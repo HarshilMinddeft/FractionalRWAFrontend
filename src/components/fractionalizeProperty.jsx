@@ -10,8 +10,8 @@ const FractionalizeProperty = () => {
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
 
-  const vaultAddress = "0x2B17094233a747D581734256cA064B6384ac810d";
-  const PContractAddr = "0x4bC392af2F448eC402b9bc52cBbEbd90692EB136"; // On cello 
+  const vaultAddress = "0x6C575466218c486bC124eeeE9F3dA4f4143b111E";
+  const PContractAddr = "0x44438f9493285Ac678c056978d5e6c761435fC22"; // On cello 
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -126,13 +126,13 @@ const FractionalizeProperty = () => {
   }, []);
 
   return (
-    <div className='mt-4 overflow-x-hidden'>
-      <NAV/>
+    <div className=''>
+      <NAV  signer={userAddress}/>
       <h2 className="text-2xl font-bold mb-4 mt-5">Your Tokenized Properties</h2>
       {loading ? (
         <p>Loading properties...</p>
       ) : properties.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 text-lg gap-4 ml-2">
           {properties.map((prop) => (
             <div key={prop.propertyId} className="border p-2 rounded-lg bg-gray-700 shadow">
               {prop.propertyThumbImages && prop.propertyThumbImages.length > 0 && (
@@ -144,7 +144,8 @@ const FractionalizeProperty = () => {
               <p><strong>Size:</strong> {prop.propertySize} sqft</p>
               <div className="mt-3 mb-2">
                 {!fractionalEvents[prop.propertyId] ? (
-                <button onClick={() => Fractionalize(prop.propertyId)}>
+                <button className='rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]'
+                 onClick={() => Fractionalize(prop.propertyId)}>
                     Fractionalize Property
                 </button>
                    ) : (

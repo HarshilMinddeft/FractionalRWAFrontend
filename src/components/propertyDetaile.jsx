@@ -5,12 +5,13 @@ import PropTokensArti from '../artifacts/contracts/PropertyShareToken.sol/Proper
 import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/FractionalMarketplace.json'
 import StableCoin from '../artifacts/contracts/StableCoin.sol/STABLEC.json'
 import OrderBook from '../artifacts/contracts/orderBook.sol/Orderbook.json'
+import { ToastContainer, toast } from 'react-toastify';
 
 const PropertyDetail = () => {
 
-  const marketplaceAddr = "0x632b1A46cb0bfe30b9064927463823e23B9DedF1"
-  const stableCoinAddr = "0xC65446b023e2A9479c072ff977F550AE09e41297"
-  const orderBookAddr = "0x10c0ac94515544eb8073Fac50d8e566B060Da57C"
+  const marketplaceAddr = "0x8Cb8Ec81E45F33274E79609c9dca999e72964b09"
+  const stableCoinAddr = "0x9AFBf6031B7563db62cD11dcE98D340E9b865E0C"
+  const orderBookAddr = "0xD29eb68BfE815eE51940822765E739cF34288d6F"
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -23,7 +24,9 @@ const PropertyDetail = () => {
   const [buyAmounts, setBuyAmounts] = useState({});
   const [pAdmin,setPAdmin] = useState('');
   const [newPropAmount,setNewPropAmount] = useState('');
-  const [currentSigner,setCurrentSigner] = useState('')
+  const [currentSigner,setCurrentSigner] = useState('');
+  const [bbPrice,setBBPrice] = useState('')
+  const [sellingTokens,setSellingTokens] = useState('')
 
      const fetchDetails = async () => {
       try {
@@ -37,6 +40,8 @@ const PropertyDetail = () => {
             totalShares: Number(ethers.utils.formatUnits(Checklisting.totalTokens, 18)).toString(),
             pricePerToken: Number(ethers.utils.formatUnits(Checklisting.pricePerToken, 6)).toString(),
             remainingTokens: Number(ethers.utils.formatUnits(Checklisting.remainingTokens, 18)).toString(),
+            buyBackPrice: Number(ethers.utils.formatUnits(Checklisting.buyBackPrice, 6)).toString(),
+            buyBack:Checklisting.buyBack
           };
         setContractListingData(listingData)
 
@@ -71,7 +76,7 @@ const PropertyDetail = () => {
       const transaction = await stableCoinConc.approve(
             marketplaceAddr,
             tokenstobuy 
-            );
+      );
 
       await transaction.wait();
 
@@ -86,11 +91,22 @@ const PropertyDetail = () => {
           fetchDetails();
         
       } catch (error) {
-         console.error("Error fetching property details:", error);
+          console.error("Error fetching property details:", error);
+          if (error instanceof Error) {
+              if (error.message.includes('user rejected')) {
+                toast.error('Transection Rejected.')
+                console.error('Transection Rejected:', error.message)
+              } else if (error.message.includes('cannot estimate gas')){
+                toast.error('Insufficient funds')
+              } else{
+                toast.error('Please try after some time')
+              }
+            }
       }
     }
 
     const fetchOrders = async() =>{
+      try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
@@ -124,15 +140,19 @@ const PropertyDetail = () => {
       }
     }
 
-    setOrders(fetchedOrders);
+      setOrders(fetchedOrders);
+      } catch (error) {
+      }
     }
 
     const buyfromLimit = async(orderId, buyAmount) => {
+
+      try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
 
-      const formBuyAmount = ethers.utils.parseUnits(buyAmount.toString(), 18);
+       const formBuyAmount = ethers.utils.parseUnits(buyAmount.toString(), 18);
 
         const stableCoinConcAp = new ethers.Contract(
           stableCoinAddr,
@@ -153,9 +173,22 @@ const PropertyDetail = () => {
 
       fetchOrders();
 
+      } catch (error) {
+         console.error("Error fetching property details:", error);
+          if (error instanceof Error) {
+              if (error.message.includes('user rejected')) {
+                toast.error('Transection Rejected.')
+                console.error('Transection Rejected:', error.message)
+              } else if (error.message.includes('cannot estimate gas')){
+                toast.error('Insufficient funds')
+              } else{
+                toast.error('Please try after some time')
+              }
+            }      
+      }
     }
 
-    const createLimitOrder = async() =>{
+    const createLimitOrder = async() => {
       try {
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -164,7 +197,6 @@ const PropertyDetail = () => {
 
       const formBuyAmount = ethers.utils.parseUnits(orderSellAmount.toString(), 18);
       const formOrderTokenAmount = ethers.utils.parseUnits(opricePerToken.toString(), 6);
-              console.log("contractListingData.shareToken",contractListingData.shareToken)
           const propertyCoinConcAp = new ethers.Contract(
           contractListingData.shareToken,
           PropTokensArti.abi,
@@ -187,10 +219,19 @@ const PropertyDetail = () => {
 
         fetchOrders();
         
-      } catch (error) {
+      } catch (error) {        
          console.error("Error fetching property details:", error);
+          if (error instanceof Error) {
+              if (error.message.includes('user rejected')) {
+                toast.error('Transection Rejected.')
+                console.error('Transection Rejected:', error.message)
+              } else if (error.message.includes('cannot estimate gas')){
+                toast.error('Insufficient funds')
+              } else{
+                toast.error('Please try after some time')
+              }
+            }
       }
-
     }
 
     //Admin Funcion
@@ -240,6 +281,77 @@ const PropertyDetail = () => {
       }
     }
 
+    //Owner Active BuyBack function
+    const ownerBuyBack = async()=>{
+      try {
+        
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+
+        const stableCoinConcAp = new ethers.Contract(
+          stableCoinAddr,
+          StableCoin.abi,
+          signer
+      );
+
+        const MarketPlaceCon = new ethers.Contract(
+            marketplaceAddr,
+            MarketplaceArti.abi,
+            signer
+      );
+
+        const remainingTokens = ethers.utils.parseUnits(contractListingData.remainingTokens.toString(), 18);
+        const buyBackPrice = ethers.utils.parseUnits(bbPrice.toString(), 6);
+
+        const requiredStablecoin = remainingTokens.mul(buyBackPrice).div(ethers.constants.WeiPerEther);
+
+        const transaction = await stableCoinConcAp.approve(marketplaceAddr, requiredStablecoin);
+        await transaction.wait()
+
+        const ActivateBuyBack = await MarketPlaceCon.activateBuyBack(id, buyBackPrice)
+        await ActivateBuyBack.wait();
+        fetchDetails()
+        
+      } catch (error) {
+        
+      }
+    }
+
+     const sellBackTokensContract = async() => {
+      try {
+      
+      const ConvertTokens = ethers.utils.parseUnits(sellingTokens.toString(), 18);
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+
+      const propertyCoinConcAp = new ethers.Contract(
+          contractListingData.shareToken,
+          PropTokensArti.abi,
+          signer
+      );
+
+      const transaction = await propertyCoinConcAp.approve(marketplaceAddr, ConvertTokens);
+      await transaction.wait();
+
+      const MarketPlaceCon = new ethers.Contract(
+          marketplaceAddr,
+          MarketplaceArti.abi,
+          signer
+        );
+
+       
+        const SellbackTokens = await MarketPlaceCon.sellTokensBack(id, ConvertTokens)
+        await SellbackTokens.wait();
+        fetchDetails()
+        
+      } catch (error) {
+        
+      }
+    }
+
     const handleBuyAmountChange = (orderId, value) => {
       setBuyAmounts((prev) => ({ ...prev, [orderId]: value }));
        };
@@ -254,11 +366,14 @@ const PropertyDetail = () => {
 
   return (
     <div className="text-white mt-8">
+            <div>
+              <ToastContainer position="top-center" autoClose={2000} />
+            </div>
       <div className='relative flex items-center justify-center mb-6'>
       <div className="absolute left-0 mt-9 mb-9">
       <button
         onClick={() => navigate(-1)}
-        className=" px-4 py-2 bg-green-700 rounded hover:bg-green-800"
+        className="rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff] "
       >
         ⬅ Back to All Properties
       </button>
@@ -277,9 +392,38 @@ const PropertyDetail = () => {
             ))}
           </div>
        )}
+       
           <div className="flex flex-col md:flex-row gap-6 p-6 text-white">
+            {/* Sell Tokens Box */}
+            {contractListingData.buyBack && (
+               <div className="w-full md:w-1/3 bg-gray-700 p-5 rounded-lg shadow-lg">
+              <h3 className="text-xl font-semibold mb-4">Sell Tokens</h3>
+              <div className="flex justify-between items-center mb-2">
+                <p>Estimated Price</p>
+                <p>{contractListingData.buyBackPrice}</p>
+              
+              </div>
+
+              <input
+                type="number"
+                min="1"
+                value={sellingTokens}
+                onChange={(e) => setSellingTokens(e.target.value)}
+                className="p-2 border border-gray-300 rounded-md w-full text-black mb-3"
+                placeholder="Enter amount"
+              />
+              <button
+                onClick={sellBackTokensContract}
+                className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
+              >
+                Sell
+              </button>
+            </div>
+            )}
+
             {/* Buy Tokens Box */}
-            <div className="w-full md:w-1/3 bg-gray-700 p-5 rounded-lg shadow-lg">
+            {!contractListingData.buyBack && (
+             <div className="w-full md:w-1/3 bg-gray-700 p-5 rounded-lg shadow-lg">
               <h3 className="text-xl font-semibold mb-4">Buy Tokens</h3>
               <div className="flex justify-between items-center mb-2">
                 <p>Estimated Price</p>
@@ -304,11 +448,13 @@ const PropertyDetail = () => {
               />
               <button
                 onClick={buyPropertyTokens}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
               >
                 Purchase
               </button>
             </div>
+            )}
+           
        {/* Limit orders  */}
             <div className="w-full md:w-1/3 bg-gray-700 p-5 rounded-lg shadow-lg">
               <h3 className="text-xl font-semibold mb-4">Limit Orders</h3>
@@ -337,7 +483,7 @@ const PropertyDetail = () => {
                       onChange={(e) => handleBuyAmountChange(order.id, e.target.value)}
                     />
                     <button
-                      className="bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                      className="rounded-lg border border-transparent px-5 py-1 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
                       onClick={() => buyfromLimit(order.id, buyAmounts[order.id])}
                     >
                       Buy
@@ -349,7 +495,7 @@ const PropertyDetail = () => {
 
                     {order.seller.toLowerCase() === currentSigner.toLowerCase() && (
                       <button
-                        className="bg-red-500 text-white text-sm rounded px-2 py-1 hover:bg-red-600"
+                        className="rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-red-800 text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
                         onClick={() => cancelLimitOrder(order.id)}
                       >
                         Cancel Your Order
@@ -362,7 +508,8 @@ const PropertyDetail = () => {
           )}
             </div>
           {/* Sell Tokens Box */}
-            <div className="w-full md:w-1/3 bg-gray-700 p-5 rounded-lg shadow-lg">
+           {property.propertyOwnerWallet.toLowerCase() !== currentSigner.toLowerCase() && !contractListingData.buyBack && (
+               <div className="w-full md:w-1/3 bg-gray-700 p-5 rounded-lg shadow-lg">
               <h3 className="text-xl font-semibold mb-1">Create Sell Order</h3>
               <p className='text-sm mb-4'>You can sell you tokens by creating sell order here</p>
               <div className="mb-3">
@@ -391,19 +538,29 @@ const PropertyDetail = () => {
 
               <button
                 onClick={createLimitOrder}
-                className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
               >
                 Create Sell Order
               </button>
             </div>
+           )}
           </div>
 
+          {/* Delisting Info */}
+          {contractListingData.buyBack && (
+            <div className="w-full md:w-1/1 bg-red-600 p-5 rounded-lg mb-2 shadow-lg text-[18px]">
+            <h3><strong>Property owner delisted this property</strong></h3> 
+           </div>
+          )}
+
+          {/* Display Info */}
            <div className="w-full md:w-1/1 bg-gray-700 p-5 rounded-lg shadow-lg text-[18px]">
             <h3><strong>Property ID: </strong> {property.propertyId}</h3> 
               <h3><strong>Token Address: </strong> {contractListingData.shareToken}</h3>   
               <h3><strong>Remaining Tokens: </strong> {contractListingData.remainingTokens} </h3>
               <h3><strong>Total Tokens: </strong> {contractListingData.totalShares}</h3>
            </div>
+
           {/* Admin Function */}
           {pAdmin && (
             <div className="flex justify-center mt-3">
@@ -423,7 +580,7 @@ const PropertyDetail = () => {
                 />
                 <button
                   onClick={changePropertyPriceAdm}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
                 >
                   Update
                 </button>
@@ -431,11 +588,45 @@ const PropertyDetail = () => {
             </div>
           )}
 
-      <div className="text-left mt-8 text-[17px]">
+          {/* DeListProperty BBActive */}
+          {property.propertyOwnerWallet.toLowerCase() == currentSigner.toLowerCase() && !contractListingData.buyBack &&(
+            <div className="flex justify-center mt-3">
+              <div className="w-full md:w-1/2 bg-gray-700 p-5 rounded-lg shadow-lg">
+                <h3 className="text-xl font-semibold mb-4 text-white">Initiate BuyBack Program</h3>
+                <div className="flex justify-between items-center mb-2 text-white">
+                  <p>Current Price</p>
+                  <p><strong>{contractListingData.pricePerToken}</strong></p>
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  value={bbPrice}
+                  onChange={(e) => setBBPrice(e.target.value)}
+                  className="p-2 border border-gray-300 rounded-md w-full text-black mb-3"
+                  placeholder="Enter new buy back amount"
+                />
+                <button
+                  onClick={ownerBuyBack}
+                  className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#ffffff]"
+                >
+                  Initiate
+                </button>
+                <p className='mt-2'>New buy amount should be minimum 10% more than current price</p>
+              </div>
+            </div>
+          )}
+
+      <div className="text-left mt-8 ml-2 text-[17px]">
         <div className='mb-5'>
           <h2><strong>Underlying asset price </strong> </h2>
           <p>{property.propertyPrice}</p>
         </div>
+        {contractListingData.buyBack &&(
+          <div className='mb-5'>
+          <h2><strong>New BuyBack Price</strong> </h2>
+          <p>{contractListingData.buyBackPrice}</p>
+        </div>
+        )}
         <div className='mb-5'>
           <h2><strong>Price Per Tokes </strong> </h2>
           <p>{contractListingData.pricePerToken}</p>

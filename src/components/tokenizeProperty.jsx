@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PropertyNFTArti from '../artifacts/contracts/propertyNFT.sol/PropertyNFT.json'
 import {ethers} from 'ethers'
 import NAV from './nav';
+import { ToastContainer, toast } from 'react-toastify';
 
 const TokenizeProperty = () => {
   const [singleImage, setSingleImage] = useState(null);
@@ -23,7 +24,7 @@ const TokenizeProperty = () => {
 
   const [uploadStatus, setUploadStatus] = useState('');
 
-  const PContractAddr = "0x4bC392af2F448eC402b9bc52cBbEbd90692EB136"; // On cello 
+  const PContractAddr = "0x44438f9493285Ac678c056978d5e6c761435fC22"; // On cello 
 
   const handleInputChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -124,7 +125,6 @@ const TokenizeProperty = () => {
           console.log("NFT DETAILES",tokenId,recipient,transactionHash,PContractAddr)
         }
 
-
       const multiImageUrls = [];
       for (const file of multipleImages) {
         const url = await uploadToPinata(file);
@@ -167,55 +167,118 @@ const TokenizeProperty = () => {
     } catch (err) {
       console.error(err);
       setUploadStatus("Upload failed.");
+      if (err instanceof Error) {
+        if (err.message.includes('user rejected')) {
+          toast.error('Transection Rejected.')
+         } else if (err.message.includes('cannot estimate gas')){
+          toast.error('Unauthorized Account')
+          } else{
+          toast.error('Please try after some time')
+        }
+      }
     }
   };
 
-  return (
-    <div className='mt-4 overflow-x-hidden'>
-      
-      <NAV/>
+return (
+  <div className=''>
+    <NAV />
+    <div>
+      <ToastContainer position="top-center" autoClose={2000} />
+    </div>
+
     <div className="max-w-lg mx-auto sm:p-8 mt-5 rounded-[10px] bg-gray-600 backdrop-blur-3xl text-white shadow-lg w-full">
       <h2 className="text-2xl font-bold">Property Details</h2>
       {propUploadStatus ? (
-      <div className="bg-green-100 text-green-800 rounded-lg text-sm whitespace-pre-line p-4">
-        {propUploadStatus}
-      </div>
+        <div className="bg-green-100 text-green-800 rounded-lg text-sm whitespace-pre-line p-4">
+          {propUploadStatus}
+        </div>
       ) : (
-      <form onSubmit={handleSubmit}>
-        {['name', 'propertyPrice', 'propertySize', 'propertyOwnerWallet', 'features', 'offering', 'details', 'management', 'location'].map(field => (
-          <div key={field} className="mb-4 text-left">
-            <label className=" mb-2 text-sm font-medium capitalize">{field.replace(/([A-Z])/g, ' $1')}</label>
+        <form onSubmit={handleSubmit}>
+          {[
+            'name',
+            'propertyPrice',
+            'propertySize',
+            'propertyOwnerWallet',
+            'features',
+            'offering',
+            'details',
+            'management',
+            'location'
+          ].map((field) => {
+            const customLabels = {
+              propertyPrice: 'Property Price ($)',
+              management: 'Managed By'
+            };
+
+            const label =
+              customLabels[field] ||
+              field.replace(/([A-Z])/g, ' $1').replace(/^./, (str) =>
+                str.toUpperCase()
+              );
+
+            return (
+              <div key={field} className="mb-4 text-left">
+                <label className="mb-2 text-sm font-medium block">{label}</label>
+                <input
+                  name={field}
+                  type="text"
+                  value={formData[field]}
+                  onChange={handleInputChange}
+                  className={`${
+                    field === 'propertyId'
+                      ? 'bg-gray-300 cursor-not-allowed'
+                      : 'bg-gray-100'
+                  } border border-gray-300 text-gray-900 text-sm rounded-lg w-full py-2.5 px-4`}
+                  placeholder={`Enter ${label}`}
+                />
+              </div>
+            );
+          })}
+
+          <div className="mb-4">
+            <label className="block mb-2 text-sm font-medium">Upload Single Image</label>
             <input
-              name={field}
-              type="text"
-              value={formData[field]}
-              onChange={handleInputChange}
-              className={`${field === 'propertyId' ? 'bg-gray-300 cursor-not-allowed' : 'bg-gray-100'} border border-gray-300 text-gray-900 text-sm rounded-lg w-full py-2.5 px-4`}
-              placeholder={`Enter ${field}`}
+              type="file"
+              accept="image/*"
+              onChange={handleSingleImageChange}
+              className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100"
             />
           </div>
-        ))}
-        <div className="mb-4">
-          <label className="block mb-2 text-sm font-medium">Upload Single Image</label>
-          <input type="file" accept="image/*" onChange={handleSingleImageChange} className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100" />
-        </div>
 
-        <div className="mb-4">
-          <label className="block mb-2 text-sm font-medium">Upload Multiple Images</label>
-          <input type="file" multiple accept="image/*" onChange={handleMultipleImagesChange} className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100" />
-        </div>
+          <div className="mb-4">
+            <label className="block mb-2 text-sm font-medium">Upload Multiple Images</label>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleMultipleImagesChange}
+              className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100"
+            />
+          </div>
 
-        <div className="mb-4">
-          <label className="block mb-2 text-sm font-medium">Upload PDF Document</label>
-          <input type="file" accept="application/pdf" onChange={handlePdfChange} className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100" />
-        </div>
-        <button type="submit" className="text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm py-2.5 px-5 w-full">Register</button>
-      </form>
-            )}
+          <div className="mb-4">
+            <label className="block mb-2 text-sm font-medium">Upload PDF Document</label>
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={handlePdfChange}
+              className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
+          >
+            Register
+          </button>
+        </form>
+      )}
       {uploadStatus && <p className="mt-4 text-sm">{uploadStatus}</p>}
     </div>
-    </div>
-  );
+  </div>
+);
+
 };
 
 export default TokenizeProperty;

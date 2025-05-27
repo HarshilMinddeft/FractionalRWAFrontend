@@ -13,9 +13,9 @@ const RedeemfracTokens = () => {
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
 
-  const vaultAddress = "0x2B17094233a747D581734256cA064B6384ac810d";
-  const PContractAddr = "0x4bC392af2F448eC402b9bc52cBbEbd90692EB136"; // On cello 
-  const marketplaceAddr = "0x632b1A46cb0bfe30b9064927463823e23B9DedF1"
+  const vaultAddress = "0x6C575466218c486bC124eeeE9F3dA4f4143b111E";
+  const PContractAddr = "0x44438f9493285Ac678c056978d5e6c761435fC22"; // On cello 
+  const marketplaceAddr = "0x8Cb8Ec81E45F33274E79609c9dca999e72964b09"
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -142,8 +142,8 @@ const RedeemfracTokens = () => {
   }, []);
 
    return (
-    <div className='mt-4 overflow-x-hidden'>
-      <NAV/>
+    <div className=''>
+    <NAV  signer={userAddress}/>
       <h2 className="text-2xl font-bold mt-5 mb-4">Redeem Your Property Tokens</h2>
       {loading ? (
         <p>Loading properties...</p>
@@ -161,7 +161,9 @@ const RedeemfracTokens = () => {
               <div className="mt-3">
                 {!fractionalEvents[prop.propertyId] ? (
                   <>
-                <button onClick={() => redeemTokens(prop.propertyId)}>
+                <button 
+                className='rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]'
+                onClick={() => redeemTokens(prop.propertyId)}>
                     Redeem Property
                 </button>
                 <p className='mt-2'>You should have <strong>{Math.floor(Number(prop.propertyPrice) / 40)}</strong> Fractional Tokens</p>

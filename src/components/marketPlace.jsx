@@ -6,8 +6,6 @@ import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/Fractiona
 import StableCoin from '../artifacts/contracts/StableCoin.sol/STABLEC.json'
 import NAV from './nav';
 
-
-
 const MarketPlace = () => {
 
       const navigate = useNavigate();
@@ -16,8 +14,8 @@ const MarketPlace = () => {
       const [loading, setLoading] = useState(true);
       const [userAddress, setUserAddress] = useState("");
 
-    const marketplaceAddr = "0x632b1A46cb0bfe30b9064927463823e23B9DedF1"
-    const stableCoinAddr = "0xC65446b023e2A9479c072ff977F550AE09e41297"
+    const marketplaceAddr = "0x8Cb8Ec81E45F33274E79609c9dca999e72964b09"
+    const stableCoinAddr = "0x9AFBf6031B7563db62cD11dcE98D340E9b865E0C"
 
      const getWalletAddress = async () => {
         if (window.ethereum) {
@@ -78,13 +76,12 @@ const MarketPlace = () => {
   }, []);
 
   return (
-    <div className='mt-4'>
-      <NAV/>
-      <h2 className="text-2xl font-bold mt-5 mb-4">Marketplace Properties</h2>
+    <div className=''>
+      <NAV signer={userAddress}/>
       {loading ? (
         <p className="text-gray-300 text-center text-lg">Loading properties...</p>
       ) : properties.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-5 ml-2">
           {properties.map((prop) => (
             <div
               key={prop.propertyId}

@@ -5,19 +5,21 @@ import VaultArti from '../artifacts/contracts/FractionalVault.sol/FractionalVaul
 import PropTokensArti from '../artifacts/contracts/PropertyShareToken.sol/PropertyShareToken.json';
 import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/FractionalMarketplace.json'
 import NAV from './nav';
+import { ToastContainer, toast } from 'react-toastify';
 
 const ListToMarketPlace = () => {
 
   const [properties, setProperties] = useState([]);
   const [Status, setStatus] = useState('');
+  const [userAddress, setUserAddress] = useState('');
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
   const [tokensInputs,setTokenInputs] = useState({})
   const [userTokenBalaces,setUserTokenBalances]= useState([])
 
-  const vaultAddress = "0x2B17094233a747D581734256cA064B6384ac810d";
-  const nftContractAddr = "0x4bC392af2F448eC402b9bc52cBbEbd90692EB136";
-  const marketplaceAddr = "0x632b1A46cb0bfe30b9064927463823e23B9DedF1"
+  const vaultAddress = "0x6C575466218c486bC124eeeE9F3dA4f4143b111E";
+  const nftContractAddr = "0x44438f9493285Ac678c056978d5e6c761435fC22";
+  const marketplaceAddr = "0x8Cb8Ec81E45F33274E79609c9dca999e72964b09"
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -26,6 +28,7 @@ const ListToMarketPlace = () => {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const accounts = await provider.send('eth_requestAccounts', []);
         const lowercaseAddress = accounts[0].toLowerCase();
+        setUserAddress(lowercaseAddress)
         return lowercaseAddress;
       } catch (err) {
         console.error('Error getting wallet:', err);
@@ -67,55 +70,53 @@ const ListToMarketPlace = () => {
   }
 };
 
-// const fetchUserTokenBalance = async () => {
-//   try {
-//     const provider = new ethers.providers.Web3Provider(window.ethereum);
-//     const signer = provider.getSigner();
-//     const userAddress = await signer.getAddress();
+const fetchUserTokenBalance = async () => {
+  try {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const userAddress = await signer.getAddress();
 
-//     const VaultFractionalize = new ethers.Contract(
-//       vaultAddress, 
-//       VaultArti.abi,
-//       signer
-//     );
+    const VaultFractionalize = new ethers.Contract(
+      vaultAddress, 
+      VaultArti.abi,
+      signer
+    );
 
-//     const balances = [];
-//     console.log("properties",properties)
-//     for (const prop of properties) {
-//       try {
-//         const fractionalData = await VaultFractionalize.fractionalData(prop.propertyId);
-//         const tokenAddress = fractionalData.tokenAddress;
+    const balances = [];
+    console.log("properties",properties)
+    for (const prop of properties) {
+      try {
+        const fractionalData = await VaultFractionalize.fractionalData(prop.propertyId);
+        const tokenAddress = fractionalData.tokenAddress;
 
-//         if (tokenAddress && tokenAddress !== ethers.constants.AddressZero) {
-//           const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        if (tokenAddress && tokenAddress !== ethers.constants.AddressZero) {
+          const tokenContract = new ethers.Contract(tokenAddress, PropTokensArti.abi, provider);
 
-//           const [balance, symbol, decimals] = await Promise.all([
-//             tokenContract.balanceOf(userAddress),
-//             tokenContract.symbol(),
-//             tokenContract.decimals()
-//           ]);
+          const [balance, symbol, decimals] = await Promise.all([
+            tokenContract.balanceOf(userAddress),
+            tokenContract.symbol(),
+            tokenContract.decimals()
+          ]);
 
-//           balances.push({
-//             propertyId: prop.propertyId,
-//             tokenAddress,
-//             symbol,
-//             balance: ethers.utils.formatUnits(balance, decimals)
-//           });
-//         }
+          balances.push({
+            propertyId: prop.propertyId,
+            tokenAddress,
+            symbol,
+            balance: ethers.utils.formatUnits(balance, decimals)
+          });
+        }
       
-//       } catch (err) {
-//         console.error(`Failed for property ID ${prop.propertyId}:`, err);
-//       }
-//     }
-//       setUserTokenBalances(balances)
-//     // console.log("User token balances:", balances);
-//     // Optionally store in state
-//     // setUserTokenBalances(balances);
+      } catch (err) {
+        console.error(`Failed for property ID ${prop.propertyId}:`, err);
+      }
+    }
+      setUserTokenBalances(balances)
+      console.log("User token balances:", balances);
 
-//   } catch (err) {
-//     console.error("Error fetching token balances:", err);
-//   }
-// };
+  } catch (err) {
+    console.error("Error fetching token balances:", err);
+  }
+};
 
 
   const listToMarketplace = async (tokenId)=>{
@@ -203,10 +204,23 @@ const ListToMarketPlace = () => {
           }));
 
        } catch (error) {
-       console.error("Errorrororor", error);
-     }
+            if (error instanceof Error) {
+        if (error.message.includes('user rejected')) {
+          toast.error('Transection Rejected.')
+          console.error('Transection Rejected:', error.message)
+        } else {
+          toast.error('Please Try after some time')
+        }
+      }
+    }
     }
 
+    useEffect(() => {
+    if (properties.length > 0) {
+      console.log("HI")
+      fetchUserTokenBalance();
+    }
+  }, [properties]);
 
   useEffect(() => {
     const init = async () => {
@@ -218,71 +232,93 @@ const ListToMarketPlace = () => {
     init();
   }, []);
 
-   return (
-    <div className='mt-4 overflow-x-hidden'>
-      <NAV/>
-      <h2 className="text-2xl font-bold mt-5 mb-4">List tokens to marketplace</h2>
-       <h3 className='mt-5'>{Status}</h3>
-      {loading ? (
-        <p>Loading properties...</p>
-      ) : properties.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {properties.map((prop) => (
+
+return (
+  <div className=''>
+  <NAV  signer={userAddress}/>
+    <h2 className="text-2xl font-bold mt-5 mb-4">List tokens to marketplace</h2>
+    <h3 className='mt-5'>{Status}</h3>
+
+      <div>
+        <ToastContainer position="top-center" autoClose={2000} />
+      </div>
+
+    {loading ? (
+      <p>Loading properties...</p>
+    ) : properties.length > 0 ? (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {properties.map((prop) => {
+          const tokenInfo = userTokenBalaces.find(
+            (tkn) => tkn.propertyId === prop.propertyId
+          );
+
+          return (
             <div key={prop.propertyId} className="border p-2 rounded-lg bg-gray-700 shadow">
-              {prop.propertyThumbImages && prop.propertyThumbImages.length > 0 && (
-                <img src={prop.propertyThumbImages[0]} 
-                alt="Thumbnail" 
-                className="w-full h-56 md:h-64 lg:h-64 object-cover rounded" 
+              {prop.propertyThumbImages?.length > 0 && (
+                <img
+                  src={prop.propertyThumbImages[0]}
+                  alt="Thumbnail"
+                  className="w-full h-56 md:h-64 lg:h-64 object-cover rounded"
                 />
               )}
-              <h3 className="text-2xl mt-2 font-semibold">{prop.propertyName}</h3>
-              <p><strong>Property id : </strong> {prop.propertyId}</p>
-              <p><strong>Price:</strong> {prop.propertyPrice}</p>
-              <p><strong>Size:</strong> {prop.propertySize} sqft</p>
+
+              <h3 className="text-2xl mt-1 font-semibold">{prop.propertyName}</h3>
+              <p className='mt-3'><strong>Property id:</strong> {prop.propertyId}</p>
+              <p className=''><strong>Valuation :</strong> {prop.propertyPrice} USD</p>
+
+              {tokenInfo && (
+                <div className="text-white ">
+                  <p><strong>Your Token Balance:</strong> {tokenInfo.balance}</p>
+                  <p className='text-sm mt-4'>{tokenInfo.tokenAddress}</p>
+                </div>
+              )}
+
+            {tokenInfo && parseFloat(tokenInfo.balance) > 0 ?(
               <div className="mt-3 mb-2">
-
-            {!fractionalEvents[prop.propertyId] ? (
-                <div className="mt-3 mb-2">
-              <input
-                type="number"
-                placeholder="Enter number of tokens"
-                className="p-3 w-40 mr-4 text-white text-sm rounded border border-gray-300"
-                onChange={(e) =>
-                  setTokenInputs((prev) => ({
-                    ...prev,
-                    [prop.propertyId]: e.target.value
-                  }))
-                }
-              />
-              <button
-                className="py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
-                onClick={() =>
-                  listToMarketplace(prop.propertyId)
-                }
-              >
-                List Tokens
-              </button>
-            </div>
-                   ) : (
-                  <p className="text-green-300 font-semibold">Tokens added to marketplace</p>
-                   )}
+                {!fractionalEvents[prop.propertyId] ? (
+                  <div className="mt-3 mb-2">
+                    <input
+                      type="number"
+                      placeholder="Enter number of tokens"
+                      className="p-3 w-40 mr-4 text-white text-sm rounded border border-gray-300"
+                      onChange={(e) =>
+                        setTokenInputs((prev) => ({
+                          ...prev,
+                          [prop.propertyId]: e.target.value
+                        }))
+                      }
+                    />
+                    <button
+                      className="py-2 rounded-lg border border-transparent px-5 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff] focus:outline-4 focus:outline-auto focus:outline-blue-500"
+                      onClick={() => listToMarketplace(prop.propertyId)}
+                    >
+                      List Tokens
+                    </button>
                   </div>
-                {fractionalEvents[prop.propertyId] && (
-              <div className="mt-2 text-sm text-white">
-                <p><strong>Share Token:</strong> {fractionalEvents[prop.propertyId].propertyTokenAddress}</p>
-                <p><strong>Total Shares:</strong> {fractionalEvents[prop.propertyId].totalShares}</p>
-                <p><strong>Per Token Price: </strong> {fractionalEvents[prop.propertyId].pricePerToken}</p>
-                <p><strong>Unbought Tokens:</strong> {fractionalEvents[prop.propertyId].remainingTokens}</p>
-             </div>
-           )}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p>No properties found for this wallet.</p>
-      )}
-    </div>
-  );
-}
+                ) : (
+                  <p className="text-green-300 font-semibold">Tokens added to marketplace</p>
+                )}
+              </div>
+              ):(
+              <p className='mt-2'><strong>All Tokens Are Listed</strong> </p>
+              )}
 
+              {fractionalEvents[prop.propertyId] && (
+                <div className="mt-2 text-sm text-white">
+                  <p><strong>Share Token:</strong> {fractionalEvents[prop.propertyId].propertyTokenAddress}</p>
+                  <p><strong>Total Shares:</strong> {fractionalEvents[prop.propertyId].totalShares}</p>
+                  <p><strong>Per Token Price:</strong> {fractionalEvents[prop.propertyId].pricePerToken}</p>
+                  <p><strong>Unbought Tokens:</strong> {fractionalEvents[prop.propertyId].remainingTokens}</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    ) : (
+      <p>No properties found for this wallet.</p>
+    )}
+  </div>
+);
+}
 export default ListToMarketPlace
