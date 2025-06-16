@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import PropertyNFTArti from '../artifacts/contracts/propertyNFT.sol/PropertyNFT.json';
 import VaultArti from '../artifacts/contracts/FractionalVault.sol/FractionalVault.json'
 import NAV from './nav';
+import SliderBar from './sliderBar'
 
 const FractionalizeProperty = () => {
   const [properties, setProperties] = useState([]);
@@ -10,8 +11,8 @@ const FractionalizeProperty = () => {
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
 
-  const vaultAddress = "0x6C575466218c486bC124eeeE9F3dA4f4143b111E";
-  const PContractAddr = "0x44438f9493285Ac678c056978d5e6c761435fC22"; // On cello 
+  const vaultAddress = "0x54B0ECd3C8a66C42cE93c112639aeDBfD8eDa124";
+  const PContractAddr = "0xd474267e496eE634f53FF4C55d37556849546B45"; // On cello 
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -34,7 +35,7 @@ const FractionalizeProperty = () => {
  const fetchProperties = async (address) => {
   try {
     const res = await fetch(
-      `http://localhost:3001/api/Properties/getOwnerProperty?ownerAddress=${address}`
+      `https://fractionalrwabackend.onrender.com/api/Properties/getOwnerProperty?ownerAddress=${address}`
     );
     const data = await res.json();
     const allProps = data.properties || [];
@@ -126,25 +127,27 @@ const FractionalizeProperty = () => {
   }, []);
 
   return (
-    <div className=''>
-      <NAV  signer={userAddress}/>
-      <h2 className="text-2xl font-bold mb-4 mt-5">Your Tokenized Properties</h2>
+    <div className='sm:pl-64'>
+      {/* <NAV  signer={userAddress}/> */}
+        <SliderBar/>
+      <h2 className="text-xl font-bold mb-4 mt-4">Your Tokenized Properties</h2>
       {loading ? (
         <p>Loading properties...</p>
       ) : properties.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 text-lg gap-4 ml-2">
+      <div className='mx-auto w-full max-w-[1360px]'>
+        <div className='grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-3 gap-[30px] mt-5 ml-2 mr-2 mb-5'>
           {properties.map((prop) => (
-            <div key={prop.propertyId} className="border p-2 rounded-lg bg-gray-700 shadow">
+            <div key={prop.propertyId} className="bg-[#ffffff] text-black rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer overflow-hidden">
               {prop.propertyThumbImages && prop.propertyThumbImages.length > 0 && (
-                <img src={prop.propertyThumbImages[0]} alt="Thumbnail" className="w-full h-64 lg:h-72 object-cover rounded" />
+                <img src={prop.propertyThumbImages[0]} alt="Thumbnail" className="w-full h-72 lg:h-72 object-cover rounded" />
               )}
-              <h3 className="text-xl font-semibold">{prop.propertyName}</h3>
+              <h3 className="text-xl mt-1 font-semibold">{prop.propertyName}</h3>
               <p className='mt-2'><strong>Property id : </strong> {prop.propertyId}</p>
               <p><strong>Price:</strong> {prop.propertyPrice}</p>
               <p><strong>Size:</strong> {prop.propertySize} sqft</p>
               <div className="mt-3 mb-2">
                 {!fractionalEvents[prop.propertyId] ? (
-                <button className='rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]'
+                <button className='rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]'
                  onClick={() => Fractionalize(prop.propertyId)}>
                     Fractionalize Property
                 </button>
@@ -152,7 +155,7 @@ const FractionalizeProperty = () => {
                   <p className="text-green-300 font-semibold">Fractionalized</p>
                    )}
                   </div>
-              <p>You will get <strong>{Math.floor(Number(prop.propertyPrice) / 40)}</strong> Fractional Tokens</p>
+              <p className='mb-4'>You will get <strong>{Math.floor(Number(prop.propertyPrice) / 40)}</strong> Fractional Tokens</p>
                 {fractionalEvents[prop.propertyId] && (
               <div className="mt-2 text-sm text-white">
                 <p><strong>Share Token:</strong> {fractionalEvents[prop.propertyId].shareToken}</p>
@@ -161,6 +164,7 @@ const FractionalizeProperty = () => {
            )}
             </div>
           ))}
+        </div>
         </div>
       ) : (
         <p>No properties found for this wallet.</p>

@@ -7,12 +7,14 @@ import ListToMarketPlace from './components/listToMarketPlace'
 import MarketPlace from './components/marketPlace'
 import PropertyDetail from './components/propertyDetaile';
 import CancelListing from './components/cancelListing';
+import LandingPage from './components/landingPage/landingPage';
 import './App.css'
 
 function App() {
 
   return (
     <Routes>
+    <Route path='/LP' element={< LandingPage/>} />
     <Route path='/TP' element={< TokenizeProperty/>} />
     <Route path='/FP' element={< FractionalizeProperty/>} />
     <Route path='/RT' element={< RedeemfracTokens/>} />

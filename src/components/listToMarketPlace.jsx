@@ -6,6 +6,7 @@ import PropTokensArti from '../artifacts/contracts/PropertyShareToken.sol/Proper
 import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/FractionalMarketplace.json'
 import NAV from './nav';
 import { ToastContainer, toast } from 'react-toastify';
+import SliderBar from './sliderBar'
 
 const ListToMarketPlace = () => {
 
@@ -17,9 +18,9 @@ const ListToMarketPlace = () => {
   const [tokensInputs,setTokenInputs] = useState({})
   const [userTokenBalaces,setUserTokenBalances]= useState([])
 
-  const vaultAddress = "0x6C575466218c486bC124eeeE9F3dA4f4143b111E";
-  const nftContractAddr = "0x44438f9493285Ac678c056978d5e6c761435fC22";
-  const marketplaceAddr = "0x8Cb8Ec81E45F33274E79609c9dca999e72964b09"
+  const vaultAddress = "0x54B0ECd3C8a66C42cE93c112639aeDBfD8eDa124";
+  const nftContractAddr = "0xd474267e496eE634f53FF4C55d37556849546B45";
+  const marketplaceAddr = "0x6b771145BB9C12E8FB20a7B2650Ca101D6Cc811a"
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -42,7 +43,7 @@ const ListToMarketPlace = () => {
  const fetchProperties = async (address) => {
   try {
     const res = await fetch(
-      `http://localhost:3001/api/Properties/getOwnerProperty?ownerAddress=${address}`
+      `https://fractionalrwabackend.onrender.com/api/Properties/getOwnerProperty?ownerAddress=${address}`
     );
     const data = await res.json();
     const allProps = data.properties || [];
@@ -50,6 +51,7 @@ const ListToMarketPlace = () => {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
     const PropertyNFT = new ethers.Contract(nftContractAddr, PropertyNFTArti.abi, signer);
+    // const MarketPlaceData = new ethers.Contract(vaultAddress,MarketplaceArti.abi,signer);
     const filteredProps = [];
     for (const prop of allProps) {
       try {
@@ -232,11 +234,12 @@ const fetchUserTokenBalance = async () => {
     init();
   }, []);
 
-
 return (
-  <div className=''>
-  <NAV  signer={userAddress}/>
-    <h2 className="text-2xl font-bold mt-5 mb-4">List tokens to marketplace</h2>
+  <div className='sm:pl-64'>
+  {/* <NAV  signer={userAddress}/> */}
+  <SliderBar/>
+
+    <h2 className="text-xl font-bold mt-4 mb-4">List tokens to marketplace</h2>
     <h3 className='mt-5'>{Status}</h3>
 
       <div>
@@ -246,75 +249,74 @@ return (
     {loading ? (
       <p>Loading properties...</p>
     ) : properties.length > 0 ? (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {properties.map((prop) => {
-          const tokenInfo = userTokenBalaces.find(
-            (tkn) => tkn.propertyId === prop.propertyId
-          );
-
-          return (
-            <div key={prop.propertyId} className="border p-2 rounded-lg bg-gray-700 shadow">
-              {prop.propertyThumbImages?.length > 0 && (
-                <img
-                  src={prop.propertyThumbImages[0]}
-                  alt="Thumbnail"
-                  className="w-full h-56 md:h-64 lg:h-64 object-cover rounded"
-                />
-              )}
-
-              <h3 className="text-2xl mt-1 font-semibold">{prop.propertyName}</h3>
-              <p className='mt-3'><strong>Property id:</strong> {prop.propertyId}</p>
-              <p className=''><strong>Valuation :</strong> {prop.propertyPrice} USD</p>
-
-              {tokenInfo && (
-                <div className="text-white ">
-                  <p><strong>Your Token Balance:</strong> {tokenInfo.balance}</p>
-                  <p className='text-sm mt-4'>{tokenInfo.tokenAddress}</p>
-                </div>
-              )}
-
-            {tokenInfo && parseFloat(tokenInfo.balance) > 0 ?(
-              <div className="mt-3 mb-2">
-                {!fractionalEvents[prop.propertyId] ? (
-                  <div className="mt-3 mb-2">
-                    <input
-                      type="number"
-                      placeholder="Enter number of tokens"
-                      className="p-3 w-40 mr-4 text-white text-sm rounded border border-gray-300"
-                      onChange={(e) =>
-                        setTokenInputs((prev) => ({
-                          ...prev,
-                          [prop.propertyId]: e.target.value
-                        }))
-                      }
+          <div className='mx-auto w-full max-w-[1360px] mb-6'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[30px] mt-5 ml-2 mr-2'>
+          
+            {properties.map((prop) => {
+              const tokenInfo = userTokenBalaces.find(
+                (tkn) => tkn.propertyId === prop.propertyId
+              );
+              return (
+                <div key={prop.propertyId} className="bg-[#ffffff] text-black rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer overflow-hidden">
+                  {prop.propertyThumbImages?.length > 0 && (
+                    <img
+                      src={prop.propertyThumbImages[0]}
+                      alt="Thumbnail"
+                      className="w-full h-56 md:h-64 lg:h-64 object-cover rounded"
                     />
-                    <button
-                      className="py-2 rounded-lg border border-transparent px-5 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff] focus:outline-4 focus:outline-auto focus:outline-blue-500"
-                      onClick={() => listToMarketplace(prop.propertyId)}
-                    >
-                      List Tokens
-                    </button>
+                  )}
+                  <h3 className="mt-1 font-semibold">{prop.propertyName}</h3>
+                  <p className='mt-3'><strong>Property id:</strong> {prop.propertyId}</p>
+                  <p className=''><strong>Valuation :</strong> {prop.propertyPrice} USD</p>
+                  {tokenInfo && (
+                    <div className="">
+                      <p><strong>Your Token Balance:</strong> {tokenInfo.balance}</p>
+                      <p className='text-sm mt-4'>{tokenInfo.tokenAddress}</p>
+                    </div>
+                  )}
+                {tokenInfo && parseFloat(tokenInfo.balance) > 0 ?(
+                  <div className="mt-3 mb-2">
+                    {!fractionalEvents[prop.propertyId] ? (
+                      <div className="mt-3 mb-2 text-black">
+                        <input
+                          type="number"
+                          placeholder="Enter number of tokens"
+                          className="p-3 w-40 mr-4 text-sm rounded border border-gray-300"
+                          onChange={(e) =>
+                            setTokenInputs((prev) => ({
+                              ...prev,
+                              [prop.propertyId]: e.target.value
+                            }))
+                          }
+                        />
+                        <button
+                          className="py-2 rounded-lg border border-transparent px-5 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff] focus:outline-4 focus:outline-auto focus:outline-blue-500"
+                          onClick={() => listToMarketplace(prop.propertyId)}
+                        >
+                          List Tokens
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-green-300 font-semibold">Tokens added to marketplace</p>
+                    )}
                   </div>
-                ) : (
-                  <p className="text-green-300 font-semibold">Tokens added to marketplace</p>
-                )}
-              </div>
-              ):(
-              <p className='mt-2'><strong>All Tokens Are Listed</strong> </p>
-              )}
-
-              {fractionalEvents[prop.propertyId] && (
-                <div className="mt-2 text-sm text-white">
-                  <p><strong>Share Token:</strong> {fractionalEvents[prop.propertyId].propertyTokenAddress}</p>
-                  <p><strong>Total Shares:</strong> {fractionalEvents[prop.propertyId].totalShares}</p>
-                  <p><strong>Per Token Price:</strong> {fractionalEvents[prop.propertyId].pricePerToken}</p>
-                  <p><strong>Unbought Tokens:</strong> {fractionalEvents[prop.propertyId].remainingTokens}</p>
+                  ):(
+                  <p className='mt-2'><strong>All Tokens Are Listed</strong> </p>
+                  )}
+                  {fractionalEvents[prop.propertyId] && (
+                    <div className="mt-2 text-sm text-white">
+                      <p><strong>Share Token:</strong> {fractionalEvents[prop.propertyId].propertyTokenAddress}</p>
+                      <p><strong>Total Shares:</strong> {fractionalEvents[prop.propertyId].totalShares}</p>
+                      <p><strong>Per Token Price:</strong> {fractionalEvents[prop.propertyId].pricePerToken}</p>
+                      <p><strong>Unbought Tokens:</strong> {fractionalEvents[prop.propertyId].remainingTokens}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+          </div>
+      
     ) : (
       <p>No properties found for this wallet.</p>
     )}

@@ -9,11 +9,12 @@ const NAV = ({signer}) => {
 
     return (
       <>
-      <nav className="border-gray-200 dark:bg-gray-900 dark:border-gray-700">
+      <nav className="border-gray-200 bg-[#ffffff] dark:border-gray-700">
+        <div className='mx-auto w-full max-w-[1360px]'>
         <div className="max-w-screen flex flex-wrap items-center justify-between p-3">
         <a href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
           <img src="/logoD.webp" className="h-10" alt="Logo" />
-          <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">MDRWA</span>
+          <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-grey">TrueFraction</span>
         </a>
 
         {/* Mobile menu button */}
@@ -41,26 +42,18 @@ const NAV = ({signer}) => {
               <li>
               <button
                 onClick={() => navigate('/TP') }
-                className="rounded-lg border border-transparent px-3 py-2 text-base font-medium bg-gray-700 text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
+                className="rounded-lg border border-transparent px-3 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
               >
                  Tokenize Property
               </button>
               </li>
             )}
-            <li>
-              <button
-                onClick={() => navigate('/') }
-                className={`rounded-lg border border-transparent px-3 py-2 text-base font-medium bg-gray-700 text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]
-                ${navigationMod === 'simpleTokenInfo' ? 'bg-[#361352f5] border-[#2d1672dc] from-[#170c31f5] to-[#170c31f5] hover:bg-gradient-to-bl' : ''}`}
-              >
-                Marketplace
-              </button>
-            </li>
+
                         {/* Dropdown */}
             <li className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center justify-between w-full py-2 px-3 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 dark:text-white   md:dark:hover:bg-transparent"
+                className="flex items-center justify-between w-full py-2 px-3 rounded bg-[#0c162c] md:border-0 text-white"
               >
                 More
                 <svg className="w-2.5 h-2.5 ml-2.5" fill="none" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
@@ -75,7 +68,7 @@ const NAV = ({signer}) => {
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute z-10 mt-4 w-49 rounded-lg shadow-lg dark:bg-gray-700 left-[-40px] md:left-[-110px]">
+                <div className="absolute z-10 mt-4 w-49 rounded-lg shadow-lg dark:bg-[#424874] left-[-40px] md:left-[-110px]">
                   <ul className="py-2 text-[15px]">
                       <li>
                       <a href="/FP" className="block px-4 py-2 !text-white visited:!text-white hover:bg-gray-600 hover:!text-white">
@@ -103,6 +96,7 @@ const NAV = ({signer}) => {
             </li>
           </ul>
         </div>
+      </div>
       </div>
     </nav>
       </>

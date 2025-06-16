@@ -4,18 +4,19 @@ import { ethers } from 'ethers';
 import PropTokensArti from '../artifacts/contracts/PropertyShareToken.sol/PropertyShareToken.json'
 import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/FractionalMarketplace.json'
 import StableCoin from '../artifacts/contracts/StableCoin.sol/STABLEC.json'
-import NAV from './nav';
+// import NAV from './nav';
+import Header from './landingPage/comps/Header/Index'
 
 const MarketPlace = () => {
 
       const navigate = useNavigate();
 
       const [properties, setProperties] = useState([]);
-      const [loading, setLoading] = useState(true);
+      const [loading, setLoading] = useState(false);
       const [userAddress, setUserAddress] = useState("");
 
-    const marketplaceAddr = "0x8Cb8Ec81E45F33274E79609c9dca999e72964b09"
-    const stableCoinAddr = "0x9AFBf6031B7563db62cD11dcE98D340E9b865E0C"
+    const marketplaceAddr = "0x6b771145BB9C12E8FB20a7B2650Ca101D6Cc811a"
+    const stableCoinAddr = "0x96db19f0205660B4a6D1eBe60f5A818dD1709f06"
 
      const getWalletAddress = async () => {
         if (window.ethereum) {
@@ -34,9 +35,10 @@ const MarketPlace = () => {
       };
 
     const fetchProperties = async (address) => {
+      setLoading(true);
       try {
         const res = await fetch(
-          `http://localhost:3001/api/Properties/marketPlace/getAllPropertiesSummary`
+          `https://fractionalrwabackend.onrender.com/api/Properties/marketPlace/getAllPropertiesSummary`
         );
         const data = await res.json();
         const allProps = data.properties || [];
@@ -64,28 +66,80 @@ const MarketPlace = () => {
       }
     };
 
-
-  useEffect(() => {
     const init = async () => {
+    if (!window.ethereum) {
+      alert("Please install MetaMask!");
+      return;
+    }
+
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const network = await provider.getNetwork();
+
+      // Check if connected to Alfajores Testnet
+      if (network.chainId !== 44787) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0xaef3' }],
+          });
+        } catch (switchError) {
+          // If the chain is not added to MetaMask, request to add it
+          if (switchError.code === 4902) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0xaef3',
+                  chainName: 'Celo Alfajores Testnet',
+                  rpcUrls: ['https://alfajores-forno.celo-testnet.org'],
+                  nativeCurrency: {
+                    name: 'CELO',
+                    symbol: 'CELO',
+                    decimals: 18,
+                  },
+                  blockExplorerUrls: ['https://alfajores.celoscan.io/'],
+                }],
+              });
+            } catch (addError) {
+              console.error('Failed to add Alfajores network:', addError);
+            }
+          } else {
+            console.error('Failed to switch network:', switchError);
+            alert('Please switch to the Celo Alfajores Testnet in MetaMask.');
+            return;
+          }
+        }
+      }
+
       const address = await getWalletAddress();
       if (address) {
         fetchProperties(address);
       }
-    };
+
+    } catch (error) {
+      console.error('Error during initialization:', error);
+    }
+  };
+
+
+  useEffect(() => {
     init();
   }, []);
 
   return (
     <div className=''>
-      <NAV signer={userAddress}/>
+      {/* <NAV signer={userAddress}/> */}
+      <Header/>
       {loading ? (
         <p className="text-gray-300 text-center text-lg">Loading properties...</p>
-      ) : properties.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-5 ml-2">
-          {properties.map((prop) => (
+      ) : properties?.length > 0 ? (
+        <div className='mx-auto w-full max-w-[1360px]'>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[30px] mb-5 mt-10 ml-2 mr-2">
+          {properties?.map((prop) => (
             <div
               key={prop.propertyId}
-              className="bg-gray-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer overflow-hidden"
+              className="bg-[#ffffff] text-white rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer overflow-hidden"
               onClick={() => navigate(`/property/${prop.propertyId}`)}
             >
               {prop.propertyThumbImages?.length > 0 && (
@@ -96,15 +150,16 @@ const MarketPlace = () => {
                 />
               )}
             <div className="p-4 space-y-2">
-                      <h3 className="text-2xl font-bold">{prop.propertyName}</h3>
-                      <div className="text-sm text-gray-300 space-y-1">
-                        <p><strong className="text-white"> ID:</strong> {prop.propertyId}</p>
-                        <p><strong className="text-white"> Price:</strong> {prop.propertyPrice} USD</p>
-                        <p><strong className="text-white"> Size:</strong> {prop.propertySize} sqft</p>
+                      <h3 className="text-2xl text-[#000000] font-bold">{prop.propertyName}</h3>
+                      <div className="text-sm text-[#000000] space-y-1">
+                        <p><strong className="text-[#000000]"> ID:</strong> {prop.propertyId}</p>
+                        <p><strong className="text-[#000000]"> Price:</strong> {prop.propertyPrice} USD</p>
+                        <p><strong className="text-[#000000]"> Size:</strong> {prop.propertySize} sqft</p>
                       </div>
                     </div>
                   </div>
           ))}
+        </div>
         </div>
       ) : (
         <p className="text-gray-300">No properties found.</p>

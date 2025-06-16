@@ -5,6 +5,7 @@ import PropTokensArti from '../artifacts/contracts/PropertyShareToken.sol/Proper
 import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/FractionalMarketplace.json'
 import NAV from './nav';
 import { ToastContainer, toast } from 'react-toastify';
+import SliderBar from './sliderBar'
 
 const CancelListing = () => {
 
@@ -17,9 +18,8 @@ const CancelListing = () => {
   const [propertyShares, setPropertyShares] = useState({});
   const [listingOwners, setListingOwners] = useState({});
 
-
-  const vaultAddress = "0x6C575466218c486bC124eeeE9F3dA4f4143b111E";
-  const marketplaceAddr = "0x8Cb8Ec81E45F33274E79609c9dca999e72964b09"
+  const vaultAddress = "0x54B0ECd3C8a66C42cE93c112639aeDBfD8eDa124";
+  const marketplaceAddr = "0x6b771145BB9C12E8FB20a7B2650Ca101D6Cc811a"
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -41,7 +41,7 @@ const CancelListing = () => {
 const fetchProperties = async (address) => {
       try {
         const res = await fetch(
-          `http://localhost:3001/api/Properties/marketPlace/getAllPropertiesSummary`
+          `https://fractionalrwabackend.onrender.com/api/Properties/marketPlace/getAllPropertiesSummary`
         );
         const data = await res.json();
         const allProps = data.properties || [];
@@ -215,9 +215,10 @@ const fetchUserTokenBalance = async () => {
 
 
 return (
-  <div className=''>
-    <NAV signer={currentSigner}/>
-    <h2 className="text-2xl font-bold mt-5 mb-4">Cancel Listing</h2>
+  <div className='sm:pl-64'>
+    {/* <NAV signer={currentSigner}/> */}
+       <SliderBar/>
+    <h2 className="text-xl font-bold mt-5 mb-4">Cancel Listing</h2>
     <h3 className='mt-5'>{Status}</h3>
 
       <div>
@@ -227,15 +228,15 @@ return (
     {loading ? (
       <p>Loading properties...</p>
     ) : properties.length > 0 ? (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="mx-auto w-full max-w-[1360px]">
+         <div className='grid grid-cols-1  sm:grid-cols-2 lg:grid-cols-3 gap-[30px] mt-5 ml-2 mr-2 mb-5'>
         {properties.map((prop) => {
           const tokenInfo = userTokenBalaces.find(
             (tkn) => tkn.propertyId === prop.propertyId
           );
-
           return (
             <div key={prop.propertyId} >
-              <div className="border p-2 rounded-lg bg-gray-700 shadow">
+              <div className="bg-[#ffffff] text-black rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer overflow-hidden">
               {prop.propertyThumbImages?.length > 0  && (
                 <img
                   src={prop.propertyThumbImages[0]}
@@ -245,7 +246,7 @@ return (
               )}
 
               {tokenInfo && listingOwners[prop.propertyId]?.toLowerCase() === currentSigner?.toLowerCase() ?( 
-                <div className="text-white ">
+                <div className="text-black ">
                   <h3 className="text-2xl mt-1 font-semibold">{prop.propertyName}</h3>
                   <p className='mt-3'><strong>Property id:</strong> {prop.propertyId}</p>
                   <p className=''><strong>Valuation :</strong> {prop.propertyPrice} USD</p>
@@ -257,17 +258,19 @@ return (
                 </div>
               ):(<p className='mt-2'>Delisted</p>)}
 
-             {tokenInfo &&  parseFloat(tokenInfo.balance) > 0 &&(
+             {tokenInfo && listingOwners[prop.propertyId]?.toLowerCase() === currentSigner?.toLowerCase() &&(
               <div className="mt-3 mb-2">
                 {!fractionalEvents[prop.propertyId] ? (
                   <div className="mt-3 mb-2">
                     <button
-                      className="rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
+                      className="rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
                       onClick={() => cancelListing(prop.propertyId)}
                     >
                       Delist
                     </button>
+                   
                   </div>
+                  
                 ) : (
                   <p className="text-green-300 font-semibold">Delisting Successful</p>
                 )}
@@ -285,6 +288,7 @@ return (
             </div>
           );
         })}
+         </div>
       </div>
     ) : (
       <p>No properties found for this wallet.</p>

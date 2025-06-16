@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import PropertyNFTArti from '../artifacts/contracts/propertyNFT.sol/PropertyNFT.json'
 import {ethers} from 'ethers'
-import NAV from './nav';
+// import NAV from './nav';
 import { ToastContainer, toast } from 'react-toastify';
+import Header from './landingPage/comps/Header/Index'
 
 const TokenizeProperty = () => {
   const [singleImage, setSingleImage] = useState(null);
@@ -24,7 +25,7 @@ const TokenizeProperty = () => {
 
   const [uploadStatus, setUploadStatus] = useState('');
 
-  const PContractAddr = "0x44438f9493285Ac678c056978d5e6c761435fC22"; // On cello 
+  const PContractAddr = "0xd474267e496eE634f53FF4C55d37556849546B45"; // On cello nft contract address
 
   const handleInputChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -37,7 +38,7 @@ const TokenizeProperty = () => {
   const uploadToPinata = async (file) => {
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch('http://localhost:3001/api/Properties/nftUpload', {
+    const res = await fetch('https://fractionalrwabackend.onrender.com/api/Properties/nftUpload', {
       method: 'POST',
       body: fd
     });
@@ -70,7 +71,7 @@ const TokenizeProperty = () => {
         ]
       };
 
-        const metadataRes = await fetch('http://localhost:3001/api/Properties/metadataUpload', {
+        const metadataRes = await fetch('https://fractionalrwabackend.onrender.com/api/Properties/metadataUpload', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -153,7 +154,7 @@ const TokenizeProperty = () => {
 
       console.log("FINAL PAYLOAD", JSON.stringify(finalPayload));
 
-      const response = await fetch('http://localhost:3001/api/Properties/addProperty', {
+      const response = await fetch('https://fractionalrwabackend.onrender.com/api/Properties/addProperty', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finalPayload),
@@ -181,12 +182,13 @@ const TokenizeProperty = () => {
 
 return (
   <div className=''>
-    <NAV />
+      <Header/>
+    {/* <NAV /> */}
     <div>
       <ToastContainer position="top-center" autoClose={2000} />
     </div>
 
-    <div className="max-w-lg mx-auto sm:p-8 mt-5 rounded-[10px] bg-gray-600 backdrop-blur-3xl text-white shadow-lg w-full">
+    <div className="max-w-lg mx-auto sm:p-8 mt-5 rounded-[10px] mb-4 bg-[#ffffff] backdrop-blur-3xl text-black shadow-lg w-full">
       <h2 className="text-2xl font-bold">Property Details</h2>
       {propUploadStatus ? (
         <div className="bg-green-100 text-green-800 rounded-lg text-sm whitespace-pre-line p-4">
@@ -268,7 +270,7 @@ return (
 
           <button
             type="submit"
-            className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
+            className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
           >
             Register
           </button>

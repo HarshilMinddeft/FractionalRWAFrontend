@@ -9,9 +9,9 @@ import { ToastContainer, toast } from 'react-toastify';
 
 const PropertyDetail = () => {
 
-  const marketplaceAddr = "0x8Cb8Ec81E45F33274E79609c9dca999e72964b09"
-  const stableCoinAddr = "0x9AFBf6031B7563db62cD11dcE98D340E9b865E0C"
-  const orderBookAddr = "0xD29eb68BfE815eE51940822765E739cF34288d6F"
+  const marketplaceAddr = "0x6b771145BB9C12E8FB20a7B2650Ca101D6Cc811a"
+  const stableCoinAddr = "0x96db19f0205660B4a6D1eBe60f5A818dD1709f06"
+  const orderBookAddr = "0x1bde1Abc3ccbAADbb972787D1E63A886625Ac8Ce"
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ const PropertyDetail = () => {
         setContractListingData(listingData)
 
         // console.log("Checklisting",Checklisting)
-        const res = await fetch(`http://localhost:3001/api/Properties/marketPlace/getPropertyById/${id}`);
+        const res = await fetch(`https://fractionalrwabackend.onrender.com/api/Properties/marketPlace/getPropertyById/${id}`);
         const data = await res.json();
         setProperty(data.property);
           console.log("signerAddress",address)
@@ -362,10 +362,10 @@ const PropertyDetail = () => {
     fetchOrders();
   }, [id]);
 
-  if (!property) return <p className="text-white p-6">Loading property details...</p>;
+  if (!property) return <p className="text-black p-6">Loading property details...</p>;
 
   return (
-    <div className="text-white mt-8">
+    <div className="text-black mt-8">
             <div>
               <ToastContainer position="top-center" autoClose={2000} />
             </div>
@@ -373,7 +373,7 @@ const PropertyDetail = () => {
       <div className="absolute left-0 mt-9 mb-9">
       <button
         onClick={() => navigate(-1)}
-        className="rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff] "
+        className="rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff] "
       >
         ⬅ Back to All Properties
       </button>
@@ -396,7 +396,7 @@ const PropertyDetail = () => {
           <div className="flex flex-col md:flex-row gap-6 p-6 text-white">
             {/* Sell Tokens Box */}
             {contractListingData.buyBack && (
-               <div className="w-full md:w-1/3 bg-gray-700 p-5 rounded-lg shadow-lg">
+               <div className="w-full md:w-1/3 bg-[#ffffff] text-black p-5 rounded-lg shadow-lg">
               <h3 className="text-xl font-semibold mb-4">Sell Tokens</h3>
               <div className="flex justify-between items-center mb-2">
                 <p>Estimated Price</p>
@@ -409,12 +409,12 @@ const PropertyDetail = () => {
                 min="1"
                 value={sellingTokens}
                 onChange={(e) => setSellingTokens(e.target.value)}
-                className="p-2 border border-gray-300 rounded-md w-full text-black mb-3"
+                className="p-2 border border-gray-300 rounded-md w-full mb-3"
                 placeholder="Enter amount"
               />
               <button
                 onClick={sellBackTokensContract}
-                className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
+                className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
               >
                 Sell
               </button>
@@ -423,7 +423,7 @@ const PropertyDetail = () => {
 
             {/* Buy Tokens Box */}
             {!contractListingData.buyBack && (
-             <div className="w-full md:w-1/3 bg-gray-700 p-5 rounded-lg shadow-lg">
+             <div className="w-full md:w-1/3 bg-[#ffffff] text-black p-5 rounded-lg shadow-lg">
               <h3 className="text-xl font-semibold mb-4">Buy Tokens</h3>
               <div className="flex justify-between items-center mb-2">
                 <p>Estimated Price</p>
@@ -443,12 +443,12 @@ const PropertyDetail = () => {
                 min="1"
                 value={buyTokensAmount}
                 onChange={(e) => setBuyTokensAmount(e.target.value)}
-                className="p-2 border border-gray-300 rounded-md w-full text-black mb-3"
+                className="p-2 border border-gray-300 rounded-md w-full mb-3"
                 placeholder="Enter amount"
               />
               <button
                 onClick={buyPropertyTokens}
-                className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
+                className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
               >
                 Purchase
               </button>
@@ -456,14 +456,14 @@ const PropertyDetail = () => {
             )}
            
        {/* Limit orders  */}
-            <div className="w-full md:w-1/3 bg-gray-700 p-5 rounded-lg shadow-lg">
+            <div className="w-full md:w-1/3 bg-[#ffffff] text-black p-5 rounded-lg shadow-lg">
               <h3 className="text-xl font-semibold mb-4">Limit Orders</h3>
              {orders.length === 0 ? (
-                <p className="text-gray-300 mb-4">No active orders found.</p>
+                <p className="text-black mb-4">No active orders found.</p>
                 ) : (
                   <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
               {orders.map((order) => (
-                <div key={order.id} className="bg-gray-600 p-3 rounded text-sm flex justify-between items-center">
+                <div key={order.id} className="bg-[#f5f5f5e3] p-3 rounded text-sm flex justify-between items-center">
 
                   <div>
                   <p><strong>Seller:</strong> {order.seller.slice(0, 6)}...{order.seller.slice(-4)}</p>
@@ -477,13 +477,13 @@ const PropertyDetail = () => {
                     <input
                       type="number"
                       min="1"
-                      className="p-1 w-20 text-black text-sm rounded border border-gray-300"
+                      className="p-1 w-20 text-sm rounded border border-gray-300"
                       placeholder="Qty"
                       value={buyAmounts[order.id] || ''}
                       onChange={(e) => handleBuyAmountChange(order.id, e.target.value)}
                     />
                     <button
-                      className="rounded-lg border border-transparent px-5 py-1 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
+                      className="rounded-lg border border-transparent px-5 py-1 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
                       onClick={() => buyfromLimit(order.id, buyAmounts[order.id])}
                     >
                       Buy
@@ -509,36 +509,36 @@ const PropertyDetail = () => {
             </div>
           {/* Sell Tokens Box */}
            {property.propertyOwnerWallet.toLowerCase() !== currentSigner.toLowerCase() && !contractListingData.buyBack && (
-               <div className="w-full md:w-1/3 bg-gray-700 p-5 rounded-lg shadow-lg">
+               <div className="w-full md:w-1/3 bg-[#ffffff] text-black p-5 rounded-lg shadow-lg">
               <h3 className="text-xl font-semibold mb-1">Create Sell Order</h3>
               <p className='text-sm mb-4'>You can sell you tokens by creating sell order here</p>
               <div className="mb-3">
-                <label className="block text-sm mb-1">Amount to Sell</label>
+                <label className="block text-sm font-bold mb-1">Amount to Sell</label>
                 <input
                   type="number"
                   min="1"
                   value={orderSellAmount}
                   onChange={(e) => setOrderSellAmount(e.target.value)}
-                  className="p-2 border border-gray-300 rounded-md w-full text-black"
+                  className="p-2 border border-gray-300 rounded-md w-full"
                   placeholder="Enter amount"
                 />
               </div>
 
               <div className="mb-3">
-                <label className="block text-sm mb-1">Price per Token</label>
+                <label className="block text-sm font-bold mb-1">Price per Token</label>
                 <input
                   type="number"
                   min="0"
                   value={opricePerToken}
                   onChange={(e) => setPricePerToken(e.target.value)}
-                  className="p-2 border border-gray-300 rounded-md w-full text-black"
+                  className="p-2 border border-gray-300 rounded-md w-full"
                   placeholder="Enter price"
                 />
               </div>
 
               <button
                 onClick={createLimitOrder}
-                className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
+                className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
               >
                 Create Sell Order
               </button>
@@ -554,7 +554,7 @@ const PropertyDetail = () => {
           )}
 
           {/* Display Info */}
-           <div className="w-full md:w-1/1 bg-gray-700 p-5 rounded-lg shadow-lg text-[18px]">
+           <div className="w-full md:w-1/1 bg-[#ffffff] text-black p-5 rounded-lg shadow-lg text-[18px]">
             <h3><strong>Property ID: </strong> {property.propertyId}</h3> 
               <h3><strong>Token Address: </strong> {contractListingData.shareToken}</h3>   
               <h3><strong>Remaining Tokens: </strong> {contractListingData.remainingTokens} </h3>
@@ -575,7 +575,7 @@ const PropertyDetail = () => {
                   min="1"
                   value={newPropAmount}
                   onChange={(e) => setNewPropAmount(e.target.value)}
-                  className="p-2 border border-gray-300 rounded-md w-full text-black mb-3"
+                  className="p-2 border border-gray-300 rounded-md w-full mb-3"
                   placeholder="Enter amount"
                 />
                 <button
@@ -591,8 +591,8 @@ const PropertyDetail = () => {
           {/* DeListProperty BBActive */}
           {property.propertyOwnerWallet.toLowerCase() == currentSigner.toLowerCase() && !contractListingData.buyBack &&(
             <div className="flex justify-center mt-3">
-              <div className="w-full md:w-1/2 bg-gray-700 p-5 rounded-lg shadow-lg">
-                <h3 className="text-xl font-semibold mb-4 text-white">Initiate BuyBack Program</h3>
+              <div className="w-full md:w-1/2 bg-[#ffffff] p-5 rounded-lg shadow-lg">
+                <h3 className="text-xl font-semibold mb-2 text-black">Initiate BuyBack Program</h3>
                 <div className="flex justify-between items-center mb-2 text-white">
                   <p>Current Price</p>
                   <p><strong>{contractListingData.pricePerToken}</strong></p>
@@ -602,12 +602,12 @@ const PropertyDetail = () => {
                   min="1"
                   value={bbPrice}
                   onChange={(e) => setBBPrice(e.target.value)}
-                  className="p-2 border border-gray-300 rounded-md w-full text-black mb-3"
+                  className="p-2 border border-gray-300 rounded-md w-full mb-3"
                   placeholder="Enter new buy back amount"
                 />
                 <button
                   onClick={ownerBuyBack}
-                  className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#ffffff]"
+                  className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#ffffff]"
                 >
                   Initiate
                 </button>

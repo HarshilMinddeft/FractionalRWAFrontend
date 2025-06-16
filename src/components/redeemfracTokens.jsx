@@ -5,6 +5,7 @@ import VaultArti from '../artifacts/contracts/FractionalVault.sol/FractionalVaul
 import PropTokensArti from '../artifacts/contracts/PropertyShareToken.sol/PropertyShareToken.json'
 import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/FractionalMarketplace.json'
 import NAV from './nav';
+import SliderBar from './sliderBar'
 
 const RedeemfracTokens = () => {
 
@@ -13,9 +14,9 @@ const RedeemfracTokens = () => {
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
 
-  const vaultAddress = "0x6C575466218c486bC124eeeE9F3dA4f4143b111E";
-  const PContractAddr = "0x44438f9493285Ac678c056978d5e6c761435fC22"; // On cello 
-  const marketplaceAddr = "0x8Cb8Ec81E45F33274E79609c9dca999e72964b09"
+  const vaultAddress = "0x54B0ECd3C8a66C42cE93c112639aeDBfD8eDa124";
+  const PContractAddr = "0xd474267e496eE634f53FF4C55d37556849546B45"; // On cello nft contract address
+  const marketplaceAddr = "0x6b771145BB9C12E8FB20a7B2650Ca101D6Cc811a"
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -38,7 +39,7 @@ const RedeemfracTokens = () => {
  const fetchProperties = async (address) => {
   try {
     const res = await fetch(
-      `http://localhost:3001/api/Properties/getOwnerProperty?ownerAddress=${address}`
+      `https://fractionalrwabackend.onrender.com/api/Properties/getOwnerProperty?ownerAddress=${address}`
     );
     const data = await res.json();
     const allProps = data.properties || [];
@@ -142,15 +143,17 @@ const RedeemfracTokens = () => {
   }, []);
 
    return (
-    <div className=''>
-    <NAV  signer={userAddress}/>
-      <h2 className="text-2xl font-bold mt-5 mb-4">Redeem Your Property Tokens</h2>
+    <div className='sm:pl-64'>
+    {/* <NAV  signer={userAddress}/> */}
+            <SliderBar/>
+      <h2 className="text-xl font-bold mt-5 mb-4">Redeem Your Property Tokens</h2>
       {loading ? (
         <p>Loading properties...</p>
       ) : properties.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className='mx-auto w-full max-w-[1360px]'>
+        <div className='grid grid-cols-1  sm:grid-cols-2 lg:grid-cols-3 gap-[30px] mt-5 ml-2 mr-2 mb-5'>
           {properties.map((prop) => (
-            <div key={prop.propertyId} className="border p-2 rounded-lg bg-gray-700 shadow">
+            <div key={prop.propertyId} className="bg-[#ffffff] text-black rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer overflow-hidden">
               {prop.propertyThumbImages && prop.propertyThumbImages.length > 0 && (
                 <img src={prop.propertyThumbImages[0]} alt="Thumbnail" className="w-full h-64 lg:h-72 object-cover rounded" />
               )}
@@ -162,11 +165,11 @@ const RedeemfracTokens = () => {
                 {!fractionalEvents[prop.propertyId] ? (
                   <>
                 <button 
-                className='rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]'
+                className='rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]'
                 onClick={() => redeemTokens(prop.propertyId)}>
                     Redeem Property
                 </button>
-                <p className='mt-2'>You should have <strong>{Math.floor(Number(prop.propertyPrice) / 40)}</strong> Fractional Tokens</p>
+                <p className='mt-2 mb-5'>You should have <strong>{Math.floor(Number(prop.propertyPrice) / 40)}</strong> Fractional Tokens</p>
                  </>
                    ) : (
                   <p className="text-green-300 font-semibold">All Tokens Redeemed</p>
@@ -180,6 +183,7 @@ const RedeemfracTokens = () => {
            )}
             </div>
           ))}
+        </div>
         </div>
       ) : (
         <p>No properties found for this wallet.</p>
