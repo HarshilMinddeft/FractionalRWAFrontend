@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
-import PropertyNFTArti from '../artifacts/contracts/propertyNFT.sol/PropertyNFT.json';
-import VaultArti from '../artifacts/contracts/FractionalVault.sol/FractionalVault.json';
-import PropTokensArti from '../artifacts/contracts/PropertyShareToken.sol/PropertyShareToken.json';
-import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/FractionalMarketplace.json'
+import PropertyNFTArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/propertyNFT.sol/PropertyNFT.json'
+import VaultArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/FractionalVault.sol/FractionalVault.json';
+import PropTokensArti from '../artifacts/contracts/RwaERC-3643/token/Token.sol/Token.json'
+import MarketplaceArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/DemoMarketplace.sol/FractionalMarketplace.json'
 import NAV from './nav';
 import { ToastContainer, toast } from 'react-toastify';
 import SliderBar from './sliderBar'
@@ -18,10 +18,9 @@ const ListToMarketPlace = () => {
   const [tokensInputs,setTokenInputs] = useState({})
   const [userTokenBalaces,setUserTokenBalances]= useState([])
 
-  const vaultAddress = "0x54B0ECd3C8a66C42cE93c112639aeDBfD8eDa124";
-  const nftContractAddr = "0xd474267e496eE634f53FF4C55d37556849546B45";
-  const marketplaceAddr = "0x6b771145BB9C12E8FB20a7B2650Ca101D6Cc811a"
-
+  const nftContractAddr = "0x8A5c7da551f5B95C7Add704a1B3a9bF0DD0680f4";
+  const marketplaceAddr = "0x7D14383d32022D4AA2Be9dA518563c82A51C02c2"
+  const vaultAddress = "0x72A6c7E3Ce1BB637687Ad6c612986e3EAF81a653";
   // Get connected wallet
   const getWalletAddress = async () => {
     if (window.ethereum) {
@@ -43,7 +42,7 @@ const ListToMarketPlace = () => {
  const fetchProperties = async (address) => {
   try {
     const res = await fetch(
-      `https://fractionalrwabackend.onrender.com/api/Properties/getOwnerProperty?ownerAddress=${address}`
+      `http://localhost:3001/api/Properties/getOwnerProperty?ownerAddress=${address}`
     );
     const data = await res.json();
     const allProps = data.properties || [];
@@ -163,7 +162,7 @@ const fetchUserTokenBalance = async () => {
         const checkListing = Checklisting.active
 
         const transaction = await propertyTokensTxn.approve(
-            marketplaceAddr,
+            signer,
             tokensToListForProp 
             );
 

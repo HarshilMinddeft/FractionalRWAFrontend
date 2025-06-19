@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
-import PropTokensArti from '../artifacts/contracts/PropertyShareToken.sol/PropertyShareToken.json'
-import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/FractionalMarketplace.json'
-import StableCoin from '../artifacts/contracts/StableCoin.sol/STABLEC.json'
-import OrderBook from '../artifacts/contracts/orderBook.sol/Orderbook.json'
+import PropTokensArti from '../artifacts/contracts/RwaERC-3643/token/Token.sol/Token.json'
+import MarketplaceArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/DemoMarketplace.sol/FractionalMarketplace.json'
+import StableCoin from '../artifacts/contracts/StableCoin.sol/MinddeftUSD.json'
+import OrderBook from '../artifacts/contracts/RwaERC-3643/TrueFraction/orderBook.sol/Orderbook.json'
 import { ToastContainer, toast } from 'react-toastify';
 
 const PropertyDetail = () => {
 
-  const marketplaceAddr = "0x6b771145BB9C12E8FB20a7B2650Ca101D6Cc811a"
-  const stableCoinAddr = "0x96db19f0205660B4a6D1eBe60f5A818dD1709f06"
-  const orderBookAddr = "0x1bde1Abc3ccbAADbb972787D1E63A886625Ac8Ce"
+  const marketplaceAddr = "0x7D14383d32022D4AA2Be9dA518563c82A51C02c2"
+  const stableCoinAddr = "0xA41AcEFce10aF7b3Dc0898e1EA6b03b06551675e"
+  const orderBookAddr = "0xe36AfD40a0B461e4b65FC9761F11d7215774f5c5"
 
   const { id } = useParams();
   const navigate = useNavigate();

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
-import PropertyNFTArti from '../artifacts/contracts/propertyNFT.sol/PropertyNFT.json';
-import VaultArti from '../artifacts/contracts/FractionalVault.sol/FractionalVault.json'
-import NAV from './nav';
+import PropertyNFTArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/propertyNFT.sol/PropertyNFT.json';
+import VaultArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/FractionalVault.sol/FractionalVault.json';
 import SliderBar from './sliderBar'
 
 const FractionalizeProperty = () => {
@@ -11,8 +10,8 @@ const FractionalizeProperty = () => {
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
 
-  const vaultAddress = "0x54B0ECd3C8a66C42cE93c112639aeDBfD8eDa124";
-  const PContractAddr = "0xd474267e496eE634f53FF4C55d37556849546B45"; // On cello 
+  const vaultAddress = "0x72A6c7E3Ce1BB637687Ad6c612986e3EAF81a653";
+  const PContractAddr = "0x8A5c7da551f5B95C7Add704a1B3a9bF0DD0680f4"; // On cello nft contract address
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -35,7 +34,7 @@ const FractionalizeProperty = () => {
  const fetchProperties = async (address) => {
   try {
     const res = await fetch(
-      `https://fractionalrwabackend.onrender.com/api/Properties/getOwnerProperty?ownerAddress=${address}`
+      `http://localhost:3001/api/Properties/getOwnerProperty?ownerAddress=${address}`
     );
     const data = await res.json();
     const allProps = data.properties || [];
@@ -62,7 +61,7 @@ const FractionalizeProperty = () => {
   }
 };
 
-  const Fractionalize = async (tokenId)=>{
+  const Fractionalize = async (tokenId ,ComplianceAddress)=>{
 
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -92,7 +91,8 @@ const FractionalizeProperty = () => {
         );
 
         const vaultTnx = await VaultFractionalize.fractionalizeProperty(
-          tokenId
+          tokenId,
+          ComplianceAddress
         )
         await vaultTnx.wait();
         console.log( "Fractionalization done",vaultTnx.hash);
@@ -104,6 +104,7 @@ const FractionalizeProperty = () => {
             shareToken: propertyToken.tokenAddress,
             totalShares: propertyToken.totalShares.toString(),
             originalOwner: propertyToken.originalOwner,
+            complianceAddress :propertyToken.complianceAddress,
           };
 
           console.log("fractionalData",fractionalData)
@@ -148,7 +149,7 @@ const FractionalizeProperty = () => {
               <div className="mt-3 mb-2">
                 {!fractionalEvents[prop.propertyId] ? (
                 <button className='rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]'
-                 onClick={() => Fractionalize(prop.propertyId)}>
+                 onClick={() => Fractionalize(prop.propertyId, prop.complianceAddress)}>
                     Fractionalize Property
                 </button>
                    ) : (

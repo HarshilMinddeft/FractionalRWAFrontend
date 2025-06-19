@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
-import VaultArti from '../artifacts/contracts/FractionalVault.sol/FractionalVault.json';
-import PropTokensArti from '../artifacts/contracts/PropertyShareToken.sol/PropertyShareToken.json';
-import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/FractionalMarketplace.json'
+import VaultArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/FractionalVault.sol/FractionalVault.json';
+import PropTokensArti from '../artifacts/contracts/RwaERC-3643/token/Token.sol/Token.json';
+import MarketplaceArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/DemoMarketplace.sol/FractionalMarketplace.json'
 import NAV from './nav';
 import { ToastContainer, toast } from 'react-toastify';
 import SliderBar from './sliderBar'
@@ -18,8 +18,8 @@ const CancelListing = () => {
   const [propertyShares, setPropertyShares] = useState({});
   const [listingOwners, setListingOwners] = useState({});
 
-  const vaultAddress = "0x54B0ECd3C8a66C42cE93c112639aeDBfD8eDa124";
-  const marketplaceAddr = "0x6b771145BB9C12E8FB20a7B2650Ca101D6Cc811a"
+  const vaultAddress = "0x72A6c7E3Ce1BB637687Ad6c612986e3EAF81a653";
+  const marketplaceAddr = "0x7D14383d32022D4AA2Be9dA518563c82A51C02c2"
 
   // Get connected wallet
   const getWalletAddress = async () => {

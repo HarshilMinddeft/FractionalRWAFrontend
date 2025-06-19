@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import PropertyNFTArti from '../artifacts/contracts/propertyNFT.sol/PropertyNFT.json'
+import PropertyNFTArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/propertyNFT.sol/PropertyNFT.json'
+import ComplianceArti from '../artifacts/contracts/RwaERC-3643/compliance/modular/ModularCompliance.sol/ModularCompliance.json'
 import {ethers} from 'ethers'
 // import NAV from './nav';
 import { ToastContainer, toast } from 'react-toastify';
@@ -25,7 +26,7 @@ const TokenizeProperty = () => {
 
   const [uploadStatus, setUploadStatus] = useState('');
 
-  const PContractAddr = "0xd474267e496eE634f53FF4C55d37556849546B45"; // On cello nft contract address
+  const PContractAddr = "0x8A5c7da551f5B95C7Add704a1B3a9bF0DD0680f4"; // On cello nft contract address
 
   const handleInputChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -38,7 +39,7 @@ const TokenizeProperty = () => {
   const uploadToPinata = async (file) => {
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch('https://fractionalrwabackend.onrender.com/api/Properties/nftUpload', {
+    const res = await fetch('http://localhost:3001/api/Properties/nftUpload', {
       method: 'POST',
       body: fd
     });
@@ -53,6 +54,7 @@ const TokenizeProperty = () => {
     try {
       let tokenpId = '';
       let singleImageUrl = '';
+      let ComplianceAddress = '';
 
       if (singleImage) {
   singleImageUrl = await uploadToPinata(singleImage);
@@ -71,7 +73,7 @@ const TokenizeProperty = () => {
         ]
       };
 
-        const metadataRes = await fetch('https://fractionalrwabackend.onrender.com/api/Properties/metadataUpload', {
+        const metadataRes = await fetch('http://localhost:3001/api/Properties/metadataUpload', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -91,13 +93,45 @@ const TokenizeProperty = () => {
         const signer = provider.getSigner();
         const address = await signer.getAddress();
         console.log("signerAddress",address)
+        
+         const ComplianceFactory = new ethers.ContractFactory(
+          ComplianceArti.abi,
+          ComplianceArti.bytecode,
+          signer
+        );
+        toast.info('Deploying Compliance Contract.')
+        const complianceContract = await ComplianceFactory.deploy();
+        await complianceContract.deployed();
+        console.log("Deployed ModularCompliance at:", complianceContract.address);
+        toast.success('Deployed Compliance')
+
+        ComplianceAddress = complianceContract.address
+
+        // Call init() as it's an initializer
+        toast.info('Initializing Compliance Contract.')
+        const tx = await complianceContract.init();
+        await tx.wait();
+        toast.success('Compliance Contract Initialized')
+
+          const ComplianceCont = new ethers.Contract(
+          ComplianceAddress,
+          ComplianceArti.abi,
+          signer
+        );
+        toast.info('Transferring Ownership.')
+        const chnageOwnerCompliance = await ComplianceCont.transferOwnership(
+          formData.propertyOwnerWallet
+        );
+        
+        const complianceTxn = await chnageOwnerCompliance.wait();
+        // const transactionHash = transaction.hash
 
          const PropertyNFT = new ethers.Contract(
           PContractAddr,
           PropertyNFTArti.abi,
           signer
         );
-
+          toast.info('Minting Property NFT.')
           const transaction =
           await PropertyNFT.mintProperty(
             formData.name,
@@ -135,6 +169,7 @@ const TokenizeProperty = () => {
       let pdfUrl = '';
       if (pdfFile) pdfUrl = await uploadToPinata(pdfFile);
 
+      toast.info('Saving Data.')
       const finalPayload = {
         propertyId: tokenpId,
         propertyName: formData.name,
@@ -149,12 +184,13 @@ const TokenizeProperty = () => {
         propertyDocuments: [pdfUrl],
         propertyImages: multiImageUrls,
         propertyThumbImages: [singleImageUrl],
+        complianceAddress : ComplianceAddress,
         active: true
       };
 
       console.log("FINAL PAYLOAD", JSON.stringify(finalPayload));
 
-      const response = await fetch('https://fractionalrwabackend.onrender.com/api/Properties/addProperty', {
+      const response = await fetch('http://localhost:3001/api/Properties/addProperty', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finalPayload),
@@ -163,6 +199,7 @@ const TokenizeProperty = () => {
       if (!response.ok) throw new Error('Failed to upload property data.');
 
       setUploadStatus("Property tokenization successful!");
+      toast.success('Process Completed successfully.')
       console.log("Saved property:", await response.json());
 
     } catch (err) {
@@ -180,6 +217,7 @@ const TokenizeProperty = () => {
     }
   };
 
+
 return (
   <div className=''>
       <Header/>
@@ -187,7 +225,6 @@ return (
     <div>
       <ToastContainer position="top-center" autoClose={2000} />
     </div>
-
     <div className="max-w-lg mx-auto sm:p-8 mt-5 rounded-[10px] mb-4 bg-[#ffffff] backdrop-blur-3xl text-black shadow-lg w-full">
       <h2 className="text-2xl font-bold">Property Details</h2>
       {propUploadStatus ? (

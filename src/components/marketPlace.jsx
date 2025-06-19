@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
-import PropTokensArti from '../artifacts/contracts/PropertyShareToken.sol/PropertyShareToken.json'
-import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/FractionalMarketplace.json'
-import StableCoin from '../artifacts/contracts/StableCoin.sol/STABLEC.json'
+import MarketplaceArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/DemoMarketplace.sol/FractionalMarketplace.json'
 // import NAV from './nav';
 import Header from './landingPage/comps/Header/Index'
 
@@ -15,8 +13,7 @@ const MarketPlace = () => {
       const [loading, setLoading] = useState(false);
       const [userAddress, setUserAddress] = useState("");
 
-    const marketplaceAddr = "0x6b771145BB9C12E8FB20a7B2650Ca101D6Cc811a"
-    const stableCoinAddr = "0x96db19f0205660B4a6D1eBe60f5A818dD1709f06"
+    const marketplaceAddr = "0x7D14383d32022D4AA2Be9dA518563c82A51C02c2"
 
      const getWalletAddress = async () => {
         if (window.ethereum) {

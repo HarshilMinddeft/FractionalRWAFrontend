@@ -13,7 +13,7 @@ const settings = {
     slidesToShow: 3,
     autoplay: true,
     speed:200,
-    arrows:false,
+    arrows:true,
 }
 
 const TNFT = () => {

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
-import PropertyNFTArti from '../artifacts/contracts/propertyNFT.sol/PropertyNFT.json';
-import VaultArti from '../artifacts/contracts/FractionalVault.sol/FractionalVault.json';
-import PropTokensArti from '../artifacts/contracts/PropertyShareToken.sol/PropertyShareToken.json'
-import MarketplaceArti from '../artifacts/contracts/rwaMarketPlace.sol/FractionalMarketplace.json'
+import PropertyNFTArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/propertyNFT.sol/PropertyNFT.json'
+import VaultArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/FractionalVault.sol/FractionalVault.json';
+import PropTokensArti from '../artifacts/contracts/RwaERC-3643/token/Token.sol/Token.json'
+import ComplianceArti from '../artifacts/contracts/RwaERC-3643/compliance/modular/ModularCompliance.sol/ModularCompliance.json'
+import MarketplaceArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/DemoMarketplace.sol/FractionalMarketplace.json'
 import NAV from './nav';
 import SliderBar from './sliderBar'
 
@@ -14,9 +15,9 @@ const RedeemfracTokens = () => {
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
 
-  const vaultAddress = "0x54B0ECd3C8a66C42cE93c112639aeDBfD8eDa124";
-  const PContractAddr = "0xd474267e496eE634f53FF4C55d37556849546B45"; // On cello nft contract address
-  const marketplaceAddr = "0x6b771145BB9C12E8FB20a7B2650Ca101D6Cc811a"
+  const vaultAddress = "0x72A6c7E3Ce1BB637687Ad6c612986e3EAF81a653";
+  const PContractAddr = "0x8A5c7da551f5B95C7Add704a1B3a9bF0DD0680f4"; // On cello nft contract address
+  const marketplaceAddr = "0x7D14383d32022D4AA2Be9dA518563c82A51C02c2"
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -39,7 +40,7 @@ const RedeemfracTokens = () => {
  const fetchProperties = async (address) => {
   try {
     const res = await fetch(
-      `https://fractionalrwabackend.onrender.com/api/Properties/getOwnerProperty?ownerAddress=${address}`
+      `http://localhost:3001/api/Properties/getOwnerProperty?ownerAddress=${address}`
     );
     const data = await res.json();
     const allProps = data.properties || [];
@@ -69,7 +70,7 @@ const RedeemfracTokens = () => {
   }
 };
 
-  const redeemTokens = async (tokenId)=>{
+  const redeemTokens = async (tokenId, ComplianceAddress)=>{
 
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -87,7 +88,6 @@ const RedeemfracTokens = () => {
         const propertyToken = await VaultFractionalize.fractionalData(
           tokenId
         )
-
         let propertyShareTokenAddr = propertyToken.tokenAddress;
         let totalTokens = propertyToken.totalShares;
         
@@ -110,7 +110,18 @@ const RedeemfracTokens = () => {
         )
 
         await vaultTnx.wait();
-        console.log( "Fractionalization done",vaultTnx.hash);
+        console.log( "Redeem done",vaultTnx.hash);
+
+        const UnbindToken = new ethers.Contract(
+          ComplianceAddress,
+          ComplianceArti.abi,
+          signer
+        );
+
+        const UnbindTKN = await UnbindToken.unbindToken(propertyShareTokenAddr);
+        await UnbindTKN.wait();
+        
+        console.log("UnbindDone",UnbindTKN.hash)
 
         const AfterData = await VaultFractionalize.fractionalData(
           tokenId
@@ -120,6 +131,7 @@ const RedeemfracTokens = () => {
             shareToken: AfterData.tokenAddress,
             totalShares: AfterData.totalShares.toString(),
             originalOwner: AfterData.originalOwner,
+            compAddress : AfterData.complianceAddress,
           };
 
           console.log("fractionalData",fractionalData)
@@ -166,7 +178,7 @@ const RedeemfracTokens = () => {
                   <>
                 <button 
                 className='rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]'
-                onClick={() => redeemTokens(prop.propertyId)}>
+                onClick={() => redeemTokens(prop.propertyId, prop.complianceAddress)}>
                     Redeem Property
                 </button>
                 <p className='mt-2 mb-5'>You should have <strong>{Math.floor(Number(prop.propertyPrice) / 40)}</strong> Fractional Tokens</p>

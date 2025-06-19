@@ -18,7 +18,7 @@ const TfInfo = () => {
                 sequence={[
                   "Fractionalize",
                   3000,
-                  "Redeem Back",
+                  "Redeem Property",
                   2000,
                   "List as much you want",
                   2000,
