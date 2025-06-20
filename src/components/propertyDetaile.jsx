@@ -9,7 +9,7 @@ import { ToastContainer, toast } from 'react-toastify';
 
 const PropertyDetail = () => {
 
-  const marketplaceAddr = "0x7D14383d32022D4AA2Be9dA518563c82A51C02c2"
+  const marketplaceAddr = "0xaAB86f0C7dE87089c3D9722e0F79f15D2C2008a1"
   const stableCoinAddr = "0xA41AcEFce10aF7b3Dc0898e1EA6b03b06551675e"
   const orderBookAddr = "0xe36AfD40a0B461e4b65FC9761F11d7215774f5c5"
 
@@ -46,7 +46,7 @@ const PropertyDetail = () => {
         setContractListingData(listingData)
 
         // console.log("Checklisting",Checklisting)
-        const res = await fetch(`https://fractionalrwabackend.onrender.com/api/Properties/marketPlace/getPropertyById/${id}`);
+        const res = await fetch(`http://localhost:3001/api/Properties/marketPlace/getPropertyById/${id}`);
         const data = await res.json();
         setProperty(data.property);
           console.log("signerAddress",address)

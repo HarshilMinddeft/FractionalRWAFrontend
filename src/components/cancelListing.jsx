@@ -19,7 +19,7 @@ const CancelListing = () => {
   const [listingOwners, setListingOwners] = useState({});
 
   const vaultAddress = "0x72A6c7E3Ce1BB637687Ad6c612986e3EAF81a653";
-  const marketplaceAddr = "0x7D14383d32022D4AA2Be9dA518563c82A51C02c2"
+  const marketplaceAddr = "0xaAB86f0C7dE87089c3D9722e0F79f15D2C2008a1"
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -41,7 +41,7 @@ const CancelListing = () => {
 const fetchProperties = async (address) => {
       try {
         const res = await fetch(
-          `https://fractionalrwabackend.onrender.com/api/Properties/marketPlace/getAllPropertiesSummary`
+          `http://localhost:3001/api/Properties/marketPlace/getAllPropertiesSummary`
         );
         const data = await res.json();
         const allProps = data.properties || [];

@@ -19,7 +19,7 @@ const ListToMarketPlace = () => {
   const [userTokenBalaces,setUserTokenBalances]= useState([])
 
   const nftContractAddr = "0x8A5c7da551f5B95C7Add704a1B3a9bF0DD0680f4";
-  const marketplaceAddr = "0x7D14383d32022D4AA2Be9dA518563c82A51C02c2"
+  const marketplaceAddr = "0xaAB86f0C7dE87089c3D9722e0F79f15D2C2008a1"
   const vaultAddress = "0x72A6c7E3Ce1BB637687Ad6c612986e3EAF81a653";
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -162,8 +162,8 @@ const fetchUserTokenBalance = async () => {
         const checkListing = Checklisting.active
 
         const transaction = await propertyTokensTxn.approve(
-            signer,
-            tokensToListForProp 
+            marketplaceAddr,
+            tokensToListForProp
             );
 
           await transaction.wait();
