@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect } from 'react';
 import PropertyNFTArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/propertyNFT.sol/PropertyNFT.json'
 import ComplianceArti from '../artifacts/contracts/RwaERC-3643/compliance/modular/ModularCompliance.sol/ModularCompliance.json'
 import {ethers} from 'ethers'
@@ -9,6 +9,7 @@ import Header from './landingPage/comps/Header/Index'
 const TokenizeProperty = () => {
   const [singleImage, setSingleImage] = useState(null);
   const [multipleImages, setMultipleImages] = useState([]);
+  const [userAddress, setUserAddress] = useState('');
   const [pdfFile, setPdfFile] = useState(null);
   const [propUploadStatus, setProUploadStatus] = useState();
   const [formData, setFormData] = useState({
@@ -26,7 +27,7 @@ const TokenizeProperty = () => {
 
   const [uploadStatus, setUploadStatus] = useState('');
 
-  const PContractAddr = "0x8A5c7da551f5B95C7Add704a1B3a9bF0DD0680f4"; // On cello nft contract address
+  const PContractAddr = "0x00A0A54c2e1a41D41182Dcd255bfD06305361d21"; // On cello nft contract address
 
   const handleInputChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -39,7 +40,7 @@ const TokenizeProperty = () => {
   const uploadToPinata = async (file) => {
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch('http://localhost:3001/api/Properties/nftUpload', {
+    const res = await fetch('https://fractionalrwabackend-k5z9.onrender.com/api/Properties/nftUpload', {
       method: 'POST',
       body: fd
     });
@@ -73,7 +74,7 @@ const TokenizeProperty = () => {
         ]
       };
 
-        const metadataRes = await fetch('http://localhost:3001/api/Properties/metadataUpload', {
+        const metadataRes = await fetch('https://fractionalrwabackend-k5z9.onrender.com/api/Properties/metadataUpload', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -151,7 +152,7 @@ const TokenizeProperty = () => {
         tokenpId = tokenId;
         const recipient = mintedEvent.args.recipient;
 
-//      https://alfajores.celoscan.io/tx/${transactionHash} Removed temp 
+         // https://alfajores.celoscan.io/tx/${transactionHash} Removed temp 
           setProUploadStatus(`NFT Minted!
            Property NFT ID: ${tokenId}
            Owner Address: ${recipient}
@@ -188,9 +189,9 @@ const TokenizeProperty = () => {
         active: true
       };
 
-      console.log("FINAL PAYLOAD", JSON.stringify(finalPayload));
+      // console.log("FINAL PAYLOAD", JSON.stringify(finalPayload));
 
-      const response = await fetch('http://localhost:3001/api/Properties/addProperty', {
+      const response = await fetch('https://fractionalrwabackend-k5z9.onrender.com/api/Properties/addProperty', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finalPayload),
@@ -216,6 +217,26 @@ const TokenizeProperty = () => {
       }
     }
   };
+    const getWalletAddress = async () => {
+    if (window.ethereum) {
+      try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const accounts = await provider.send('eth_requestAccounts', []);
+        const lowercaseAddress = accounts[0].toLowerCase();
+        setUserAddress(lowercaseAddress);
+        // console.log(lowercaseAddress)
+        return lowercaseAddress;
+      } catch (err) {
+        console.error('Error getting wallet:', err);
+      }
+    } else {
+      alert('Please install MetaMask!');
+    }
+  };
+
+    useEffect(() => {
+       getWalletAddress();
+    }, []);
 
 
 return (
@@ -304,13 +325,15 @@ return (
               className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100"
             />
           </div>
-
-          <button
+          {userAddress === "0xe917e81c69bf15238c63abd45d1c335c2fc80bdd" ?( <button
             type="submit"
             className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
           >
             Register
-          </button>
+          </button>):(
+            <p className='font-semibold mt-4 text-red-600'>Connect With Admin Wallet</p>
+          )}
+         
         </form>
       )}
       {uploadStatus && <p className="mt-4 text-sm">{uploadStatus}</p>}

@@ -13,7 +13,7 @@ const MarketPlace = () => {
       const [loading, setLoading] = useState(false);
       const [userAddress, setUserAddress] = useState("");
 
-    const marketplaceAddr = "0xaAB86f0C7dE87089c3D9722e0F79f15D2C2008a1"
+    const marketplaceAddr = "0xFb4C7367F52012bc1Fd929D9435F968eCf777b04"
 
      const getWalletAddress = async () => {
         if (window.ethereum) {
@@ -35,7 +35,7 @@ const MarketPlace = () => {
       setLoading(true);
       try {
         const res = await fetch(
-          `http://localhost:3001/api/Properties/marketPlace/getAllPropertiesSummary`
+          `https://fractionalrwabackend-k5z9.onrender.com/api/Properties/marketPlace/getAllPropertiesSummary`
         );
         const data = await res.json();
         const allProps = data.properties || [];

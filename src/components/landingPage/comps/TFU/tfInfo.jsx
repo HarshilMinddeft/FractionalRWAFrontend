@@ -1,5 +1,5 @@
 import React from 'react'
-import "./tfInfo.css"
+import "./Info.css"
 import Button from '../../common/Button'
 import { TypeAnimation } from "react-type-animation";
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ const TfInfo = () => {
   return (
         <div className='mb-28 mt-24'>
            <div className='tf-left'>
-            <div className='tf-heding'>
+            <div className='tf-heding'> 
                 With TrueFraction <br></br>
                 <span className=''>You can </span>
                  <span className='heading-gradient'>

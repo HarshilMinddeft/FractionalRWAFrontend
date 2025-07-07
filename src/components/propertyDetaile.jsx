@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
+import axios from "axios";
 import PropTokensArti from '../artifacts/contracts/RwaERC-3643/token/Token.sol/Token.json'
 import MarketplaceArti from '../artifacts/contracts/RwaERC-3643/TrueFraction/DemoMarketplace.sol/FractionalMarketplace.json'
 import StableCoin from '../artifacts/contracts/StableCoin.sol/MinddeftUSD.json'
 import OrderBook from '../artifacts/contracts/RwaERC-3643/TrueFraction/orderBook.sol/Orderbook.json'
+import IdentityRegistryArti from '../artifacts/contracts/RwaERC-3643/registry/implementation/IdentityRegistry.sol/IdentityRegistry.json'
 import { ToastContainer, toast } from 'react-toastify';
+import "slick-carousel/slick/slick.css"; 
+import "slick-carousel/slick/slick-theme.css";
+import Slider from "react-slick";
 
 const PropertyDetail = () => {
 
-  const marketplaceAddr = "0xaAB86f0C7dE87089c3D9722e0F79f15D2C2008a1"
+  const marketplaceAddr = "0xFb4C7367F52012bc1Fd929D9435F968eCf777b04"
   const stableCoinAddr = "0xA41AcEFce10aF7b3Dc0898e1EA6b03b06551675e"
-  const orderBookAddr = "0xe36AfD40a0B461e4b65FC9761F11d7215774f5c5"
+  const orderBookAddr = "0x6c5E8cb87CD87bC59E61c17809952BEaA0307DE0"
+  const IdentityRegistryCR = "0x47Abc6934383afe1182bD8b9Cb0c586E1EeE9efA"
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -27,13 +33,50 @@ const PropertyDetail = () => {
   const [currentSigner,setCurrentSigner] = useState('');
   const [bbPrice,setBBPrice] = useState('')
   const [sellingTokens,setSellingTokens] = useState('')
+  const [refId, setRefId] = useState("");
+  const [kycStatus,setKycStatus] = useState('')
+  const [showPopup, setShowPopup] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-     const fetchDetails = async () => {
+  const handleCompleteKYCClick = () => {
+    setShowPopup(true);
+  };
+
+
+  const handleKycSubmit = async () => {
+    if (!refId) {
+      return alert("Please enter a reference ID (e.g.,email)");
+    }
+    const payload = {
+      refId,
+      userWalletAddress: currentSigner,
+      kycActive: true,
+    };
+
+    const blockpass = new window.BlockpassKYCConnect("truefractionkyc_7bf80", {
+      refId,
+      elementId: "blockpass-kyc-connect-button",
+      mainColor: "800080",
+    });
+
+      blockpass.startKYCConnect();
+      if (isSubmitting) {
+      setShowPopup(false);
+      return;
+    }
+    setIsSubmitting(true);
+
+    await axios.post("https://fractionalrwabackend-k5z9.onrender.com/api/user/addnewUser", payload);
+  };
+
+
+    const fetchDetails = async () => {
       try {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
         const address = await signer.getAddress();
         const MarketPlace = new ethers.Contract(marketplaceAddr, MarketplaceArti.abi, signer);
+        const identityRegistryCheck = new ethers.Contract(IdentityRegistryCR, IdentityRegistryArti.abi, signer);
         const Checklisting = await MarketPlace.listings(id)
         const listingData = {
             shareToken: Checklisting.propertyToken,
@@ -46,7 +89,7 @@ const PropertyDetail = () => {
         setContractListingData(listingData)
 
         // console.log("Checklisting",Checklisting)
-        const res = await fetch(`http://localhost:3001/api/Properties/marketPlace/getPropertyById/${id}`);
+        const res = await fetch(`https://fractionalrwabackend-k5z9.onrender.com/api/Properties/marketPlace/getPropertyById/${id}`);
         const data = await res.json();
         setProperty(data.property);
           console.log("signerAddress",address)
@@ -54,6 +97,12 @@ const PropertyDetail = () => {
         if(address == '0xe917e81c69Bf15238c63abd45d1c335C2fc80bDD'){
           setPAdmin(address)
         }
+        const kycCheck = await identityRegistryCheck.isVerified(address);
+        setKycStatus(kycCheck);
+        if(!kycCheck){
+          toast.error("KYC Pending")
+        }
+        console.log("kycCheck",kycCheck)
 
       } catch (err) {
         console.error("Error fetching property details:", err);
@@ -96,9 +145,12 @@ const PropertyDetail = () => {
               if (error.message.includes('user rejected')) {
                 toast.error('Transection Rejected.')
                 console.error('Transection Rejected:', error.message)
+              } else if (error.message.includes('Transfer not possible')){
+                toast.error('KYC Required')
               } else if (error.message.includes('cannot estimate gas')){
                 toast.error('Insufficient funds')
-              } else{
+              }
+               else{
                 toast.error('Please try after some time')
               }
             }
@@ -179,7 +231,10 @@ const PropertyDetail = () => {
               if (error.message.includes('user rejected')) {
                 toast.error('Transection Rejected.')
                 console.error('Transection Rejected:', error.message)
-              } else if (error.message.includes('cannot estimate gas')){
+              } else if (error.message.includes('Transfer not possible')){
+                toast.error('KYC Required')
+              }
+               else if (error.message.includes('cannot estimate gas')){
                 toast.error('Insufficient funds')
               } else{
                 toast.error('Please try after some time')
@@ -225,7 +280,10 @@ const PropertyDetail = () => {
               if (error.message.includes('user rejected')) {
                 toast.error('Transection Rejected.')
                 console.error('Transection Rejected:', error.message)
-              } else if (error.message.includes('cannot estimate gas')){
+              }else if (error.message.includes('Transfer not possible')){
+                toast.error('KYC Required')
+            }
+              else if (error.message.includes('cannot estimate gas')){
                 toast.error('Insufficient funds')
               } else{
                 toast.error('Please try after some time')
@@ -341,7 +399,6 @@ const PropertyDetail = () => {
           MarketplaceArti.abi,
           signer
         );
-
        
         const SellbackTokens = await MarketPlaceCon.sellTokensBack(id, ConvertTokens)
         await SellbackTokens.wait();
@@ -356,7 +413,25 @@ const PropertyDetail = () => {
       setBuyAmounts((prev) => ({ ...prev, [orderId]: value }));
        };
 
-       
+  useEffect(() => {
+  const scriptId = "blockpass-script";
+
+  if (!document.getElementById(scriptId)) {
+    const script = document.createElement("script");
+    script.src = "https://cdn.blockpass.org/widget/scripts/release/3.0.2/blockpass-kyc-connect.prod.js";
+    script.id = scriptId;
+    script.async = true;
+    script.onload = () => {
+      console.log("Blockpass script loaded");
+    };
+    script.onerror = () => {
+      console.error("Failed to load Blockpass script");
+    };
+
+    document.body.appendChild(script);
+  }
+}, []);
+
   useEffect(() => {
     fetchDetails();
     fetchOrders();
@@ -364,11 +439,22 @@ const PropertyDetail = () => {
 
   if (!property) return <p className="text-black p-6">Loading property details...</p>;
 
+  const sliderSettings = {
+  slidesToShow: 1,
+  slidesToScroll: 1,
+  autoplay: true,
+  speed: 500,
+  arrows: true,
+  dots: true,
+  infinite: true,
+};
+
   return (
     <div className="text-black mt-8">
-            <div>
-              <ToastContainer position="top-center" autoClose={2000} />
-            </div>
+              <div className='mx-auto w-full max-w-[1360px]'>
+        <div>
+            <ToastContainer position="top-center" autoClose={2000} />
+        </div>
       <div className='relative flex items-center justify-center mb-6'>
       <div className="absolute left-0 mt-9 mb-9">
       <button
@@ -380,6 +466,7 @@ const PropertyDetail = () => {
       </div>
       <h2 className="text-3xl font-bold text-center">{property.propertyName}</h2>
       </div>
+
         {property.propertyImages?.length > 0 && (
           <div className="flex overflow-x-auto space-x-4 mb-4">
             {property.propertyImages.map((imageUrl, index) => (
@@ -387,7 +474,7 @@ const PropertyDetail = () => {
                 key={index}
                 src={imageUrl}
                 alt={`Property Image ${index + 1}`}
-                className="h-[350px] min-w-[500px] object-cover rounded-lg"
+                className="h-[350px] min-w-[600px] object-cover rounded-lg"
               />
             ))}
           </div>
@@ -446,14 +533,44 @@ const PropertyDetail = () => {
                 className="p-2 border border-gray-300 rounded-md w-full mb-3"
                 placeholder="Enter amount"
               />
-              <button
+              {kycStatus ?(<button
                 onClick={buyPropertyTokens}
                 className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
               >
                 Purchase
-              </button>
+              </button>) :(
+                <button
+                 onClick={handleCompleteKYCClick}
+                 className="w-full rounded-lg border border-blue-500 px-5 py-2 text-base font-medium bg-white text-blue-600 hover:bg-blue-100"
+                 >
+                  Complete KYC
+                  </button>)
+              }
+              
             </div>
             )}
+
+            {showPopup && (
+        <div className="fixed inset-0 bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+            <h2 className="text-xl text-black font-semibold mb-4">Enter Email for KYC</h2>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              className="w-full border p-2 rounded mb-4 text-black"
+              value={refId}
+              onChange={(e) => setRefId(e.target.value)}
+            />
+            <button
+             id="blockpass-kyc-connect-button"
+              onClick={handleKycSubmit}
+              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+            >
+              Start KYC
+            </button>
+          </div>
+        </div>
+      )}
            
        {/* Limit orders  */}
             <div className="w-full md:w-1/3 bg-[#ffffff] text-black p-5 rounded-lg shadow-lg">
@@ -482,12 +599,14 @@ const PropertyDetail = () => {
                       value={buyAmounts[order.id] || ''}
                       onChange={(e) => handleBuyAmountChange(order.id, e.target.value)}
                     />
-                    <button
+                    {kycStatus &&(
+                        <button
                       className="rounded-lg border border-transparent px-5 py-1 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
                       onClick={() => buyfromLimit(order.id, buyAmounts[order.id])}
                     >
                       Buy
                       </button>
+                    )}
                       </>
                     )}
 
@@ -535,13 +654,20 @@ const PropertyDetail = () => {
                   placeholder="Enter price"
                 />
               </div>
-
+            {kycStatus ?(
               <button
                 onClick={createLimitOrder}
                 className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
               >
                 Create Sell Order
-              </button>
+              </button>):(
+                  <button
+                 onClick={handleCompleteKYCClick}
+                 className="w-full rounded-lg border border-blue-500 px-5 py-2 text-base font-medium bg-white text-blue-600 hover:bg-blue-100"
+                 >
+                  Complete KYC
+                  </button>
+              )}
             </div>
            )}
           </div>
@@ -564,9 +690,9 @@ const PropertyDetail = () => {
           {/* Admin Function */}
           {pAdmin && (
             <div className="flex justify-center mt-3">
-              <div className="w-full md:w-1/2 bg-gray-700 p-5 rounded-lg shadow-lg">
-                <h3 className="text-xl font-semibold mb-4 text-white">Change Property Token Price</h3>
-                <div className="flex justify-between items-center mb-2 text-white">
+              <div className="w-full md:w-1/2 bg-[#ffffff] p-5 rounded-lg shadow-2xl">
+                <h3 className="text-xl font-semibold mb-4 text-black">Change Property Token Price</h3>
+                <div className="flex justify-between items-center mb-2 text-black">
                   <p>Current Price</p>
                   <p><strong>{contractListingData.pricePerToken}</strong></p>
                 </div>
@@ -580,7 +706,7 @@ const PropertyDetail = () => {
                 />
                 <button
                   onClick={changePropertyPriceAdm}
-                  className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#271335] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
+                  className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
                 >
                   Update
                 </button>
@@ -616,7 +742,7 @@ const PropertyDetail = () => {
             </div>
           )}
 
-      <div className="text-left mt-8 ml-2 text-[17px]">
+      <div className="text-left mt-8 ml-2 text-[17px] mr-2 bg-[#ffffff] text-black p-5 rounded-lg shadow-lg">
         <div className='mb-5'>
           <h2><strong>Underlying asset price </strong> </h2>
           <p>{property.propertyPrice}</p>
@@ -666,6 +792,7 @@ const PropertyDetail = () => {
            Click here to view property documents
           </a>
         </div> 
+      </div>
       </div>
     </div>
   );

@@ -10,8 +10,8 @@ const FractionalizeProperty = () => {
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
 
-  const vaultAddress = "0x72A6c7E3Ce1BB637687Ad6c612986e3EAF81a653";
-  const PContractAddr = "0x8A5c7da551f5B95C7Add704a1B3a9bF0DD0680f4"; // On cello nft contract address
+  const vaultAddress = "0xF279cf626E1f929731194e6d3748810C2E223EB6";
+  const PContractAddr = "0x00A0A54c2e1a41D41182Dcd255bfD06305361d21"; // On cello nft contract address
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -34,7 +34,7 @@ const FractionalizeProperty = () => {
  const fetchProperties = async (address) => {
   try {
     const res = await fetch(
-      `http://localhost:3001/api/Properties/getOwnerProperty?ownerAddress=${address}`
+      `https://fractionalrwabackend-k5z9.onrender.com/api/Properties/getOwnerProperty?ownerAddress=${address}`
     );
     const data = await res.json();
     const allProps = data.properties || [];
@@ -156,7 +156,8 @@ const FractionalizeProperty = () => {
                   <p className="text-green-300 font-semibold">Fractionalized</p>
                    )}
                   </div>
-              <p className='mb-4'>You will get <strong>{Math.floor(Number(prop.propertyPrice) / 40)}</strong> Fractional Tokens</p>
+              <p className='mb-1'>You will get <strong>{Math.floor(Number(prop.propertyPrice) / 40)}</strong> Fractional Tokens</p>
+                  <p className='mb-4 text-sm'>{PContractAddr}</p>
                 {fractionalEvents[prop.propertyId] && (
               <div className="mt-2 text-sm text-white">
                 <p><strong>Share Token:</strong> {fractionalEvents[prop.propertyId].shareToken}</p>

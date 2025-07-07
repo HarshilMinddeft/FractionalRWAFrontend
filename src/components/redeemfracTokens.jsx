@@ -15,9 +15,9 @@ const RedeemfracTokens = () => {
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
 
-  const vaultAddress = "0x72A6c7E3Ce1BB637687Ad6c612986e3EAF81a653";
-  const PContractAddr = "0x8A5c7da551f5B95C7Add704a1B3a9bF0DD0680f4"; // On cello nft contract address
-  const marketplaceAddr = "0xaAB86f0C7dE87089c3D9722e0F79f15D2C2008a1"
+  const vaultAddress = "0xF279cf626E1f929731194e6d3748810C2E223EB6";
+  const PContractAddr = "0x00A0A54c2e1a41D41182Dcd255bfD06305361d21"; // On cello nft contract address
+  const marketplaceAddr = "0xFb4C7367F52012bc1Fd929D9435F968eCf777b04"
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -40,7 +40,7 @@ const RedeemfracTokens = () => {
  const fetchProperties = async (address) => {
   try {
     const res = await fetch(
-      `http://localhost:3001/api/Properties/getOwnerProperty?ownerAddress=${address}`
+      `https://fractionalrwabackend-k5z9.onrender.com/api/Properties/getOwnerProperty?ownerAddress=${address}`
     );
     const data = await res.json();
     const allProps = data.properties || [];

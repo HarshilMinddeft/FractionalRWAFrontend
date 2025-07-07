@@ -33,7 +33,7 @@ const TNFT = () => {
       <Button
         btnType="PRIMARY"
         btnText="See More"
-        btnonClick={() => navigate('/') }
+        btnonClick={() => navigate('/MP') }
                 />
     </div>
     </div>
