@@ -10,8 +10,8 @@ const FractionalizeProperty = () => {
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
 
-  const vaultAddress = "0xF279cf626E1f929731194e6d3748810C2E223EB6";
-  const PContractAddr = "0x00A0A54c2e1a41D41182Dcd255bfD06305361d21"; // On cello nft contract address
+  const vaultAddress = "0x93a886A8e6363C420Ce9fFC0aF07e58E585B16ff"; // new on sonic
+  const PContractAddr = "0x5B017F7a7274E4E463ab0446f7878660756a509E"; // new on sonic
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -90,30 +90,50 @@ const FractionalizeProperty = () => {
           signer
         );
 
-        const vaultTnx = await VaultFractionalize.fractionalizeProperty(
-          tokenId,
-          ComplianceAddress
-        )
-        await vaultTnx.wait();
-        console.log( "Fractionalization done",vaultTnx.hash);
+        try {
+          const vaultTnx = await VaultFractionalize.fractionalizeProperty(
+            tokenId,
+            ComplianceAddress
+          )
+          await vaultTnx.wait();
+          console.log( "Fractionalization done",vaultTnx.hash);
 
-        const propertyToken = await VaultFractionalize.fractionalData(
-          tokenId
-        )
-        const fractionalData = {
-            shareToken: propertyToken.tokenAddress,
-            totalShares: propertyToken.totalShares.toString(),
-            originalOwner: propertyToken.originalOwner,
-            complianceAddress :propertyToken.complianceAddress,
-          };
+          const propertyToken = await VaultFractionalize.fractionalData(
+            tokenId
+          )
+          const fractionalData = {
+              shareToken: propertyToken.tokenAddress,
+              totalShares: propertyToken.totalShares.toString(),
+              originalOwner: propertyToken.originalOwner,
+              complianceAddress :propertyToken.complianceAddress,
+            };
 
-          console.log("fractionalData",fractionalData)
-          setFractionalEvents(prev => ({...prev,
-            [tokenId]: fractionalData
-          }));
+            console.log("fractionalData",fractionalData)
+            setFractionalEvents(prev => ({...prev,
+              [tokenId]: fractionalData
+            }));
+        } catch (fractionalizeError) {
+          // Check for identity verification error
+          if (fractionalizeError.reason?.includes("Identity is not verified") ||
+              fractionalizeError.message?.includes("Identity is not verified") ||
+              fractionalizeError.data?.message?.includes("Identity is not verified")) {
+            alert("❌ Identity Verification Required\n\nYour identity needs to be verified before you can fractionalize this property. Please complete the KYC verification process first.");
+            console.error("Identity not verified:", fractionalizeError);
+          } else {
+            // Handle other fractionalization errors
+            alert("❌ Fractionalization Failed\n\n" + (fractionalizeError.reason || fractionalizeError.message || "An unknown error occurred"));
+            console.error("Fractionalization error:", fractionalizeError);
+          }
+          throw fractionalizeError;
+        }
 
        } catch (error) {
-       console.error("Errorrororor", error);
+       console.error("Error in Fractionalize:", error);
+       // Only show alert if it wasn't already handled
+       if (!error.reason?.includes("Identity is not verified") &&
+           !error.message?.includes("Identity is not verified")) {
+         alert("❌ Transaction Failed\n\n" + (error.message || "An unexpected error occurred"));
+       }
      }
     }
 

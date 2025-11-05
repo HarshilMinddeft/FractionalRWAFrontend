@@ -30,7 +30,7 @@ const navigate = useNavigate();
                 <div className='tf-r-diamond-items absolute-center'>
                     <img className='tf-r-diamond-img' 
                     alt='diamond-banner'
-                    src='https://brown-leading-scallop-142.mypinata.cloud/ipfs/QmTP8QzjTPTDEGHzyAvbauTMKPJKWphUr8gWKx1rm7sgQQ'
+                    src='https://ipfs.io/ipfs/QmTP8QzjTPTDEGHzyAvbauTMKPJKWphUr8gWKx1rm7sgQQ'
                     />
 
                 </div>
@@ -38,7 +38,7 @@ const navigate = useNavigate();
                     <img 
                     className='tf-r-diamond-img' 
                     alt='diamond-banner'
-                    src='https://brown-leading-scallop-142.mypinata.cloud/ipfs/QmfGVm5vDqwYZ7eX59HGapSScxJrGaj74XPDZUm7tVh6cF'
+                    src='https://ipfs.io/ipfs/QmfGVm5vDqwYZ7eX59HGapSScxJrGaj74XPDZUm7tVh6cF'
                     />
 
                 </div>
@@ -46,7 +46,7 @@ const navigate = useNavigate();
                     <img 
                     className='tf-r-diamond-img' 
                     alt='diamond-banner'
-                    src='https://brown-leading-scallop-142.mypinata.cloud/ipfs/QmQSosWCn9TV6Sg7pQ4TxeRjeZFfq6Ay5QqEy94wE1wk8H'
+                    src='https://ipfs.io/ipfs/QmQSosWCn9TV6Sg7pQ4TxeRjeZFfq6Ay5QqEy94wE1wk8H'
                     />
 
                 </div>
@@ -54,7 +54,7 @@ const navigate = useNavigate();
                     <img 
                     className='tf-r-diamond-img' 
                     alt='diamond-banner'
-                    src='https://brown-leading-scallop-142.mypinata.cloud/ipfs/QmSxWvDuXCdf5K8Hipt2muSBXHhQPSc3sqTnNX9yBeayCJ'
+                    src='https://ipfs.io/ipfs/QmSxWvDuXCdf5K8Hipt2muSBXHhQPSc3sqTnNX9yBeayCJ'
                     />
 
                 </div>

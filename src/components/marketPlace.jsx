@@ -13,8 +13,8 @@ const MarketPlace = () => {
       const [loading, setLoading] = useState(false);
       const [userAddress, setUserAddress] = useState("");
 
-    const marketplaceAddr = "0xFb4C7367F52012bc1Fd929D9435F968eCf777b04"
-
+    const marketplaceAddr = "0x014CBb0a7DaBcE1455D16Bf7796DEB5AA58313a6" // new on sonic
+ 
      const getWalletAddress = async () => {
         if (window.ethereum) {
           try {
@@ -73,8 +73,8 @@ const MarketPlace = () => {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const network = await provider.getNetwork();
 
-      // Check if connected to Alfajores Testnet
-      if (network.chainId !== 44787) {
+      // Check if connected to sonic testnet
+      if (network.chainId !== 14601) {
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
@@ -87,23 +87,23 @@ const MarketPlace = () => {
               await window.ethereum.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: '0xaef3',
-                  chainName: 'Celo Alfajores Testnet',
-                  rpcUrls: ['https://alfajores-forno.celo-testnet.org'],
+                  chainId: '0x3909',
+                  chainName: 'Sonic Testnet',
+                  rpcUrls: ['https://rpc.testnet.soniclabs.com'],
                   nativeCurrency: {
-                    name: 'CELO',
-                    symbol: 'CELO',
+                    name: 'SONIC',
+                    symbol: 'S',
                     decimals: 18,
                   },
-                  blockExplorerUrls: ['https://alfajores.celoscan.io/'],
+                  blockExplorerUrls: ['https://testnet.sonicscan.org/'],
                 }],
               });
             } catch (addError) {
-              console.error('Failed to add Alfajores network:', addError);
+              console.error('Failed to add Sonic network:', addError);
             }
           } else {
             console.error('Failed to switch network:', switchError);
-            alert('Please switch to the Celo Alfajores Testnet in MetaMask.');
+            alert('Please switch to the Sonic Alfajores Testnet in MetaMask.');
             return;
           }
         }

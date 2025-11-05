@@ -13,7 +13,7 @@ export const INFO_ITEMS = [
   {
     id: 2,
     icon: wwwpng,
-    section_title: "Legal Documentation and svp ownership",
+    section_title: "Legal Documentation and spv ownership",
     description:
       "Verifying your property, conducting audits and valuations, reviewing documentation, and transferring property ownership to the legal SPV",
   },

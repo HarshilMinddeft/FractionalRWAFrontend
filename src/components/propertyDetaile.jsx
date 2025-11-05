@@ -14,10 +14,10 @@ import Slider from "react-slick";
 
 const PropertyDetail = () => {
 
-  const marketplaceAddr = "0xFb4C7367F52012bc1Fd929D9435F968eCf777b04"
-  const stableCoinAddr = "0xA41AcEFce10aF7b3Dc0898e1EA6b03b06551675e"
-  const orderBookAddr = "0x6c5E8cb87CD87bC59E61c17809952BEaA0307DE0"
-  const IdentityRegistryCR = "0x47Abc6934383afe1182bD8b9Cb0c586E1EeE9efA"
+  const marketplaceAddr = "0x014CBb0a7DaBcE1455D16Bf7796DEB5AA58313a6" // new on sonic
+  const stableCoinAddr = "0xD83334724f8106a638C89F6Cf59159da3f7b479C" // new on sonic
+  const orderBookAddr = "0x4740DeD2a806b340E9db0108b2Cb84379E8E9544" // new on sonic
+  const IdentityRegistryCR = "0x300b5C8F882b071A4858074ACD2Dd6ab8EEEE34D" // new on sonic
 
   const { id } = useParams();
   const navigate = useNavigate();
@@ -53,7 +53,7 @@ const PropertyDetail = () => {
       kycActive: true,
     };
 
-    const blockpass = new window.BlockpassKYCConnect("truefractionkyc_7bf80", {
+    const blockpass = new window.BlockpassKYCConnect("truefraction_12597", {
       refId,
       elementId: "blockpass-kyc-connect-button",
       mainColor: "800080",
@@ -194,6 +194,8 @@ const PropertyDetail = () => {
 
       setOrders(fetchedOrders);
       } catch (error) {
+        console.error("Error fetching orders:", error);
+        toast.error('Failed to fetch orders. Please try again.');
       }
     }
 
@@ -311,8 +313,18 @@ const PropertyDetail = () => {
       const adminUpdatePropertyPrice = await MarketPlaceCon.updatePropertyPrice(id, pTokenPrice)
         await adminUpdatePropertyPrice.wait();
         fetchDetails()
+        toast.success('Property price updated successfully!');
         } catch (error) {
-          
+          console.error("Error updating property price:", error);
+          if (error instanceof Error) {
+            if (error.message.includes('user rejected')) {
+              toast.error('Transaction Rejected.');
+            } else if (error.message.includes('cannot estimate gas')) {
+              toast.error('Insufficient funds');
+            } else {
+              toast.error('Failed to update property price. Please try again.');
+            }
+          }
         }
     }
 
@@ -331,11 +343,20 @@ const PropertyDetail = () => {
         await cancelOrder.wait();
 
         console.log("Order cancelled successfully");
-
+        toast.success('Order cancelled successfully!');
         fetchOrders();
 
       } catch (error) {
-        
+        console.error("Error cancelling order:", error);
+        if (error instanceof Error) {
+          if (error.message.includes('user rejected')) {
+            toast.error('Transaction Rejected.');
+          } else if (error.message.includes('cannot estimate gas')) {
+            toast.error('Insufficient funds');
+          } else {
+            toast.error('Failed to cancel order. Please try again.');
+          }
+        }
       }
     }
 
@@ -370,9 +391,19 @@ const PropertyDetail = () => {
         const ActivateBuyBack = await MarketPlaceCon.activateBuyBack(id, buyBackPrice)
         await ActivateBuyBack.wait();
         fetchDetails()
-        
+        toast.success('Buyback activated successfully!');
+
       } catch (error) {
-        
+        console.error("Error activating buyback:", error);
+        if (error instanceof Error) {
+          if (error.message.includes('user rejected')) {
+            toast.error('Transaction Rejected.');
+          } else if (error.message.includes('cannot estimate gas')) {
+            toast.error('Insufficient funds');
+          } else {
+            toast.error('Failed to activate buyback. Please try again.');
+          }
+        }
       }
     }
 
@@ -403,9 +434,21 @@ const PropertyDetail = () => {
         const SellbackTokens = await MarketPlaceCon.sellTokensBack(id, ConvertTokens)
         await SellbackTokens.wait();
         fetchDetails()
-        
+        toast.success('Tokens sold back successfully!');
+
       } catch (error) {
-        
+        console.error("Error selling back tokens:", error);
+        if (error instanceof Error) {
+          if (error.message.includes('user rejected')) {
+            toast.error('Transaction Rejected.');
+          } else if (error.message.includes('Transfer not possible')) {
+            toast.error('KYC Required');
+          } else if (error.message.includes('cannot estimate gas')) {
+            toast.error('Insufficient funds');
+          } else {
+            toast.error('Failed to sell back tokens. Please try again.');
+          }
+        }
       }
     }
 

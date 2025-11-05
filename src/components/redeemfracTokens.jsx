@@ -15,9 +15,9 @@ const RedeemfracTokens = () => {
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
 
-  const vaultAddress = "0xF279cf626E1f929731194e6d3748810C2E223EB6";
-  const PContractAddr = "0x00A0A54c2e1a41D41182Dcd255bfD06305361d21"; // On cello nft contract address
-  const marketplaceAddr = "0xFb4C7367F52012bc1Fd929D9435F968eCf777b04"
+  const vaultAddress = "0x93a886A8e6363C420Ce9fFC0aF07e58E585B16ff"; // new on sonic
+  const PContractAddr = "0x5B017F7a7274E4E463ab0446f7878660756a509E"; // new on sonic
+  const marketplaceAddr = "0x014CBb0a7DaBcE1455D16Bf7796DEB5AA58313a6" // new on sonic
 
   // Get connected wallet
   const getWalletAddress = async () => {

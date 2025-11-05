@@ -18,8 +18,8 @@ const CancelListing = () => {
   const [propertyShares, setPropertyShares] = useState({});
   const [listingOwners, setListingOwners] = useState({});
 
-  const vaultAddress = "0xF279cf626E1f929731194e6d3748810C2E223EB6";
-  const marketplaceAddr = "0xFb4C7367F52012bc1Fd929D9435F968eCf777b04"
+  const vaultAddress = "0x93a886A8e6363C420Ce9fFC0aF07e58E585B16ff"; // new on sonic
+  const marketplaceAddr = "0x014CBb0a7DaBcE1455D16Bf7796DEB5AA58313a6" // new on sonic
 
   // Get connected wallet
   const getWalletAddress = async () => {
@@ -36,7 +36,6 @@ const CancelListing = () => {
       alert('Please install MetaMask!');
     }
   };
-
   // Fetch properties for connected user
 const fetchProperties = async (address) => {
       try {

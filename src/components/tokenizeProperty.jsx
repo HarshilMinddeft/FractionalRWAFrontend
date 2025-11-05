@@ -27,7 +27,7 @@ const TokenizeProperty = () => {
 
   const [uploadStatus, setUploadStatus] = useState('');
 
-  const PContractAddr = "0x00A0A54c2e1a41D41182Dcd255bfD06305361d21"; // On cello nft contract address
+  const PContractAddr = "0x5B017F7a7274E4E463ab0446f7878660756a509E"; // new on sonic
 
   const handleInputChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
