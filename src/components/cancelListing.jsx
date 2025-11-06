@@ -190,13 +190,12 @@ const fetchUserTokenBalance = async () => {
             }
           }
 
-          console.error('Transaction error:', error);
-    }
+      console.error('Transaction error:', error);
+      }
     }
 
     useEffect(() => {
     if (properties.length > 0) {
-      console.log("HI")
       fetchUserTokenBalance();
     }
   }, [properties]);
