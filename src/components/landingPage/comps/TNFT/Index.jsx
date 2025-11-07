@@ -23,18 +23,17 @@ const TNFT = () => {
     <div className='tn-title absolute-center'>
         <span className='heading-gradient'>TRENDING PROPERTIES</span>
     </div>
-    <div className='tn-r-bg-blob'></div>
     <Slider {...settings}>
         {TNRENDING_NFTS.map((_nft) => (
         <TrendingCard nft={_nft} />
         ))}
     </Slider>
-    <div className='tn-btn absolute-center' >
+    <div className='mt-16 absolute-center'>
       <Button
         btnType="PRIMARY"
         btnText="See More"
-        btnonClick={() => navigate('/MP') }
-                />
+        btnonClick={() => navigate('/MP')}
+      />
     </div>
     </div>
   )

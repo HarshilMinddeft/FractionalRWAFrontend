@@ -73,12 +73,12 @@ const MarketPlace = () => {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const network = await provider.getNetwork();
 
-      // Check if connected to sonic testnet
+      // Check if connected to sonic testnet (14601 = 0x3909)
       if (network.chainId !== 14601) {
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0xaef3' }],
+            params: [{ chainId: '0x3909' }],
           });
         } catch (switchError) {
           // If the chain is not added to MetaMask, request to add it
@@ -103,7 +103,7 @@ const MarketPlace = () => {
             }
           } else {
             console.error('Failed to switch network:', switchError);
-            alert('Please switch to the Sonic Alfajores Testnet in MetaMask.');
+            alert('Please switch to the Sonic Testnet in MetaMask.');
             return;
           }
         }
