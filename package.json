@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.7",
+    "@web3modal/ethers5": "^5.1.11",
     "axios": "^1.10.0",
     "ethers": "^5.7.0",
     "flowbite": "^3.1.2",
