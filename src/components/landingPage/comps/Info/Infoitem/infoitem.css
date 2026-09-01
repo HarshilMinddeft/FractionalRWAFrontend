@@ -1,25 +1,22 @@
 .info-item {
-    flex-direction: column;
-    text-align: center;
-    margin: 0px 28px;
-    width: 30%;
+  flex-direction: column;
+  text-align: center;
+  margin: 0px 28px;
+  width: 30%;
 }
 
 .ii-title {
-    font-size: 28px;
-    font-weight: 600;
-    margin-top: 18px;
+  font-size: 28px;
+  font-weight: 600;
+  margin-top: 18px;
 }
 
 .ii-description {
-
-    margin-top: 18px;
-    font-size: 18px;
+  margin-top: 18px;
+  font-size: 18px;
 }
 
 .ii-icon {
-    
-    height: 150px;
-    width: 150px;
-    
+  height: 150px;
+  width: 150px;
 }

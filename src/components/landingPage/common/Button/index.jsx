@@ -1,18 +1,18 @@
-import "./button.css"
+import './button.css';
 
 const Button = (props) => {
-    const {btnType, btnText, btnonClick, customClass } = props;
+  const { btnType, btnText, btnonClick, customClass } = props;
 
   return (
-    <div className={` ${
-        btnType === "PRIMARY" 
-    ? `button primary-btn ${customClass}`
-    : `button secondary-btn ${customClass}`
- }`}
-     onClick={btnonClick}
-     >
-        {btnText}</div>
-  )
-}
+    <div
+      className={` ${
+        btnType === 'PRIMARY' ? `button primary-btn ${customClass}` : `button secondary-btn ${customClass}`
+      }`}
+      onClick={btnonClick}
+    >
+      {btnText}
+    </div>
+  );
+};
 
-export default Button
+export default Button;

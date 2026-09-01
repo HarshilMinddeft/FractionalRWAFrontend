@@ -31,9 +31,15 @@ const BlockpassKycPage = () => {
       <PageHeader
         title="Identity Verification"
         description="Complete KYC to unlock buying and selling."
-        icon={<path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />}
+        icon={
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+          />
+        }
       />
-      <Card className="max-w-md mx-auto p-6 sm:p-8 space-y-4">
+      <Card className="mx-auto max-w-md space-y-4 p-6 sm:p-8">
         <Input
           label="Wallet or Email"
           type="text"

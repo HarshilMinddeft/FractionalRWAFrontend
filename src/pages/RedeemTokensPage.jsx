@@ -55,26 +55,15 @@ const RedeemTokensPage = () => {
       const propertyShareTokenAddr = propertyToken.tokenAddress;
       const totalTokens = propertyToken.totalShares;
 
-      const propertyTokensTxn = new ethers.Contract(
-        propertyShareTokenAddr,
-        contractsConfig.vault.abi,
-        signer
-      );
+      const propertyTokensTxn = new ethers.Contract(propertyShareTokenAddr, contractsConfig.vault.abi, signer);
 
-      const approveTx = await propertyTokensTxn.approve(
-        contractsConfig.vault.address,
-        totalTokens
-      );
+      const approveTx = await propertyTokensTxn.approve(contractsConfig.vault.address, totalTokens);
       await approveTx.wait();
 
       const vaultTx = await vaultContract.redeemShares(tokenId);
       await vaultTx.wait();
 
-      const unbindTokenContract = new ethers.Contract(
-        complianceAddress,
-        contractsConfig.compliance.abi,
-        signer
-      );
+      const unbindTokenContract = new ethers.Contract(complianceAddress, contractsConfig.compliance.abi, signer);
 
       const unbindTx = await unbindTokenContract.unbindToken(propertyShareTokenAddr);
       await unbindTx.wait();
@@ -113,20 +102,26 @@ const RedeemTokensPage = () => {
       <PageHeader
         title="Redeem Property"
         description="Redeem fractional tokens to reclaim the underlying property."
-        icon={<path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />}
+        icon={
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+          />
+        }
       />
       {loading ? (
         <Spinner words={['tokens', 'balances', 'properties', 'tokens']} />
       ) : properties.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {properties.map((prop) => (
             <PropertyCard key={prop.propertyId} property={prop}>
-              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="space-y-3 border-t border-slate-200 pt-2 dark:border-slate-800">
                 {!fractionalEvents[prop.propertyId] ? (
                   <>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       You should have{' '}
-                      <span className="text-slate-700 dark:text-slate-200 font-medium">
+                      <span className="font-medium text-slate-700 dark:text-slate-200">
                         {Math.floor(Number(prop.propertyPrice) / SHARES_PER_DOLLAR_DIVISOR)}
                       </span>{' '}
                       fractional tokens
@@ -136,12 +131,18 @@ const RedeemTokensPage = () => {
                     </Button>
                   </>
                 ) : (
-                  <p className="text-emerald-600 dark:text-emerald-400 font-semibold text-sm">All Tokens Redeemed</p>
+                  <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">All Tokens Redeemed</p>
                 )}
                 {fractionalEvents[prop.propertyId] && (
-                  <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs text-emerald-700 dark:text-emerald-300 space-y-1 break-all">
-                    <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Share Token:</span> {fractionalEvents[prop.propertyId].shareToken}</p>
-                    <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Total Shares:</span> {fractionalEvents[prop.propertyId].totalShares}</p>
+                  <div className="space-y-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs break-all text-emerald-700 dark:text-emerald-300">
+                    <p>
+                      <span className="text-emerald-600/70 dark:text-emerald-400/70">Share Token:</span>{' '}
+                      {fractionalEvents[prop.propertyId].shareToken}
+                    </p>
+                    <p>
+                      <span className="text-emerald-600/70 dark:text-emerald-400/70">Total Shares:</span>{' '}
+                      {fractionalEvents[prop.propertyId].totalShares}
+                    </p>
                   </div>
                 )}
               </div>

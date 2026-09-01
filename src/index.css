@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -32,7 +32,7 @@
 }
 
 :root,
-[data-theme="dark"] {
+[data-theme='dark'] {
   /* Stock Tailwind slate/indigo — unchanged in dark mode */
   --tf-slate-50: #f8fafc;
   --tf-slate-100: #f1f5f9;
@@ -54,7 +54,7 @@
   --tf-indigo-950: #1e1b4b;
 }
 
-[data-theme="light"] {
+[data-theme='light'] {
   /* Bold "pro" light palette: lavender-tinted background (not plain white),
      vivid violet accent, near-black text. Cards stay pure white so they lift
      off the tinted page background instead of blending into it. */
@@ -88,18 +88,17 @@
 }
 
 :root,
-[data-theme="dark"] {
+[data-theme='dark'] {
   color-scheme: dark;
   background-color: #020617;
   color: #f1f5f9;
 }
 
-[data-theme="light"] {
+[data-theme='light'] {
   color-scheme: light;
   background-color: var(--tf-slate-50);
   color: var(--tf-slate-950);
 }
-
 
 /* button {
   border-radius: 8px;

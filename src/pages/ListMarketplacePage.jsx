@@ -65,7 +65,7 @@ const ListMarketplacePage = () => {
             const tokenContract = new ethers.Contract(
               propertyShareTokenAddr,
               ['function balanceOf(address) view returns (uint256)'],
-              provider
+              provider,
             );
 
             const balance = await tokenContract.balanceOf(address);
@@ -103,49 +103,29 @@ const ListMarketplacePage = () => {
       const propertyToken = await vaultContract.fractionalData(tokenId);
       const propertyShareTokenAddr = propertyToken.tokenAddress;
 
-      const propertyTokensTxn = new ethers.Contract(
-        propertyShareTokenAddr,
-        contractsConfig.vault.abi,
-        signer
-      );
+      const propertyTokensTxn = new ethers.Contract(propertyShareTokenAddr, contractsConfig.vault.abi, signer);
 
       const marketplaceContract = await web3Service.getMarketplaceContract();
       const checkListingData = await marketplaceContract.listings(tokenId);
       const checkListing = checkListingData.active;
 
-      const approveTx = await propertyTokensTxn.approve(
-        contractsConfig.marketplace.address,
-        tokensToListForProp
-      );
+      const approveTx = await propertyTokensTxn.approve(contractsConfig.marketplace.address, tokensToListForProp);
       await approveTx.wait();
 
       if (!checkListing) {
-        const listTx = await marketplaceContract.listProperty(
-          tokenId,
-          propertyShareTokenAddr,
-          tokensToListForProp
-        );
+        const listTx = await marketplaceContract.listProperty(tokenId, propertyShareTokenAddr, tokensToListForProp);
         await listTx.wait();
       } else {
-        const addTokensTx = await marketplaceContract.addMoreTokensToListing(
-          tokenId,
-          tokensToListForProp
-        );
+        const addTokensTx = await marketplaceContract.addMoreTokensToListing(tokenId, tokensToListForProp);
         await addTokensTx.wait();
       }
 
       const afterListingData = await marketplaceContract.listings(tokenId);
       const listingInfo = {
         shareToken: afterListingData.propertyToken,
-        totalShares: Number(
-          ethers.utils.formatUnits(afterListingData.totalTokens, 18)
-        ).toString(),
-        pricePerToken: Number(
-          ethers.utils.formatUnits(afterListingData.pricePerToken, 6)
-        ).toString(),
-        remainingTokens: Number(
-          ethers.utils.formatUnits(afterListingData.remainingTokens, 18)
-        ).toString(),
+        totalShares: Number(ethers.utils.formatUnits(afterListingData.totalTokens, 18)).toString(),
+        pricePerToken: Number(ethers.utils.formatUnits(afterListingData.pricePerToken, 6)).toString(),
+        remainingTokens: Number(ethers.utils.formatUnits(afterListingData.remainingTokens, 18)).toString(),
       };
 
       setFractionalEvents((prev) => ({
@@ -193,23 +173,28 @@ const ListMarketplacePage = () => {
       <PageHeader
         title="List to Marketplace"
         description="Make your fractionalized property shares available for purchase."
-        icon={<path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />}
+        icon={
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M2.25 21h19.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"
+          />
+        }
       />
       {loading ? (
         <Spinner words={['properties', 'balances', 'listings', 'properties']} />
       ) : properties.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {properties.map((prop) => {
-            const tokenBalanceObj = userTokenBalances.find(
-              (b) => b.propertyId === prop.propertyId
-            );
+            const tokenBalanceObj = userTokenBalances.find((b) => b.propertyId === prop.propertyId);
             const availableBalance = tokenBalanceObj ? tokenBalanceObj.balance : '0';
 
             return (
               <PropertyCard key={prop.propertyId} property={prop}>
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="space-y-3 border-t border-slate-200 pt-2 dark:border-slate-800">
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Your balance: <span className="text-slate-700 dark:text-slate-200 font-medium">{availableBalance}</span>
+                    Your balance:{' '}
+                    <span className="font-medium text-slate-700 dark:text-slate-200">{availableBalance}</span>
                   </p>
                   <Input
                     label="Tokens to list"
@@ -222,13 +207,24 @@ const ListMarketplacePage = () => {
                     List Property
                   </Button>
                   <p className="text-xs text-slate-500">
-                    Default listing price is <span className="text-slate-600 dark:text-slate-300 font-medium">${DEFAULT_LISTING_PRICE}</span> per share.
+                    Default listing price is{' '}
+                    <span className="font-medium text-slate-600 dark:text-slate-300">${DEFAULT_LISTING_PRICE}</span> per
+                    share.
                   </p>
                   {fractionalEvents[prop.propertyId] && (
-                    <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs text-emerald-700 dark:text-emerald-300 space-y-1 break-all">
-                      <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Share Token:</span> {fractionalEvents[prop.propertyId].shareToken}</p>
-                      <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Total Listed:</span> {fractionalEvents[prop.propertyId].totalShares}</p>
-                      <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Price/Token:</span> ${fractionalEvents[prop.propertyId].pricePerToken}</p>
+                    <div className="space-y-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs break-all text-emerald-700 dark:text-emerald-300">
+                      <p>
+                        <span className="text-emerald-600/70 dark:text-emerald-400/70">Share Token:</span>{' '}
+                        {fractionalEvents[prop.propertyId].shareToken}
+                      </p>
+                      <p>
+                        <span className="text-emerald-600/70 dark:text-emerald-400/70">Total Listed:</span>{' '}
+                        {fractionalEvents[prop.propertyId].totalShares}
+                      </p>
+                      <p>
+                        <span className="text-emerald-600/70 dark:text-emerald-400/70">Price/Token:</span> $
+                        {fractionalEvents[prop.propertyId].pricePerToken}
+                      </p>
                     </div>
                   )}
                 </div>

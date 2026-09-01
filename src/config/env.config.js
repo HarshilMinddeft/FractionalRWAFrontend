@@ -23,10 +23,13 @@ export const envConfig = {
   nftContractAddress: import.meta.env.VITE_NFT_CONTRACT_ADDRESS || '0x5B017F7a7274E4E463ab0446f7878660756a509E',
   stableCoinAddress: import.meta.env.VITE_STABLECOIN_CONTRACT_ADDRESS || '0xD83334724f8106a638C89F6Cf59159da3f7b479C',
   orderBookAddress: import.meta.env.VITE_ORDERBOOK_CONTRACT_ADDRESS || '0x4740DeD2a806b340E9db0108b2Cb84379E8E9544',
-  identityRegistryAddress: import.meta.env.VITE_IDENTITY_REGISTRY_CONTRACT_ADDRESS || '0x300b5C8F882b071A4858074ACD2Dd6ab8EEEE34D',
+  identityRegistryAddress:
+    import.meta.env.VITE_IDENTITY_REGISTRY_CONTRACT_ADDRESS || '0x300b5C8F882b071A4858074ACD2Dd6ab8EEEE34D',
 
   // Admin Account
-  adminWalletAddress: (import.meta.env.VITE_ADMIN_WALLET_ADDRESS || '0xe917e81c69bf15238c63abd45d1c335c2fc80bdd').toLowerCase(),
+  adminWalletAddress: (
+    import.meta.env.VITE_ADMIN_WALLET_ADDRESS || '0xe917e81c69bf15238c63abd45d1c335c2fc80bdd'
+  ).toLowerCase(),
 
   // WalletConnect
   walletConnectProjectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'f30db7f94e9f733eb88523c914bf485e',

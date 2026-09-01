@@ -33,9 +33,9 @@ const labelFor = (field) =>
 
 const FileField = ({ label, ...rest }) => (
   <div className="mb-4 text-left">
-    <label className="block mb-2 text-sm font-medium text-slate-600 dark:text-slate-300">{label}</label>
+    <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">{label}</label>
     <input
-      className="block w-full text-sm text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-950 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-100 dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-200 file:cursor-pointer cursor-pointer"
+      className="block w-full cursor-pointer rounded-lg border border-slate-300 bg-slate-50 text-sm text-slate-600 file:mr-4 file:cursor-pointer file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:file:bg-slate-800 dark:file:text-slate-200"
       {...rest}
     />
   </div>
@@ -109,7 +109,7 @@ const TokenizePropertyPage = () => {
         const complianceFactory = new ethers.ContractFactory(
           contractsConfig.compliance.abi,
           contractsConfig.compliance.bytecode,
-          signer
+          signer,
         );
         toast.info('Deploying Compliance Contract.');
         const complianceContract = await complianceFactory.deploy();
@@ -123,15 +123,9 @@ const TokenizePropertyPage = () => {
         await initTx.wait();
         toast.success('Compliance Contract Initialized');
 
-        const complianceCont = new ethers.Contract(
-          complianceAddress,
-          contractsConfig.compliance.abi,
-          signer
-        );
+        const complianceCont = new ethers.Contract(complianceAddress, contractsConfig.compliance.abi, signer);
         toast.info('Transferring Ownership.');
-        const changeOwnerCompliance = await complianceCont.transferOwnership(
-          formData.propertyOwnerWallet
-        );
+        const changeOwnerCompliance = await complianceCont.transferOwnership(formData.propertyOwnerWallet);
         await changeOwnerCompliance.wait();
 
         const propertyNftContract = await web3Service.getPropertyNftContract();
@@ -143,7 +137,7 @@ const TokenizePropertyPage = () => {
           metadataUrl,
           formData.location,
           Number(formData.propertySize),
-          Number(formData.propertyPrice)
+          Number(formData.propertyPrice),
         );
 
         const receipt = await transaction.wait();
@@ -153,7 +147,7 @@ const TokenizePropertyPage = () => {
         const recipient = mintedEvent.args.recipient;
 
         setProUploadStatus(
-          `NFT Minted!\nProperty NFT ID: ${tokenId}\nOwner Address: ${recipient}\nNft Address: ${contractsConfig.propertyNft.address}`
+          `NFT Minted!\nProperty NFT ID: ${tokenId}\nOwner Address: ${recipient}\nNft Address: ${contractsConfig.propertyNft.address}`,
         );
       }
 
@@ -219,11 +213,17 @@ const TokenizePropertyPage = () => {
       <PageHeader
         title="Tokenize Property"
         description="Mint a new property NFT and deploy its compliance contract."
-        icon={<path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18M3.75 3h16.5M9 6.75h.008v.008H9V6.75Zm0 3h.008v.008H9V9.75Zm0 3h.008v.008H9v-.008Zm3-6h.008v.008H12V6.75Zm0 3h.008v.008H12V9.75Zm0 3h.008v.008H12v-.008Z" />}
+        icon={
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M2.25 21h19.5m-18-18v18m10.5-18v18M3.75 3h16.5M9 6.75h.008v.008H9V6.75Zm0 3h.008v.008H9V9.75Zm0 3h.008v.008H9v-.008Zm3-6h.008v.008H12V6.75Zm0 3h.008v.008H12V9.75Zm0 3h.008v.008H12v-.008Z"
+          />
+        }
       />
-      <Card className="max-w-lg mx-auto p-6 sm:p-8">
+      <Card className="mx-auto max-w-lg p-6 sm:p-8">
         {propUploadStatus ? (
-          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-sm whitespace-pre-line p-4">
+          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm whitespace-pre-line text-emerald-600 dark:text-emerald-300">
             {propUploadStatus}
           </div>
         ) : (
@@ -240,7 +240,13 @@ const TokenizePropertyPage = () => {
             ))}
 
             <FileField label="Upload Single Image" type="file" accept="image/*" onChange={handleSingleImageChange} />
-            <FileField label="Upload Multiple Images" type="file" multiple accept="image/*" onChange={handleMultipleImagesChange} />
+            <FileField
+              label="Upload Multiple Images"
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleMultipleImagesChange}
+            />
             <FileField label="Upload PDF Document" type="file" accept="application/pdf" onChange={handlePdfChange} />
 
             {userAddress === envConfig.adminWalletAddress ? (
@@ -248,7 +254,9 @@ const TokenizePropertyPage = () => {
                 Register
               </Button>
             ) : (
-              <p className="font-semibold text-red-600 dark:text-red-400 text-sm">Connect with the admin wallet to continue.</p>
+              <p className="text-sm font-semibold text-red-600 dark:text-red-400">
+                Connect with the admin wallet to continue.
+              </p>
             )}
           </form>
         )}

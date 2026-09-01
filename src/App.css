@@ -1,5 +1,5 @@
-@import url("./components/landingPage/common/styles/commonClass.css");
-@import url("./components/landingPage/common/styles/variables.css");
+@import url('./components/landingPage/common/styles/commonClass.css');
+@import url('./components/landingPage/common/styles/variables.css');
 
 #root {
   max-width: none;
@@ -35,7 +35,6 @@
     animation: logo-spin infinite 20s linear;
   }
 }
-
 
 .card {
   padding: 2em;

@@ -3,8 +3,7 @@
  * Checks .reason, .message, and .data.message since ethers v5 populates
  * different fields depending on where the revert/rejection occurred.
  */
-const getErrorText = (error) =>
-  [error?.reason, error?.message, error?.data?.message].filter(Boolean).join(' ');
+const getErrorText = (error) => [error?.reason, error?.message, error?.data?.message].filter(Boolean).join(' ');
 
 const KNOWN_ERRORS = [
   { match: 'user rejected', text: 'Transaction Rejected.' },

@@ -1,94 +1,90 @@
 .topfold {
-    height: 120vh;
-    overflow: hidden;
+  height: 120vh;
+  overflow: hidden;
 }
 
 .tf-left {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    padding-right: 48px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding-right: 48px;
 }
 
 .tf-heding {
-    font-size: 72px;
-    font-weight: 600;
-    line-height: 72px;
+  font-size: 72px;
+  font-weight: 600;
+  line-height: 72px;
 }
 
 .tf-desc {
-    font-size: 20px;   
-    margin: 24px 0px;
+  font-size: 20px;
+  margin: 24px 0px;
 }
 
 .tf-left-btns {
-    margin-top: 25px;
-    display: flex;
+  margin-top: 25px;
+  display: flex;
 }
 
-.tf-left-secondary-btn{
-    margin-left: 56px;
+.tf-left-secondary-btn {
+  margin-left: 56px;
 }
 
-.tf-left-infoStats{
-    display: flex;
-    padding: 38px 0px 0px;
-
+.tf-left-infoStats {
+  display: flex;
+  padding: 38px 0px 0px;
 }
 
-.tf-is-infoItem{
-    margin-right: 36px;
-    flex-direction: column;
+.tf-is-infoItem {
+  margin-right: 36px;
+  flex-direction: column;
 }
 
-.tf-infoItem-count{
-    font-size: 36px;
-    font-weight: 600;
+.tf-infoItem-count {
+  font-size: 36px;
+  font-weight: 600;
 }
 
 .tf-infoItem-lable {
-    font-size: 14px;
-    font-weight: 600px;
-
+  font-size: 14px;
+  font-weight: 600px;
 }
 
 .tf-right {
-    display: flex;
-    flex: 1;
-    position: relative;
+  display: flex;
+  flex: 1;
+  position: relative;
 }
 
 .tf-right-diamond {
-    display: flex;
-    flex-wrap: wrap;
-    transform: rotate(45deg);
+  display: flex;
+  flex-wrap: wrap;
+  transform: rotate(45deg);
 }
 
-.tf-r-diamond-items{
-    height: 280;
-    width: 200;
-    overflow: hidden;
-    margin: 3px;
-    transform: rotate(-45deg);
-    cursor: pointer;
-    border: 3px solid var(--white);
-    border-radius: 12px;
+.tf-r-diamond-items {
+  height: 280;
+  width: 200;
+  overflow: hidden;
+  margin: 3px;
+  transform: rotate(-45deg);
+  cursor: pointer;
+  border: 3px solid var(--white);
+  border-radius: 12px;
 }
-
 
 .tf-r-diamond-items img {
-    height:201px;
-    object-fit: contain;
-    display: block;
-   
+  height: 201px;
+  object-fit: contain;
+  display: block;
 }
 
 .tn {
-    height: 390px;
-    width: 560px;
-    background-color: var(--bg-blob);
-    filter: blur(150.24px);
-    position: absolute;
-    left: 80%;
-    transform: translate(-60%);
+  height: 390px;
+  width: 560px;
+  background-color: var(--bg-blob);
+  filter: blur(150.24px);
+  position: absolute;
+  left: 80%;
+  transform: translate(-60%);
 }

@@ -15,5 +15,5 @@ createRoot(document.getElementById('root')).render(
         </Web3Provider>
       </BrowserRouter>
     </ThemeProvider>
-  </StrictMode>
+  </StrictMode>,
 );

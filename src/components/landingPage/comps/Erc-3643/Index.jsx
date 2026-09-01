@@ -1,13 +1,13 @@
-import "./tfInfo.css"
+import './tfInfo.css';
 
 const Erc3643 = () => {
- return (
-        <div className='mb-28 mt-24'>
-           <div className='tf-left'>
-            <div className='tf-heding'>
-                {/* ERC-3643  <br></br> */}
-                {/* <span className=''>Ecosystem </span> */}
-                 {/* <span className='heading-gradient'>
+  return (
+    <div className="mt-24 mb-28">
+      <div className="tf-left">
+        <div className="tf-heding">
+          {/* ERC-3643  <br></br> */}
+          {/* <span className=''>Ecosystem </span> */}
+          {/* <span className='heading-gradient'>
                 <TypeAnimation
                 sequence={[
                   "OnChainId",
@@ -25,11 +25,11 @@ const Erc3643 = () => {
                 repeat={Infinity}
               />
               </span> */}
-            </div>
         </div>
-        <img src="/Erc3643IMG.png" className="bg-transparent" alt="Logo" />
-        </div>
-  )
-}
+      </div>
+      <img src="/Erc3643IMG.png" className="bg-transparent" alt="Logo" />
+    </div>
+  );
+};
 
-export default Erc3643
+export default Erc3643;

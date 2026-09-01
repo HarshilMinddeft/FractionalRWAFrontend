@@ -1,14 +1,13 @@
 export const ROUTES = {
-  home: "/",
-  tokenizeProperty: "/tokenize-property",
-  fractionalizeProperty: "/fractionalize-property",
-  redeemProperty: "/redeem-property",
-  listProperty: "/list-property",
-  marketplace: "/marketplace",
-  cancelListing: "/cancel-listing",
-  propertyDetails: "/properties/:id",
-  identityVerification: "/identity-verification",
+  home: '/',
+  tokenizeProperty: '/tokenize-property',
+  fractionalizeProperty: '/fractionalize-property',
+  redeemProperty: '/redeem-property',
+  listProperty: '/list-property',
+  marketplace: '/marketplace',
+  cancelListing: '/cancel-listing',
+  propertyDetails: '/properties/:id',
+  identityVerification: '/identity-verification',
 };
 
 export const getPropertyDetailsPath = (propertyId) => `/properties/${propertyId}`;
-

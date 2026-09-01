@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "check-format": "prettier --check ."
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.7",
@@ -15,6 +17,7 @@
     "axios": "^1.10.0",
     "ethers": "^5.7.0",
     "flowbite": "^3.1.2",
+    "prettier-plugin-tailwindcss": "^0.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.2.0",

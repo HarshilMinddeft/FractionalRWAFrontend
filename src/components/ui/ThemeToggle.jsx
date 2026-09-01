@@ -1,13 +1,7 @@
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from '../../context/ThemeContext';
 
 const SunIcon = () => (
-  <svg
-    className="h-5 w-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
+  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -17,13 +11,7 @@ const SunIcon = () => (
 );
 
 const MoonIcon = () => (
-  <svg
-    className="h-5 w-5"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
+  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -38,12 +26,10 @@ const ThemeToggle = () => {
   return (
     <button
       onClick={toggleTheme}
-      aria-label={
-        theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
-      }
-      className="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-700 border border-slate-200 shadow-lg hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      className="fixed right-5 bottom-5 z-40 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
     >
-      {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+      {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
     </button>
   );
 };

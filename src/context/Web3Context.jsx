@@ -90,7 +90,7 @@ export const Web3Provider = ({ children }) => {
       connectWallet: () => open(),
       disconnectWallet: () => open({ view: 'Account' }),
     }),
-    [address, isConnected, chainId, provider, signer, open]
+    [address, isConnected, chainId, provider, signer, open],
   );
 
   return <Web3Context.Provider value={value}>{children}</Web3Context.Provider>;
