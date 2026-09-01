@@ -1,14 +1,103 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Tailwind's `slate` and `indigo` scales are redefined below via CSS custom
+ * properties so the same utility classes (bg-slate-100, text-indigo-600, ...)
+ * used throughout the app render a refined, theme-specific palette instead of
+ * stock Tailwind colors. Dark mode keeps Tailwind's defaults; light mode gets
+ * a cooler, higher-contrast "pro" set (crisp near-white surfaces, low-noise
+ * borders, deep indigo accent) closer to tools like Linear/Figma.
+ */
+@theme inline {
+  --color-slate-50: var(--tf-slate-50);
+  --color-slate-100: var(--tf-slate-100);
+  --color-slate-200: var(--tf-slate-200);
+  --color-slate-300: var(--tf-slate-300);
+  --color-slate-400: var(--tf-slate-400);
+  --color-slate-500: var(--tf-slate-500);
+  --color-slate-600: var(--tf-slate-600);
+  --color-slate-700: var(--tf-slate-700);
+  --color-slate-800: var(--tf-slate-800);
+  --color-slate-900: var(--tf-slate-900);
+  --color-slate-950: var(--tf-slate-950);
+
+  --color-indigo-50: var(--tf-indigo-50);
+  --color-indigo-100: var(--tf-indigo-100);
+  --color-indigo-400: var(--tf-indigo-400);
+  --color-indigo-500: var(--tf-indigo-500);
+  --color-indigo-600: var(--tf-indigo-600);
+  --color-indigo-950: var(--tf-indigo-950);
+}
+
+:root,
+[data-theme="dark"] {
+  /* Stock Tailwind slate/indigo — unchanged in dark mode */
+  --tf-slate-50: #f8fafc;
+  --tf-slate-100: #f1f5f9;
+  --tf-slate-200: #e2e8f0;
+  --tf-slate-300: #cbd5e1;
+  --tf-slate-400: #94a3b8;
+  --tf-slate-500: #64748b;
+  --tf-slate-600: #475569;
+  --tf-slate-700: #334155;
+  --tf-slate-800: #1e293b;
+  --tf-slate-900: #0f172a;
+  --tf-slate-950: #020617;
+
+  --tf-indigo-50: #eef2ff;
+  --tf-indigo-100: #e0e7ff;
+  --tf-indigo-400: #818cf8;
+  --tf-indigo-500: #6366f1;
+  --tf-indigo-600: #4f46e5;
+  --tf-indigo-950: #1e1b4b;
+}
+
+[data-theme="light"] {
+  /* Bold "pro" light palette: lavender-tinted background (not plain white),
+     vivid violet accent, near-black text. Cards stay pure white so they lift
+     off the tinted page background instead of blending into it. */
+  --tf-slate-50: #f4f3fb;
+  --tf-slate-100: #ece9f8;
+  --tf-slate-200: #ddd9f0;
+  --tf-slate-300: #c3bce3;
+  --tf-slate-400: #9a90bd;
+  --tf-slate-500: #726a92;
+  --tf-slate-600: #524b72;
+  --tf-slate-700: #3b3557;
+  --tf-slate-800: #26223d;
+  --tf-slate-900: #16132a;
+  --tf-slate-950: #0d0b1a;
+
+  --tf-indigo-50: #f1edff;
+  --tf-indigo-100: #e3daff;
+  --tf-indigo-400: #9b7dff;
+  --tf-indigo-500: #7c5cff;
+  --tf-indigo-600: #6d4aeb;
+  --tf-indigo-950: #241a5c;
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
-  /* font-weight: 400; */
-
-  /* color: rgba(156, 59, 135, 0.87); */
-  background-color: #f5fbff;
 
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  background-color: #020617;
+  color: #f1f5f9;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  background-color: var(--tf-slate-50);
+  color: var(--tf-slate-950);
 }
 
 
@@ -31,8 +120,6 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 } */
-
-@import "tailwindcss";
 
 /* @media (prefers-color-scheme: light) {
   :root {

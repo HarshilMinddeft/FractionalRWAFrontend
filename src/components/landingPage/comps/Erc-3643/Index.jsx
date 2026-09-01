@@ -1,6 +1,4 @@
-import React from 'react'
 import "./tfInfo.css"
-import { TypeAnimation } from "react-type-animation";
 
 const Erc3643 = () => {
  return (

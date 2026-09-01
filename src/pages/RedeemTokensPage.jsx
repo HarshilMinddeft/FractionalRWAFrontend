@@ -1,14 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
-import Sidebar from '../components/common/Sidebar';
+import { toast } from 'react-toastify';
+import AppLayout from '../components/layout/AppLayout';
+import PropertyCard from '../components/property/PropertyCard';
+import PageHeader from '../components/ui/PageHeader';
+import Button from '../components/ui/Button';
+import Spinner from '../components/ui/Spinner';
+import EmptyState from '../components/ui/EmptyState';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
-import ComplianceArti from '../artifacts/contracts/RwaERC-3643/compliance/modular/ModularCompliance.sol/ModularCompliance.json';
+import { getContractErrorMessage } from '../utils/web3Errors';
+
+const SHARES_PER_DOLLAR_DIVISOR = 40;
 
 const RedeemTokensPage = () => {
   const [properties, setProperties] = useState([]);
-  const [userAddress, setUserAddress] = useState('');
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
 
@@ -28,7 +35,7 @@ const RedeemTokensPage = () => {
             filteredProps.push(prop);
           }
         } catch (err) {
-          console.error(`Error checking fractionalization for token ${prop.propertyId}:`, err);
+          console.error(`Error checking property ${prop.propertyId}:`, err);
         }
       }
       setProperties(filteredProps);
@@ -65,7 +72,7 @@ const RedeemTokensPage = () => {
 
       const unbindTokenContract = new ethers.Contract(
         complianceAddress,
-        ComplianceArti.abi,
+        contractsConfig.compliance.abi,
         signer
       );
 
@@ -73,19 +80,19 @@ const RedeemTokensPage = () => {
       await unbindTx.wait();
 
       const afterData = await vaultContract.fractionalData(tokenId);
-      const fractionalData = {
-        shareToken: afterData.tokenAddress,
-        totalShares: afterData.totalShares.toString(),
-        originalOwner: afterData.originalOwner,
-        compAddress: afterData.complianceAddress,
-      };
-
       setFractionalEvents((prev) => ({
         ...prev,
-        [tokenId]: fractionalData,
+        [tokenId]: {
+          shareToken: afterData.tokenAddress,
+          totalShares: afterData.totalShares.toString(),
+          originalOwner: afterData.originalOwner,
+          compAddress: afterData.complianceAddress,
+        },
       }));
+      toast.success('Property tokens redeemed successfully.');
     } catch (error) {
       console.error('Error redeeming property tokens:', error);
+      toast.error(getContractErrorMessage(error, 'Redemption failed. Please try again.'));
     }
   };
 
@@ -93,7 +100,6 @@ const RedeemTokensPage = () => {
     const init = async () => {
       const address = await web3Service.getWalletAddress();
       if (address) {
-        setUserAddress(address);
         fetchProperties(address);
       } else {
         setLoading(false);
@@ -103,52 +109,49 @@ const RedeemTokensPage = () => {
   }, []);
 
   return (
-    <div className="sm:pl-64">
-      <Sidebar />
-      <h2 className="text-xl font-bold mt-5 mb-4">Redeem Your Property Tokens</h2>
+    <AppLayout>
+      <PageHeader
+        title="Redeem Property"
+        description="Redeem fractional tokens to reclaim the underlying property."
+        icon={<path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />}
+      />
       {loading ? (
-        <p>Loading properties...</p>
+        <Spinner words={['tokens', 'balances', 'properties', 'tokens']} />
       ) : properties.length > 0 ? (
-        <div className="mx-auto w-full max-w-[1360px]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[30px] mt-5 ml-2 mr-2 mb-5">
-            {properties.map((prop) => (
-              <div key={prop.propertyId} className="bg-[#ffffff] text-black rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer overflow-hidden">
-                {prop.propertyThumbImages && prop.propertyThumbImages.length > 0 && (
-                  <img src={prop.propertyThumbImages[0]} alt="Thumbnail" className="w-full h-64 lg:h-72 object-cover rounded" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {properties.map((prop) => (
+            <PropertyCard key={prop.propertyId} property={prop}>
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                {!fractionalEvents[prop.propertyId] ? (
+                  <>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      You should have{' '}
+                      <span className="text-slate-700 dark:text-slate-200 font-medium">
+                        {Math.floor(Number(prop.propertyPrice) / SHARES_PER_DOLLAR_DIVISOR)}
+                      </span>{' '}
+                      fractional tokens
+                    </p>
+                    <Button fullWidth onClick={() => redeemTokens(prop.propertyId, prop.complianceAddress)}>
+                      Redeem Property
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-emerald-600 dark:text-emerald-400 font-semibold text-sm">All Tokens Redeemed</p>
                 )}
-                <h3 className="text-2xl mt-1 font-semibold">{prop.propertyName}</h3>
-                <p className="mt-2"><strong>Property id : </strong> {prop.propertyId}</p>
-                <p><strong>Price:</strong> {prop.propertyPrice}</p>
-                <p><strong>Size:</strong> {prop.propertySize} sqft</p>
-                <div className="mt-3">
-                  {!fractionalEvents[prop.propertyId] ? (
-                    <>
-                      <button
-                        className="rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
-                        onClick={() => redeemTokens(prop.propertyId, prop.complianceAddress)}
-                      >
-                        Redeem Property
-                      </button>
-                      <p className="mt-2 mb-5">You should have <strong>{Math.floor(Number(prop.propertyPrice) / 40)}</strong> Fractional Tokens</p>
-                    </>
-                  ) : (
-                    <p className="text-green-300 font-semibold">All Tokens Redeemed</p>
-                  )}
-                </div>
                 {fractionalEvents[prop.propertyId] && (
-                  <div className="mt-2 text-sm text-white">
-                    <p><strong>Share Token:</strong> {fractionalEvents[prop.propertyId].shareToken}</p>
-                    <p><strong>Total Shares:</strong> {fractionalEvents[prop.propertyId].totalShares}</p>
+                  <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs text-emerald-700 dark:text-emerald-300 space-y-1 break-all">
+                    <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Share Token:</span> {fractionalEvents[prop.propertyId].shareToken}</p>
+                    <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Total Shares:</span> {fractionalEvents[prop.propertyId].totalShares}</p>
                   </div>
                 )}
               </div>
-            ))}
-          </div>
+            </PropertyCard>
+          ))}
         </div>
       ) : (
-        <p>No properties found for this wallet.</p>
+        <EmptyState>No properties found for this wallet.</EmptyState>
       )}
-    </div>
+    </AppLayout>
   );
 };
 

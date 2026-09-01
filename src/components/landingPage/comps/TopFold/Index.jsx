@@ -1,8 +1,7 @@
-import React from 'react'
 import "./topfold.css"
 import Button from '../../common/Button'
-import { TypeAnimation } from "react-type-animation";
 import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../../../config/routes';
 
 const TopFold = () => {
 const navigate = useNavigate();
@@ -21,7 +20,7 @@ const navigate = useNavigate();
                 <Button 
                  btnType="PRIMARY"
                     btnText="Tokenize Your Property"
-                 btnonClick={() => navigate('/TP') } />
+                 btnonClick={() => navigate(ROUTES.tokenizeProperty) } />
               </div>
         </div>
         <div className='tf-right'>

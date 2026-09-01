@@ -1,4 +1,3 @@
-import React from 'react'
 import "./tnft.css"
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
@@ -7,6 +6,7 @@ import TrendingCard from './TrendingCard'
 import { TNRENDING_NFTS } from '../../data/tn'
 import Button from '../../common/Button'
 import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../../../config/routes';
 
 const settings = {
     slideToScroll: 1,
@@ -25,14 +25,14 @@ const TNFT = () => {
     </div>
     <Slider {...settings}>
         {TNRENDING_NFTS.map((_nft) => (
-        <TrendingCard nft={_nft} />
+        <TrendingCard key={_nft.id} nft={_nft} />
         ))}
     </Slider>
     <div className='mt-16 absolute-center'>
       <Button
         btnType="PRIMARY"
         btnText="See More"
-        btnonClick={() => navigate('/MP')}
+        btnonClick={() => navigate(ROUTES.marketplace)}
       />
     </div>
     </div>

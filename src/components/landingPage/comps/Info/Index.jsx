@@ -1,4 +1,3 @@
-import React from 'react'
 import "./info.css"
 import { INFO_ITEMS } from '../../data/infoItems'
 import "./Infoitem"
@@ -12,7 +11,7 @@ const Info = () => {
         </div>
         <div className='is-items-container'>
             {INFO_ITEMS.map((_infoItem)=>(
-            <InfoItem item={_infoItem} />
+            <InfoItem key={_infoItem.id} item={_infoItem} />
              ))}
         </div>
     </div>

@@ -1,4 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import AppLayout from '../components/layout/AppLayout';
+import PageHeader from '../components/ui/PageHeader';
+import Card from '../components/ui/Card';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
 
 const BlockpassKycPage = () => {
   const [refId, setRefId] = useState('');
@@ -22,23 +27,25 @@ const BlockpassKycPage = () => {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Connect with Blockpass KYC</h2>
-      <input
-        type="text"
-        placeholder="Enter your Wallet or Email"
-        value={refId}
-        onChange={(e) => setRefId(e.target.value)}
-        style={{ marginBottom: 10, padding: 8, width: '100%' }}
+    <AppLayout>
+      <PageHeader
+        title="Identity Verification"
+        description="Complete KYC to unlock buying and selling."
+        icon={<path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />}
       />
-      <button
-        id="blockpass-kyc-connect-button"
-        onClick={handleStartKYC}
-        style={{ padding: '10px 20px', cursor: 'pointer' }}
-      >
-        Connect with Blockpass
-      </button>
-    </div>
+      <Card className="max-w-md mx-auto p-6 sm:p-8 space-y-4">
+        <Input
+          label="Wallet or Email"
+          type="text"
+          placeholder="Enter your wallet or email"
+          value={refId}
+          onChange={(e) => setRefId(e.target.value)}
+        />
+        <Button id="blockpass-kyc-connect-button" fullWidth onClick={handleStartKYC}>
+          Connect with Blockpass
+        </Button>
+      </Card>
+    </AppLayout>
   );
 };
 

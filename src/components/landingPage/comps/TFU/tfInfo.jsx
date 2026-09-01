@@ -1,8 +1,8 @@
-import React from 'react'
 import "./Info.css"
 import Button from '../../common/Button'
 import { TypeAnimation } from "react-type-animation";
 import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../../../config/routes';
 
 
 const TfInfo = () => {
@@ -41,7 +41,7 @@ const TfInfo = () => {
                   <Button
                     btnType="PRIMARY"
                     btnText="Fractionalize Your Property"
-                    btnonClick={() => navigate('/FP') }
+                    btnonClick={() => navigate(ROUTES.fractionalizeProperty) }
                 />
               </div>
         </div>

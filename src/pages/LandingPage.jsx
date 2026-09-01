@@ -1,4 +1,3 @@
-import React from 'react';
 import Header from '../components/landingPage/comps/Header/Index';
 import TopFold from '../components/landingPage/comps/TopFold/Index';
 import TNFT from '../components/landingPage/comps/TNFT/Index';

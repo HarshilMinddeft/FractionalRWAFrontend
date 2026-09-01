@@ -1,14 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
-import { ToastContainer, toast } from 'react-toastify';
-import Sidebar from '../components/common/Sidebar';
+import { toast } from 'react-toastify';
+import AppLayout from '../components/layout/AppLayout';
+import PropertyCard from '../components/property/PropertyCard';
+import PageHeader from '../components/ui/PageHeader';
+import Button from '../components/ui/Button';
+import Spinner from '../components/ui/Spinner';
+import EmptyState from '../components/ui/EmptyState';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
+import { getContractErrorMessage } from '../utils/web3Errors';
+
+const SHARES_PER_DOLLAR_DIVISOR = 40;
 
 const CancelListingPage = () => {
   const [properties, setProperties] = useState([]);
-  const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
   const [userTokenBalances, setUserTokenBalances] = useState([]);
@@ -103,25 +110,10 @@ const CancelListingPage = () => {
         ...prev,
         [tokenId]: listingData,
       }));
+      toast.success('Listing cancelled successfully.');
     } catch (error) {
-      let errorMessage = 'Please try again later.';
-
-      if (error && typeof error === 'object') {
-        if (error.message?.toLowerCase().includes('user rejected')) {
-          errorMessage = 'Transaction Rejected.';
-          toast.error(errorMessage);
-        } else if (error.reason) {
-          toast.error('Insufficient tokens in marketplace');
-          toast.error('Total tokens and remaining tokens should be equal');
-        } else if (error.error?.data?.message) {
-          errorMessage = error.error.data.message;
-        } else if (error.data?.message) {
-          errorMessage = error.data.message;
-        } else if (error.error?.message) {
-          errorMessage = error.error.message;
-        }
-      }
       console.error('Transaction error:', error);
+      toast.error(getContractErrorMessage(error, 'Failed to cancel listing. Please try again.'));
     }
   };
 
@@ -129,6 +121,7 @@ const CancelListingPage = () => {
     if (properties.length > 0) {
       fetchUserTokenBalance();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [properties]);
 
   useEffect(() => {
@@ -143,82 +136,63 @@ const CancelListingPage = () => {
   }, []);
 
   return (
-    <div className="sm:pl-64">
-      <Sidebar />
-      <h2 className="text-xl font-bold mt-5 mb-4">Cancel Listing</h2>
-      <h3 className="mt-5">{status}</h3>
-
-      <div>
-        <ToastContainer position="top-center" autoClose={2000} />
-      </div>
-
+    <AppLayout>
+      <PageHeader
+        title="Cancel Listing"
+        description="Delist properties that have an active buyback in progress."
+        icon={<path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />}
+      />
       {loading ? (
-        <p>Loading properties...</p>
+        <Spinner words={['listings', 'buybacks', 'properties', 'listings']} />
       ) : properties.length > 0 ? (
-        <div className="mx-auto w-full max-w-[1360px]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[30px] mt-5 ml-2 mr-2 mb-5">
-            {properties.map((prop) => {
-              const tokenInfo = userTokenBalances.find(
-                (tkn) => tkn.propertyId === prop.propertyId
-              );
-              return (
-                <div key={prop.propertyId}>
-                  <div className="bg-[#ffffff] text-black rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer overflow-hidden">
-                    {prop.propertyThumbImages?.length > 0 && (
-                      <img
-                        src={prop.propertyThumbImages[0]}
-                        alt="Thumbnail"
-                        className="w-full h-56 md:h-64 lg:h-64 object-cover rounded"
-                      />
-                    )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {properties.map((prop) => {
+            const tokenInfo = userTokenBalances.find(
+              (tkn) => tkn.propertyId === prop.propertyId
+            );
+            const isOwner = listingOwners[prop.propertyId]?.toLowerCase() === currentSigner?.toLowerCase();
 
-                    {tokenInfo && listingOwners[prop.propertyId]?.toLowerCase() === currentSigner?.toLowerCase() ? (
-                      <div className="text-black">
-                        <h3 className="text-2xl mt-1 font-semibold">{prop.propertyName}</h3>
-                        <p className="mt-3"><strong>Property id:</strong> {prop.propertyId}</p>
-                        <p><strong>Valuation :</strong> {prop.propertyPrice} USD</p>
-                        <p><strong>Your Token Balance:</strong> {tokenInfo.balance}</p>
-                        <p><strong> You should have</strong> {Math.floor(Number(prop.propertyPrice) / 40)}</p>
-                        <p><strong>Total listed tokens:</strong> {propertyShares[prop.propertyId] || 'N/A'}</p>
-                        <p className="text-sm mt-4">{tokenInfo.tokenAddress}</p>
-                      </div>
+            return (
+              <PropertyCard key={prop.propertyId} property={prop}>
+                {tokenInfo && isOwner ? (
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2 text-sm">
+                    <p className="text-slate-500 dark:text-slate-400">
+                      Your balance: <span className="text-slate-700 dark:text-slate-200 font-medium">{tokenInfo.balance}</span>
+                    </p>
+                    <p className="text-slate-500 dark:text-slate-400">
+                      Expected: <span className="text-slate-700 dark:text-slate-200 font-medium">{Math.floor(Number(prop.propertyPrice) / SHARES_PER_DOLLAR_DIVISOR)}</span>
+                    </p>
+                    <p className="text-slate-500 dark:text-slate-400">
+                      Total listed: <span className="text-slate-700 dark:text-slate-200 font-medium">{propertyShares[prop.propertyId] || 'N/A'}</span>
+                    </p>
+                    <p className="text-xs text-slate-500 break-all">{tokenInfo.tokenAddress}</p>
+
+                    {!fractionalEvents[prop.propertyId] ? (
+                      <Button fullWidth variant="danger" onClick={() => cancelListing(prop.propertyId)}>
+                        Delist
+                      </Button>
                     ) : (
-                      <p className="mt-2">Delisted</p>
-                    )}
-
-                    {tokenInfo && listingOwners[prop.propertyId]?.toLowerCase() === currentSigner?.toLowerCase() && (
-                      <div className="mt-3 mb-2">
-                        {!fractionalEvents[prop.propertyId] ? (
-                          <div className="mt-3 mb-2">
-                            <button
-                              className="rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
-                              onClick={() => cancelListing(prop.propertyId)}
-                            >
-                              Delist
-                            </button>
-                          </div>
-                        ) : (
-                          <p className="text-green-300 font-semibold">Delisting Successful</p>
-                        )}
-                      </div>
+                      <p className="text-emerald-600 dark:text-emerald-400 font-semibold">Delisting Successful</p>
                     )}
 
                     {fractionalEvents[prop.propertyId] && (
-                      <div className="mt-2 text-sm text-white">
-                        <p><strong>Share Token Address:</strong> {fractionalEvents[prop.propertyId].propertyTokenAddress}</p>
-                        <p><strong>Marketplace contract tokens:</strong> {fractionalEvents[prop.propertyId].remainingTokens}</p>
+                      <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs text-emerald-700 dark:text-emerald-300 space-y-1 break-all">
+                        <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Share Token:</span> {fractionalEvents[prop.propertyId].propertyTokenAddress}</p>
+                        <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Remaining:</span> {fractionalEvents[prop.propertyId].remainingTokens}</p>
                       </div>
                     )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                ) : (
+                  <p className="pt-2 border-t border-slate-200 dark:border-slate-800 text-sm text-slate-500">Delisted</p>
+                )}
+              </PropertyCard>
+            );
+          })}
         </div>
       ) : (
-        <p>No properties found.</p>
+        <EmptyState>No properties with an active buyback found.</EmptyState>
       )}
-    </div>
+    </AppLayout>
   );
 };
 

@@ -1,14 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
-import { ToastContainer, toast } from 'react-toastify';
-import Sidebar from '../components/common/Sidebar';
+import { toast } from 'react-toastify';
+import AppLayout from '../components/layout/AppLayout';
+import PropertyCard from '../components/property/PropertyCard';
+import PageHeader from '../components/ui/PageHeader';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import Spinner from '../components/ui/Spinner';
+import EmptyState from '../components/ui/EmptyState';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
 
+const DEFAULT_LISTING_PRICE = 40;
+
 const ListMarketplacePage = () => {
   const [properties, setProperties] = useState([]);
-  const [status, setStatus] = useState('');
   const [userAddress, setUserAddress] = useState('');
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
@@ -178,86 +185,61 @@ const ListMarketplacePage = () => {
     if (properties.length > 0 && userAddress) {
       fetchUserTokenBalance();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [properties, userAddress]);
 
   return (
-    <div className="sm:pl-64">
-      <Sidebar />
-      <div>
-        <ToastContainer position="top-center" autoClose={2000} />
-      </div>
-      <h2 className="text-xl font-bold mb-4 mt-5">List Fractional Properties To Marketplace</h2>
+    <AppLayout>
+      <PageHeader
+        title="List to Marketplace"
+        description="Make your fractionalized property shares available for purchase."
+        icon={<path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />}
+      />
       {loading ? (
-        <p>Loading properties...</p>
+        <Spinner words={['properties', 'balances', 'listings', 'properties']} />
       ) : properties.length > 0 ? (
-        <div className="mx-auto w-full max-w-[1360px]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[30px] mt-5 ml-2 mr-2 mb-5">
-            {properties.map((prop) => {
-              const tokenBalanceObj = userTokenBalances.find(
-                (b) => b.propertyId === prop.propertyId
-              );
-              const availableBalance = tokenBalanceObj ? tokenBalanceObj.balance : '0';
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {properties.map((prop) => {
+            const tokenBalanceObj = userTokenBalances.find(
+              (b) => b.propertyId === prop.propertyId
+            );
+            const availableBalance = tokenBalanceObj ? tokenBalanceObj.balance : '0';
 
-              return (
-                <div
-                  key={prop.propertyId}
-                  className="bg-[#ffffff] text-black rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer overflow-hidden"
-                >
-                  {prop.propertyThumbImages && prop.propertyThumbImages.length > 0 && (
-                    <img
-                      src={prop.propertyThumbImages[0]}
-                      alt="Thumbnail"
-                      className="w-full h-64 lg:h-72 object-cover rounded"
-                    />
-                  )}
-                  <h3 className="text-xl mt-1 font-semibold">{prop.propertyName}</h3>
-                  <p className="mt-2"><strong>Property id : </strong> {prop.propertyId}</p>
-                  <p><strong>Price:</strong> {prop.propertyPrice}</p>
-                  <p><strong>Size:</strong> {prop.propertySize} sqft</p>
-
-                  <div className="mt-2 text-sm text-[#000000] font-semibold">
-                    <p>Your Token Balance: {availableBalance}</p>
-                  </div>
-
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium mb-1">Enter Tokens to List:</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 500"
-                      className="border border-gray-300 rounded px-3 py-1 w-full max-w-[200px] mb-2 text-black"
-                      value={tokensInputs[prop.propertyId] || ''}
-                      onChange={(e) => handleInputChange(prop.propertyId, e.target.value)}
-                    />
-                  </div>
-
-                  <div className="mt-2">
-                    <button
-                      className="rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
-                      onClick={() => listToMarketplace(prop.propertyId)}
-                    >
-                      List Property
-                    </button>
-                    <p className="mt-2 text-sm">
-                      Default token listing price is <strong>$40</strong> per share.
-                    </p>
-                  </div>
-
+            return (
+              <PropertyCard key={prop.propertyId} property={prop}>
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Your balance: <span className="text-slate-700 dark:text-slate-200 font-medium">{availableBalance}</span>
+                  </p>
+                  <Input
+                    label="Tokens to list"
+                    type="number"
+                    placeholder="e.g. 500"
+                    value={tokensInputs[prop.propertyId] || ''}
+                    onChange={(e) => handleInputChange(prop.propertyId, e.target.value)}
+                  />
+                  <Button fullWidth onClick={() => listToMarketplace(prop.propertyId)}>
+                    List Property
+                  </Button>
+                  <p className="text-xs text-slate-500">
+                    Default listing price is <span className="text-slate-600 dark:text-slate-300 font-medium">${DEFAULT_LISTING_PRICE}</span> per share.
+                  </p>
                   {fractionalEvents[prop.propertyId] && (
-                    <div className="mt-3 text-sm text-white bg-green-700 p-2 rounded">
-                      <p><strong>Share Token:</strong> {fractionalEvents[prop.propertyId].shareToken}</p>
-                      <p><strong>Total Listed Tokens:</strong> {fractionalEvents[prop.propertyId].totalShares}</p>
-                      <p><strong>Price Per Token:</strong> ${fractionalEvents[prop.propertyId].pricePerToken}</p>
+                    <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs text-emerald-700 dark:text-emerald-300 space-y-1 break-all">
+                      <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Share Token:</span> {fractionalEvents[prop.propertyId].shareToken}</p>
+                      <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Total Listed:</span> {fractionalEvents[prop.propertyId].totalShares}</p>
+                      <p><span className="text-emerald-600/70 dark:text-emerald-400/70">Price/Token:</span> ${fractionalEvents[prop.propertyId].pricePerToken}</p>
                     </div>
                   )}
                 </div>
-              );
-            })}
-          </div>
+              </PropertyCard>
+            );
+          })}
         </div>
       ) : (
-        <p>No fractionalized properties found for this wallet.</p>
+        <EmptyState>No fractionalized properties found for this wallet.</EmptyState>
       )}
-    </div>
+    </AppLayout>
   );
 };
 

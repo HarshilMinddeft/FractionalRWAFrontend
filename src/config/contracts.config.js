@@ -1,9 +1,11 @@
 import envConfig from './env.config';
 
-import MarketplaceArtifact from '../artifacts/contracts/RwaERC-3643/TrueFraction/DemoMarketplace.sol/FractionalMarketplace.json';
-import PropertyNFTArtifact from '../artifacts/contracts/RwaERC-3643/TrueFraction/propertyNFT.sol/PropertyNFT.json';
-import TokenArtifact from '../artifacts/contracts/RwaERC-3643/token/Token.sol/Token.json';
-import OrderbookArtifact from '../artifacts/contracts/RwaERC-3643/TrueFraction/orderBook.sol/Orderbook.json';
+import MarketplaceArtifact from './abis/FractionalMarketplace.json';
+import PropertyNFTArtifact from './abis/PropertyNFT.json';
+import TokenArtifact from './abis/Token.json';
+import OrderbookArtifact from './abis/Orderbook.json';
+import ModularComplianceArtifact from './abis/ModularCompliance.json';
+import IdentityRegistryArtifact from './abis/IdentityRegistry.json';
 
 export const contractsConfig = {
   marketplace: {
@@ -28,6 +30,12 @@ export const contractsConfig = {
   },
   identityRegistry: {
     address: envConfig.identityRegistryAddress,
+    abi: IdentityRegistryArtifact.abi,
+  },
+  compliance: {
+    // Deployed per-property by TokenizePropertyPage; no fixed address.
+    abi: ModularComplianceArtifact.abi,
+    bytecode: ModularComplianceArtifact.bytecode,
   },
 };
 

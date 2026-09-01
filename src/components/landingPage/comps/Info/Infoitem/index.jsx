@@ -1,4 +1,3 @@
-import React from 'react'
 import "./infoitem.css";
 
 const InfoItem = (props) => {

@@ -1,12 +1,45 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { ToastContainer, toast } from 'react-toastify';
-import Header from '../components/landingPage/comps/Header/Index';
+import { toast } from 'react-toastify';
+import AppLayout from '../components/layout/AppLayout';
+import PageHeader from '../components/ui/PageHeader';
+import Card from '../components/ui/Card';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import envConfig from '../config/env.config';
 import contractsConfig from '../config/contracts.config';
-import ComplianceArti from '../artifacts/contracts/RwaERC-3643/compliance/modular/ModularCompliance.sol/ModularCompliance.json';
+
+const FIELDS = [
+  'name',
+  'propertyPrice',
+  'propertySize',
+  'propertyOwnerWallet',
+  'features',
+  'offering',
+  'details',
+  'management',
+  'location',
+];
+
+const CUSTOM_LABELS = {
+  propertyPrice: 'Property Price ($)',
+  management: 'Managed By',
+};
+
+const labelFor = (field) =>
+  CUSTOM_LABELS[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+
+const FileField = ({ label, ...rest }) => (
+  <div className="mb-4 text-left">
+    <label className="block mb-2 text-sm font-medium text-slate-600 dark:text-slate-300">{label}</label>
+    <input
+      className="block w-full text-sm text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-950 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-100 dark:file:bg-slate-800 file:text-slate-700 dark:file:text-slate-200 file:cursor-pointer cursor-pointer"
+      {...rest}
+    />
+  </div>
+);
 
 const TokenizePropertyPage = () => {
   const [singleImage, setSingleImage] = useState(null);
@@ -74,8 +107,8 @@ const TokenizePropertyPage = () => {
         const signer = await web3Service.getSigner();
 
         const complianceFactory = new ethers.ContractFactory(
-          ComplianceArti.abi,
-          ComplianceArti.bytecode,
+          contractsConfig.compliance.abi,
+          contractsConfig.compliance.bytecode,
           signer
         );
         toast.info('Deploying Compliance Contract.');
@@ -92,7 +125,7 @@ const TokenizePropertyPage = () => {
 
         const complianceCont = new ethers.Contract(
           complianceAddress,
-          ComplianceArti.abi,
+          contractsConfig.compliance.abi,
           signer
         );
         toast.info('Transferring Ownership.');
@@ -182,100 +215,46 @@ const TokenizePropertyPage = () => {
   }, []);
 
   return (
-    <div>
-      <Header />
-      <div>
-        <ToastContainer position="top-center" autoClose={2000} />
-      </div>
-      <div className="max-w-lg mx-auto sm:p-8 mt-5 rounded-[10px] mb-4 bg-[#ffffff] backdrop-blur-3xl text-black shadow-lg w-full">
-        <h2 className="text-2xl font-bold">Property Details</h2>
+    <AppLayout>
+      <PageHeader
+        title="Tokenize Property"
+        description="Mint a new property NFT and deploy its compliance contract."
+        icon={<path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18M3.75 3h16.5M9 6.75h.008v.008H9V6.75Zm0 3h.008v.008H9V9.75Zm0 3h.008v.008H9v-.008Zm3-6h.008v.008H12V6.75Zm0 3h.008v.008H12V9.75Zm0 3h.008v.008H12v-.008Z" />}
+      />
+      <Card className="max-w-lg mx-auto p-6 sm:p-8">
         {propUploadStatus ? (
-          <div className="bg-green-100 text-green-800 rounded-lg text-sm whitespace-pre-line p-4">
+          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-sm whitespace-pre-line p-4">
             {propUploadStatus}
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
-            {[
-              'name',
-              'propertyPrice',
-              'propertySize',
-              'propertyOwnerWallet',
-              'features',
-              'offering',
-              'details',
-              'management',
-              'location',
-            ].map((field) => {
-              const customLabels = {
-                propertyPrice: 'Property Price ($)',
-                management: 'Managed By',
-              };
-
-              const label =
-                customLabels[field] ||
-                field.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
-
-              return (
-                <div key={field} className="mb-4 text-left">
-                  <label className="mb-2 text-sm font-medium block">{label}</label>
-                  <input
-                    name={field}
-                    type="text"
-                    value={formData[field]}
-                    onChange={handleInputChange}
-                    className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg w-full py-2.5 px-4"
-                    placeholder={`Enter ${label}`}
-                  />
-                </div>
-              );
-            })}
-
-            <div className="mb-4 text-left">
-              <label className="block mb-2 text-sm font-medium">Upload Single Image</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleSingleImageChange}
-                className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100"
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {FIELDS.map((field) => (
+              <Input
+                key={field}
+                name={field}
+                label={labelFor(field)}
+                value={formData[field]}
+                onChange={handleInputChange}
+                placeholder={`Enter ${labelFor(field)}`}
               />
-            </div>
+            ))}
 
-            <div className="mb-4 text-left">
-              <label className="block mb-2 text-sm font-medium">Upload Multiple Images</label>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleMultipleImagesChange}
-                className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100"
-              />
-            </div>
-
-            <div className="mb-4 text-left">
-              <label className="block mb-2 text-sm font-medium">Upload PDF Document</label>
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={handlePdfChange}
-                className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100"
-              />
-            </div>
+            <FileField label="Upload Single Image" type="file" accept="image/*" onChange={handleSingleImageChange} />
+            <FileField label="Upload Multiple Images" type="file" multiple accept="image/*" onChange={handleMultipleImagesChange} />
+            <FileField label="Upload PDF Document" type="file" accept="application/pdf" onChange={handlePdfChange} />
 
             {userAddress === envConfig.adminWalletAddress ? (
-              <button
-                type="submit"
-                className="w-full rounded-lg border border-transparent px-5 py-2 text-base font-medium bg-[#0c162c] text-white cursor-pointer transition-colors duration-200 hover:border-[#646cff]"
-              >
+              <Button type="submit" fullWidth>
                 Register
-              </button>
+              </Button>
             ) : (
-              <p className="font-semibold mt-4 text-red-600">Connect With Admin Wallet</p>
+              <p className="font-semibold text-red-600 dark:text-red-400 text-sm">Connect with the admin wallet to continue.</p>
             )}
           </form>
         )}
-        {uploadStatus && <p className="mt-4 text-sm">{uploadStatus}</p>}
-      </div>
-    </div>
+        {uploadStatus && <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">{uploadStatus}</p>}
+      </Card>
+    </AppLayout>
   );
 };
 

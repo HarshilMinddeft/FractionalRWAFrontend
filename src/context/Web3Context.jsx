@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { ethers } from 'ethers';
 import {
   createWeb3Modal,

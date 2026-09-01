@@ -1,4 +1,3 @@
-import React from 'react';
 import './bi.css';
 import mmpng from '../../assets/mmpng.png';
 import ops from '../../assets/ops.png';
