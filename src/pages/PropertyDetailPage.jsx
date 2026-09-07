@@ -2,132 +2,125 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
+import { AnimatePresence, motion } from 'motion/react';
 import AppLayout from '../components/layout/AppLayout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Spinner from '../components/ui/Spinner';
+import Progress from '../components/ui/Progress';
+import Badge from '../components/ui/Badge';
+import Dialog from '../components/ui/Dialog';
+import CopyButton from '../components/ui/CopyButton';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
 import envConfig from '../config/env.config';
 import { getContractErrorMessage } from '../utils/web3Errors';
+import { cn, formatNumber, formatUsd, shortenAddress, toPercent } from '../lib/utils';
 
-const SectionLabel = ({ children }) => (
-  <h3 className="mb-4 text-xs font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">{children}</h3>
+/* ------------------------------------------------------------------ */
+/* Small presentational pieces                                          */
+/* ------------------------------------------------------------------ */
+
+const SectionLabel = ({ children, tone = 'slate' }) => (
+  <h3 className="mb-4 flex items-center gap-2 text-[11px] font-bold tracking-[0.12em] uppercase">
+    <span className={cn('h-4 w-1 rounded-full', tone === 'red' ? 'bg-red-400' : 'bg-gradient-to-b from-indigo-500 to-violet-500')} />
+    <span className={cn(tone === 'red' ? 'text-red-500 dark:text-red-400' : 'text-slate-400 dark:text-slate-500')}>
+      {children}
+    </span>
+  </h3>
+);
+
+const BackButton = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label="Go back"
+    className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:text-slate-900 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-white"
+  >
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+    </svg>
+  </button>
 );
 
 const FACT_ICONS = {
   id: (
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
   ),
   token: (
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
   ),
   price: (
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182.552-.44 1.278-.659 2.003-.659.725 0 1.45.22 2.003.659L14.5 8.5"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182.552-.44 1.278-.659 2.003-.659.725 0 1.45.22 2.003.659L14.5 8.5" />
   ),
   perToken: (
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-4.5v9m-3.75-3.375c0 1.036 1.679 1.875 3.75 1.875s3.75-.84 3.75-1.875-1.679-1.875-3.75-1.875-3.75-.84-3.75-1.875S10.179 7 12.25 7s3.75.84 3.75 1.875"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-4.5v9m-3.75-3.375c0 1.036 1.679 1.875 3.75 1.875s3.75-.84 3.75-1.875-1.679-1.875-3.75-1.875-3.75-.84-3.75-1.875S10.179 7 12.25 7s3.75.84 3.75 1.875" />
   ),
   remaining: (
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
   ),
   total: (
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5" />
   ),
   size: (
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
   ),
   features: (
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
   ),
   location: (
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+  ),
+  doc: (
+    <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
   ),
 };
 
-const FactCard = ({ icon, label, value, mono = false, wide = false }) => (
+const FactItem = ({ icon, label, value, mono = false, copyValue, className = '' }) => (
   <div
-    className={`group relative flex h-full items-start gap-3 overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 transition-colors hover:border-indigo-300 dark:border-slate-800 dark:from-slate-950 dark:to-slate-900/60 dark:hover:border-indigo-800 ${
-      wide ? 'sm:col-span-2' : ''
-    }`}
+    className={cn(
+      'flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 transition-colors hover:border-indigo-100 hover:bg-indigo-50/40 dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-indigo-900 dark:hover:bg-indigo-950/20',
+      className,
+    )}
   >
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
-      <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:text-indigo-400 dark:ring-slate-700">
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
         {FACT_ICONS[icon]}
       </svg>
     </div>
     <div className="min-w-0 flex-1 text-left">
-      <p className="text-[11px] font-medium tracking-wide text-slate-400 uppercase dark:text-slate-500">{label}</p>
-      <p
-        className={`mt-0.5 text-sm font-semibold text-slate-900 dark:text-white ${mono ? 'font-mono text-xs leading-relaxed break-all' : 'truncate'}`}
-      >
+      <p className="text-[10.5px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">{label}</p>
+      <p className={cn('mt-0.5 font-semibold text-slate-800 dark:text-slate-100', mono ? 'font-mono text-xs leading-relaxed break-all' : 'text-sm truncate')}>
         {value}
       </p>
+      {copyValue && (
+        <CopyButton value={copyValue} label="Copy address" copiedLabel="Copied" className="mt-1" />
+      )}
     </div>
   </div>
 );
 
-const AccordionSection = ({ title, icon, children, defaultOpen = false }) => {
+const Accordion = ({ title, icon, children, defaultOpen = false }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div className="overflow-hidden rounded-xl border border-slate-100 bg-white transition-colors dark:border-slate-800 dark:bg-slate-900/60">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+        className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40"
       >
-        <span className="flex items-center gap-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
-          <svg
-            className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            {icon}
-          </svg>
+        <span className="flex items-center gap-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {icon}
+            </svg>
+          </span>
           {title}
         </span>
         <svg
-          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={cn('h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200', open && 'rotate-180')}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -136,22 +129,28 @@ const AccordionSection = ({ title, icon, children, defaultOpen = false }) => {
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      <div className={`grid transition-all duration-200 ease-in-out ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+      <div className={cn('grid transition-all duration-200 ease-in-out', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
         <div className="overflow-hidden">
-          <p className="px-4 pb-4 text-left text-sm leading-relaxed text-slate-500 dark:text-slate-400">{children}</p>
+          <p className="px-4 pb-4 text-left text-sm leading-relaxed whitespace-pre-line text-slate-500 dark:text-slate-400">
+            {children}
+          </p>
         </div>
       </div>
     </div>
   );
 };
 
-const ImageCarousel = ({ images = [] }) => {
+/* ------------------------------------------------------------------ */
+/* Image gallery                                                        */
+/* ------------------------------------------------------------------ */
+
+const Gallery = ({ images = [] }) => {
   const [active, setActive] = useState(0);
 
-  if (!images.length) {
+  if (!images?.length) {
     return (
-      <Card className="flex h-96 items-center justify-center text-slate-400 dark:text-slate-600">
-        No images available
+      <Card className="flex aspect-[16/9] items-center justify-center text-slate-400 dark:text-slate-600">
+        No images available for this property
       </Card>
     );
   }
@@ -159,34 +158,27 @@ const ImageCarousel = ({ images = [] }) => {
   const goTo = (i) => setActive((i + images.length) % images.length);
 
   return (
-    <Card className="p-3">
-      <div className="relative overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-950">
-        <img src={images[active]} alt={`Property view ${active + 1}`} className="h-96 w-full object-cover" />
+    <Card className="overflow-hidden p-2.5 sm:p-3">
+      <div className="group relative overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-950">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.img
+            key={active}
+            src={images[active]}
+            alt={`Property view ${active + 1}`}
+            initial={{ opacity: 0.4, scale: 1.02 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            className="aspect-[16/9] w-full object-cover"
+          />
+        </AnimatePresence>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
 
         {images.length > 1 && (
           <>
-            <button
-              type="button"
-              onClick={() => goTo(active - 1)}
-              aria-label="Previous image"
-              className="absolute top-1/2 left-3 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-md transition hover:bg-white dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-900"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => goTo(active + 1)}
-              aria-label="Next image"
-              className="absolute top-1/2 right-3 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-md transition hover:bg-white dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-900"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-
-            <span className="absolute right-3 bottom-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white">
+            <ArrowButton dir="prev" onClick={() => goTo(active - 1)} />
+            <ArrowButton dir="next" onClick={() => goTo(active + 1)} />
+            <span className="absolute right-3 bottom-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
               {active + 1} / {images.length}
             </span>
           </>
@@ -194,19 +186,20 @@ const ImageCarousel = ({ images = [] }) => {
       </div>
 
       {images.length > 1 && (
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-          {images.map((imageUrl, index) => (
+        <div className="tf-scroll mt-2.5 flex gap-2 overflow-x-auto pb-1">
+          {images.map((url, index) => (
             <button
-              key={imageUrl + index}
+              key={url + index}
               type="button"
               onClick={() => setActive(index)}
-              className={`shrink-0 overflow-hidden rounded-md border-2 transition ${
+              className={cn(
+                'relative shrink-0 overflow-hidden rounded-lg ring-2 transition-all duration-150',
                 index === active
-                  ? 'border-indigo-600 dark:border-indigo-400'
-                  : 'border-transparent opacity-70 hover:opacity-100'
-              }`}
+                  ? 'ring-indigo-500 opacity-100'
+                  : 'ring-transparent opacity-60 hover:opacity-100',
+              )}
             >
-              <img src={imageUrl} alt={`Thumbnail ${index + 1}`} className="h-16 w-20 object-cover" />
+              <img src={url} alt={`Thumbnail ${index + 1}`} className="h-16 w-24 object-cover" />
             </button>
           ))}
         </div>
@@ -215,19 +208,47 @@ const ImageCarousel = ({ images = [] }) => {
   );
 };
 
-const StatusBanner = ({ buyBack }) =>
-  buyBack ? (
-    <Card className="flex items-center gap-2 border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-      <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-        />
+const ArrowButton = ({ dir, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={dir === 'prev' ? 'Previous image' : 'Next image'}
+    className={cn(
+      'absolute top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/90 text-slate-700 opacity-0 shadow-md backdrop-blur transition-all duration-200 group-hover:opacity-100 hover:bg-white dark:bg-slate-900/85 dark:text-slate-100 dark:hover:bg-slate-900',
+      dir === 'prev' ? 'left-3' : 'right-3',
+    )}
+  >
+    <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+      {dir === 'prev' ? (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      ) : (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      )}
+    </svg>
+  </button>
+);
+
+/* ------------------------------------------------------------------ */
+/* Status                                                               */
+/* ------------------------------------------------------------------ */
+
+const BuybackBanner = () => (
+  <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/50">
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
       </svg>
-      <strong>The owner has delisted this property.</strong>
-    </Card>
-  ) : null;
+    </span>
+    <p>
+      <strong>The owner has delisted this property.</strong> Token holders can sell their shares back at the buyback
+      price below.
+    </p>
+  </div>
+);
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                 */
+/* ------------------------------------------------------------------ */
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
@@ -237,7 +258,7 @@ const PropertyDetailPage = () => {
   const [buyTokensAmount, setBuyTokensAmount] = useState('');
   const [orderSellAmount, setOrderSellAmount] = useState('');
   const [opricePerToken, setPricePerToken] = useState('');
-  const [contractListingData, setContractListingData] = useState('');
+  const [contractListingData, setContractListingData] = useState({});
   const [orders, setOrders] = useState([]);
   const [buyAmounts, setBuyAmounts] = useState({});
   const [pAdmin, setPAdmin] = useState('');
@@ -250,9 +271,7 @@ const PropertyDetailPage = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCompleteKYCClick = () => {
-    setShowPopup(true);
-  };
+  const handleCompleteKYCClick = () => setShowPopup(true);
 
   const handleKycSubmit = async () => {
     if (!refId) {
@@ -277,7 +296,6 @@ const PropertyDetailPage = () => {
       return;
     }
     setIsSubmitting(true);
-
     await propertyApi.addNewUser(payload);
   };
 
@@ -326,6 +344,10 @@ const PropertyDetailPage = () => {
   };
 
   const buyPropertyTokens = async () => {
+    if (!buyTokensAmount || Number(buyTokensAmount) <= 0) {
+      toast.error('Please enter the number of tokens to buy.');
+      return;
+    }
     try {
       const tokensToBuy = ethers.utils.parseUnits(buyTokensAmount.toString(), 18);
 
@@ -337,6 +359,7 @@ const PropertyDetailPage = () => {
       const buyTx = await marketplaceContract.buyTokens(id, tokensToBuy);
       await buyTx.wait();
       toast.success('Tokens purchased successfully!');
+      setBuyTokensAmount('');
       fetchDetails();
     } catch (error) {
       console.error('Error buying property tokens:', error);
@@ -373,6 +396,10 @@ const PropertyDetailPage = () => {
   };
 
   const buyFromLimit = async (orderId, buyAmount) => {
+    if (!buyAmount || Number(buyAmount) <= 0) {
+      toast.error('Enter the quantity you want to buy.');
+      return;
+    }
     try {
       const formBuyAmount = ethers.utils.parseUnits(buyAmount.toString(), 18);
 
@@ -393,6 +420,10 @@ const PropertyDetailPage = () => {
   };
 
   const createLimitOrder = async () => {
+    if (!orderSellAmount || Number(orderSellAmount) <= 0 || !opricePerToken || Number(opricePerToken) <= 0) {
+      toast.error('Enter a valid amount and price per token.');
+      return;
+    }
     try {
       const signer = await web3Service.getSigner();
       const formBuyAmount = ethers.utils.parseUnits(orderSellAmount.toString(), 18);
@@ -416,6 +447,8 @@ const PropertyDetailPage = () => {
       await createTx.wait();
 
       toast.success('Sell order created successfully!');
+      setOrderSellAmount('');
+      setPricePerToken('');
       fetchOrders();
     } catch (error) {
       console.error('Error creating limit order:', error);
@@ -424,6 +457,10 @@ const PropertyDetailPage = () => {
   };
 
   const changePropertyPriceAdm = async () => {
+    if (!newPropAmount || Number(newPropAmount) <= 0) {
+      toast.error('Enter a valid new price per token.');
+      return;
+    }
     try {
       const pTokenPrice = ethers.utils.parseUnits(newPropAmount.toString(), 6);
       const marketplaceContract = await web3Service.getMarketplaceContract();
@@ -431,6 +468,7 @@ const PropertyDetailPage = () => {
       await updateTx.wait();
 
       fetchDetails();
+      setNewPropAmount('');
       toast.success('Property price updated successfully!');
     } catch (error) {
       console.error('Error updating property price:', error);
@@ -453,6 +491,10 @@ const PropertyDetailPage = () => {
   };
 
   const ownerBuyBack = async () => {
+    if (!bbPrice || Number(bbPrice) <= 0) {
+      toast.error('Enter a buyback price.');
+      return;
+    }
     try {
       const stableCoinContract = await web3Service.getStableCoinContract();
       const marketplaceContract = await web3Service.getMarketplaceContract();
@@ -468,6 +510,7 @@ const PropertyDetailPage = () => {
       const activateTx = await marketplaceContract.activateBuyBack(id, buyBackPrice);
       await activateTx.wait();
 
+      setBBPrice('');
       fetchDetails();
       toast.success('Buyback activated successfully!');
     } catch (error) {
@@ -477,6 +520,10 @@ const PropertyDetailPage = () => {
   };
 
   const sellBackTokensContract = async () => {
+    if (!sellingTokens || Number(sellingTokens) <= 0) {
+      toast.error('Enter the number of tokens to sell back.');
+      return;
+    }
     try {
       const convertTokens = ethers.utils.parseUnits(sellingTokens.toString(), 18);
       const signer = await web3Service.getSigner();
@@ -494,6 +541,7 @@ const PropertyDetailPage = () => {
       const sellTx = await marketplaceContract.sellTokensBack(id, convertTokens);
       await sellTx.wait();
 
+      setSellingTokens('');
       fetchDetails();
       toast.success('Tokens sold back successfully!');
     } catch (error) {
@@ -531,401 +579,498 @@ const PropertyDetailPage = () => {
   if (!property) {
     return (
       <AppLayout>
-        <Spinner words={['details', 'images', 'pricing', 'details']} />
+        <Spinner words={['details', 'images', 'pricing', 'listings']} />
       </AppLayout>
     );
   }
 
-  const KycGate = ({ onVerified }) =>
+  const listing = contractListingData;
+  const soldPct = toPercent(Number(listing.totalShares || 0) - Number(listing.remainingTokens || 0), listing.totalShares);
+  const pricePerToken = Number(listing.pricePerToken);
+  const buyBackPrice = Number(listing.buyBackPrice);
+  const quickBuyCost =
+    buyTokensAmount && Number(buyTokensAmount) > 0 && pricePerToken > 0
+      ? Number(buyTokensAmount) * pricePerToken
+      : null;
+  const quickSellValue =
+    sellingTokens && Number(sellingTokens) > 0 && buyBackPrice > 0
+      ? Number(sellingTokens) * buyBackPrice
+      : null;
+
+  const KycGate = ({ children }) =>
     kycStatus ? (
-      onVerified
+      children
     ) : (
       <Button variant="secondary" fullWidth onClick={handleCompleteKYCClick}>
-        Complete KYC
+        <span className="flex items-center gap-2">
+          <svg className="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+          </svg>
+          Complete KYC to continue
+        </span>
       </Button>
     );
 
+  const quickAmounts = [1, 10, 100, 500];
+
   return (
     <AppLayout>
-      <div className="mb-6 flex items-start gap-4">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          aria-label="Go back"
-          className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-          </svg>
-        </button>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="truncate text-2xl leading-tight font-bold text-slate-900 dark:text-white">
+      {/* Header */}
+      <div className="mb-6 flex items-start gap-3 sm:gap-4">
+        <BackButton onClick={() => navigate(-1)} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="truncate text-xl font-bold tracking-tight text-slate-900 sm:text-2xl dark:text-white">
               {property.propertyName}
             </h1>
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase ${
-                contractListingData.buyBack
-                  ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
-                  : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
-              }`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${contractListingData.buyBack ? 'bg-red-500' : 'bg-emerald-500'}`}
-              />
-              {contractListingData.buyBack ? 'Buyback Active' : 'Active'}
-            </span>
+            {listing.buyBack ? (
+              <Badge tone="danger" dot>
+                Buyback active
+              </Badge>
+            ) : (
+              <Badge tone="success" dot>
+                Live listing
+              </Badge>
+            )}
           </div>
-          {property.locationDetailes && (
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
-              <svg
-                className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
-                />
-              </svg>
-              {property.locationDetailes}
-            </p>
-          )}
+          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
+            {property.locationDetailes && (
+              <span className="flex items-center gap-1.5">
+                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                </svg>
+                {property.locationDetailes}
+              </span>
+            )}
+            <span className="font-mono text-xs text-slate-400 dark:text-slate-500">Property ID #{property.propertyId}</span>
+          </div>
         </div>
       </div>
 
-      <div className="mb-6">
-        <StatusBanner buyBack={contractListingData.buyBack} />
-      </div>
+      {listing.buyBack && <div className="mb-6"><BuybackBanner /></div>}
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
-        {/* LEFT: carousel + details */}
+        {/* ---------------- LEFT COLUMN ---------------- */}
         <div className="space-y-6 lg:col-span-2">
-          <ImageCarousel images={property.propertyImages} />
+          <Gallery images={property.propertyImages} />
 
-          <Card className="p-6">
-            <SectionLabel>Property Details</SectionLabel>
-
+          {/* Key facts */}
+          <Card className="p-5 sm:p-6">
+            <SectionLabel>Property overview</SectionLabel>
             <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
-              <FactCard icon="id" label="Property ID" value={property.propertyId} />
-              <FactCard icon="size" label="Property Size" value={`${property.propertySize} sqft`} />
-              <FactCard icon="price" label="Underlying Asset Price" value={`$${property.propertyPrice}`} />
-              <FactCard icon="perToken" label="Price per Token" value={`$${contractListingData.pricePerToken}`} />
-              {contractListingData.buyBack && (
-                <FactCard icon="price" label="Buyback Price" value={`$${contractListingData.buyBackPrice}`} wide />
-              )}
-              <FactCard
-                icon="remaining"
-                label="Remaining Tokens"
-                value={`${contractListingData.remainingTokens} / ${contractListingData.totalShares}`}
-                wide
+              <FactItem icon="id" label="Property ID" value={`#${property.propertyId}`} />
+              <FactItem icon="size" label="Property size" value={property.propertySize ? `${formatNumber(property.propertySize)} sqft` : '—'} />
+              <FactItem icon="price" label="Underlying asset value" value={formatUsd(property.propertyPrice, 0)} />
+              <FactItem
+                icon="perToken"
+                label="Price per token"
+                value={listing.pricePerToken ? formatUsd(listing.pricePerToken) : '—'}
               />
-              <FactCard icon="location" label="Location" value={property.locationDetailes} wide />
-              <FactCard icon="features" label="Features" value={property.propertyFeatures} wide />
-              <FactCard icon="token" label="Token Address" value={contractListingData.shareToken} mono wide />
-            </div>
-
-            <div className="mt-6 space-y-3">
-              {property.offringDetailes && (
-                <AccordionSection
-                  title="Offering Details"
-                  defaultOpen
-                  icon={
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21"
-                    />
-                  }
-                >
-                  {property.offringDetailes}
-                </AccordionSection>
+              {listing.buyBack && (
+                <FactItem icon="price" label="Buyback price" value={formatUsd(listing.buyBackPrice)} />
               )}
-              {property.propertyDetailes && (
-                <AccordionSection
-                  title="Property Details"
-                  icon={
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z"
-                    />
-                  }
-                >
-                  {property.propertyDetailes}
-                </AccordionSection>
+              <FactItem
+                icon="total"
+                label="Total token supply"
+                value={listing.totalShares ? formatNumber(listing.totalShares) : '—'}
+              />
+              <FactItem
+                icon="remaining"
+                label="Available on marketplace"
+                value={
+                  listing.remainingTokens !== undefined
+                    ? `${formatNumber(listing.remainingTokens)} tokens`
+                    : '—'
+                }
+              />
+              <FactItem icon="location" label="Location" value={property.locationDetailes || '—'} />
+              {property.propertyFeatures && (
+                <FactItem icon="features" label="Features" value={property.propertyFeatures} className="sm:col-span-2" />
               )}
-              {property.propertyManagement && (
-                <AccordionSection
-                  title="Management Details"
-                  icon={
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                    />
-                  }
-                >
-                  {property.propertyManagement}
-                </AccordionSection>
-              )}
-              {property.propertyDocuments && (
-                <a
-                  href={property.propertyDocuments}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-xl border border-dashed border-indigo-300 px-4 py-3.5 text-sm font-semibold text-indigo-600 transition-colors hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-950/30"
-                >
-                  <svg
-                    className="h-4 w-4 shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"
-                    />
-                  </svg>
-                  View property documents
-                </a>
+              {listing.shareToken && (
+                <FactItem
+                  icon="token"
+                  label="Share token address"
+                  value={shortenAddress(listing.shareToken)}
+                  mono
+                  copyValue={listing.shareToken}
+                  className="sm:col-span-2"
+                />
               )}
             </div>
           </Card>
-        </div>
 
-        {/* RIGHT: trading rail */}
-        <div className="space-y-6 lg:sticky lg:top-6">
-          {contractListingData.buyBack ? (
-            <Card className="p-5">
-              <SectionLabel>Sell Tokens</SectionLabel>
-              <div className="mb-3 flex justify-between text-sm">
-                <span className="text-slate-500">Buyback Price</span>
-                <span className="font-medium text-slate-700 dark:text-slate-200">
-                  ${contractListingData.buyBackPrice}
-                </span>
+          {/* Story / docs */}
+          {(property.offringDetailes || property.propertyDetailes || property.propertyManagement) && (
+            <Card className="p-5 sm:p-6">
+              <SectionLabel>About this asset</SectionLabel>
+              <div className="space-y-3">
+                {property.offringDetailes && (
+                  <Accordion
+                    title="Offering details"
+                    defaultOpen
+                    icon={
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21" />
+                    }
+                  >
+                    {property.offringDetailes}
+                  </Accordion>
+                )}
+                {property.propertyDetailes && (
+                  <Accordion
+                    title="Property details"
+                    icon={
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
+                    }
+                  >
+                    {property.propertyDetailes}
+                  </Accordion>
+                )}
+                {property.propertyManagement && (
+                  <Accordion
+                    title="Management details"
+                    icon={
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    }
+                  >
+                    {property.propertyManagement}
+                  </Accordion>
+                )}
               </div>
-              <Input
-                type="number"
-                min="1"
-                value={sellingTokens}
-                onChange={(e) => setSellingTokens(e.target.value)}
-                placeholder="Enter amount"
-                className="mb-3"
-              />
-              <Button fullWidth onClick={sellBackTokensContract}>
-                Sell
-              </Button>
-            </Card>
-          ) : (
-            <Card className="p-5">
-              <SectionLabel>Buy Tokens</SectionLabel>
-              <div className="mb-2 flex justify-between text-sm">
-                <span className="text-slate-500">Price per Token</span>
-                <span className="font-medium text-slate-700 dark:text-slate-200">
-                  ${contractListingData.pricePerToken}
-                </span>
-              </div>
-              <div className="mb-4 flex justify-between text-sm">
-                <span className="text-slate-500">Remaining Tokens</span>
-                <span className="font-medium text-slate-700 dark:text-slate-200">
-                  {contractListingData.remainingTokens}
-                </span>
-              </div>
-              <Input
-                type="number"
-                min="1"
-                value={buyTokensAmount}
-                onChange={(e) => setBuyTokensAmount(e.target.value)}
-                placeholder="Enter amount"
-                className="mb-3"
-              />
-              <KycGate>
-                <Button fullWidth onClick={buyPropertyTokens}>
-                  Purchase
-                </Button>
-              </KycGate>
             </Card>
           )}
 
-          <Card className="p-5">
-            <SectionLabel>Limit Orders</SectionLabel>
-            {orders.length === 0 ? (
-              <p className="text-sm text-slate-500">No active orders found.</p>
-            ) : (
-              <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
-                {orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-800 dark:bg-slate-950"
-                  >
-                    <div className="mb-2 flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-xs text-slate-400 dark:text-slate-500">
-                          {order.seller.slice(0, 6)}...{order.seller.slice(-4)}
-                        </p>
-                        <p className="font-medium text-slate-700 dark:text-slate-200">
-                          {order.amount} tokens @ ${order.pricePerToken}
-                        </p>
-                      </div>
-                    </div>
+          {property.propertyDocuments && (
+            <a
+              href={property.propertyDocuments}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 px-4 py-3.5 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100/60 dark:border-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-sm dark:bg-slate-900 dark:text-indigo-400">
+                <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  {FACT_ICONS.doc}
+                </svg>
+              </span>
+              <span className="flex-1 text-left">View offering documents</span>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+              </svg>
+            </a>
+          )}
+        </div>
 
-                    {order.seller.toLowerCase() !== currentSigner.toLowerCase() ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min="1"
-                          className="w-full min-w-0 rounded border border-slate-300 bg-white p-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                          placeholder="Qty"
-                          value={buyAmounts[order.id] || ''}
-                          onChange={(e) => handleBuyAmountChange(order.id, e.target.value)}
-                        />
-                        {kycStatus && (
-                          <Button
-                            className="shrink-0 px-3 py-1.5"
-                            onClick={() => buyFromLimit(order.id, buyAmounts[order.id])}
-                          >
-                            Buy
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <Button
-                        variant="danger"
-                        fullWidth
-                        className="px-3 py-1.5"
-                        onClick={() => cancelLimitOrder(order.id)}
-                      >
-                        Cancel Order
-                      </Button>
-                    )}
+        {/* ---------------- RIGHT RAIL ---------------- */}
+        <div className="space-y-6 lg:sticky lg:top-24">
+          {listing.buyBack ? (
+            <Card className="p-5">
+              <SectionLabel>Sell back to treasury</SectionLabel>
+              <div className="mb-1 flex items-end justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
+                    Buyback price / token
+                  </p>
+                  <p className="text-2xl font-bold tracking-tight text-slate-900 tabular-nums dark:text-white">
+                    {formatUsd(listing.buyBackPrice)}
+                  </p>
+                </div>
+                <Badge tone="success" dot>
+                  Guaranteed
+                </Badge>
+              </div>
+              <p className="mb-4 mt-1 text-xs text-slate-400 dark:text-slate-500">
+                {formatNumber(listing.remainingTokens)} tokens still eligible for buyback.
+              </p>
+              <Input
+                type="number"
+                min="0"
+                value={sellingTokens}
+                onChange={(e) => setSellingTokens(e.target.value)}
+                placeholder="Number of tokens"
+                label="Tokens to sell"
+                className="mb-2"
+              />
+              {quickSellValue !== null && (
+                <p className="mb-4 rounded-lg bg-indigo-50/70 px-3 py-2 text-xs font-medium text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
+                  You will receive ≈ <strong>{formatUsd(quickSellValue)}</strong> stablecoin.
+                </p>
+              )}
+              <KycGate>
+                <Button fullWidth onClick={sellBackTokensContract}>
+                  Sell tokens back
+                </Button>
+              </KycGate>
+            </Card>
+          ) : (
+            <Card className="overflow-hidden">
+              <div className="bg-gradient-to-br from-indigo-600 to-violet-600 p-5 text-white dark:from-indigo-500 dark:to-violet-500">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold tracking-[0.12em] text-white/70 uppercase">Buy tokens</p>
+                    <p className="mt-1 text-[26px] leading-none font-bold tracking-tight tabular-nums">
+                      {formatUsd(listing.pricePerToken)}
+                    </p>
+                    <p className="mt-1 text-xs text-white/70">per token</p>
                   </div>
-                ))}
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182.552-.44 1.278-.659 2.003-.659.725 0 1.45.22 2.003.659L14.5 8.5" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5">
+                <div className="mb-1.5 flex items-center justify-between text-sm">
+                  <span className="text-slate-500 dark:text-slate-400">Available</span>
+                  <span className="font-semibold text-slate-700 tabular-nums dark:text-slate-200">
+                    {formatNumber(listing.remainingTokens)} / {formatNumber(listing.totalShares)} tokens
+                  </span>
+                </div>
+                <Progress value={soldPct} className="mb-5" showLabel />
+                <p className="-mt-3 mb-4 text-right text-[11px] text-slate-400 dark:text-slate-500">
+                  {formatNumber(soldPct, 0)}% of supply purchased
+                </p>
+
+                <Input
+                  type="number"
+                  min="0"
+                  value={buyTokensAmount}
+                  onChange={(e) => setBuyTokensAmount(e.target.value)}
+                  placeholder="e.g. 50"
+                  label="Tokens to buy"
+                  className="mb-2"
+                />
+
+                <div className="mb-4 flex items-center gap-1.5">
+                  <span className="mr-1 text-[11px] font-medium text-slate-400">Quick:</span>
+                  {quickAmounts.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setBuyTokensAmount(String(n))}
+                      className="cursor-pointer rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-indigo-700 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+
+                {quickBuyCost !== null && (
+                  <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-950/60">
+                    <span className="text-slate-500 dark:text-slate-400">Estimated total</span>
+                    <span className="font-bold text-slate-900 tabular-nums dark:text-white">
+                      {formatUsd(quickBuyCost)}
+                    </span>
+                  </div>
+                )}
+
+                <KycGate>
+                  <Button fullWidth size="lg" onClick={buyPropertyTokens}>
+                    Purchase tokens
+                  </Button>
+                </KycGate>
+              </div>
+            </Card>
+          )}
+
+          {/* Limit orders */}
+          <Card className="p-5">
+            <SectionLabel>Order book</SectionLabel>
+            {orders.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200 py-6 text-center text-sm text-slate-400 dark:border-slate-700 dark:text-slate-500">
+                No open sell orders right now
+              </div>
+            ) : (
+              <div className="tf-scroll max-h-80 space-y-2.5 overflow-y-auto pr-1">
+                {orders.map((order) => {
+                  const mine = order.seller.toLowerCase() === currentSigner.toLowerCase();
+                  return (
+                    <div
+                      key={order.id}
+                      className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-sm dark:border-slate-800 dark:bg-slate-950/50"
+                    >
+                      <div className="mb-2 flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-[10px] font-bold text-indigo-600 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:text-indigo-400 dark:ring-slate-700">
+                            {order.seller.slice(2, 4).toUpperCase()}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
+                              {shortenAddress(order.seller)}
+                              {mine && <span className="ml-1.5 font-sans font-semibold text-indigo-500">you</span>}
+                            </p>
+                            <p className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">
+                              {formatNumber(order.amount)} tokens @ {formatUsd(order.pricePerToken)}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                          #{order.id}
+                        </span>
+                      </div>
+
+                      {mine ? (
+                        <Button variant="outlineDanger" size="sm" fullWidth onClick={() => cancelLimitOrder(order.id)}>
+                          Cancel my order
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            value={buyAmounts[order.id] || ''}
+                            onChange={(e) => handleBuyAmountChange(order.id, e.target.value)}
+                            placeholder="Qty"
+                            className="h-8 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-2.5 text-sm text-slate-900 shadow-sm outline-none placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                          />
+                          {kycStatus ? (
+                            <Button size="sm" className="shrink-0" onClick={() => buyFromLimit(order.id, buyAmounts[order.id])}>
+                              Buy
+                            </Button>
+                          ) : (
+                            <Button variant="secondary" size="sm" className="shrink-0" onClick={handleCompleteKYCClick}>
+                              KYC
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </Card>
 
-          {!isOwner && !contractListingData.buyBack && (
+          {/* Create sell order */}
+          {!isOwner && !listing.buyBack && (
             <Card className="p-5">
-              <SectionLabel>Create Sell Order</SectionLabel>
-              <p className="-mt-2 mb-4 text-sm text-slate-500">List your tokens for sale on the order book.</p>
-              <Input
-                label="Amount to Sell"
-                type="number"
-                min="1"
-                value={orderSellAmount}
-                onChange={(e) => setOrderSellAmount(e.target.value)}
-                placeholder="Enter amount"
-                className="mb-3"
-              />
-              <Input
-                label="Price per Token"
-                type="number"
-                min="0"
-                value={opricePerToken}
-                onChange={(e) => setPricePerToken(e.target.value)}
-                placeholder="Enter price"
-                className="mb-4"
-              />
-              <KycGate>
-                <Button fullWidth onClick={createLimitOrder}>
-                  Create Sell Order
-                </Button>
-              </KycGate>
+              <SectionLabel>Create sell order</SectionLabel>
+              <p className="-mt-2 mb-4 text-sm text-slate-500 dark:text-slate-400">
+                List tokens you hold on the public order book at your own price.
+              </p>
+              <div className="space-y-3">
+                <Input
+                  label="Amount to sell"
+                  type="number"
+                  min="0"
+                  value={orderSellAmount}
+                  onChange={(e) => setOrderSellAmount(e.target.value)}
+                  placeholder="e.g. 100"
+                />
+                <Input
+                  label="Price per token (USDC)"
+                  type="number"
+                  min="0"
+                  value={opricePerToken}
+                  onChange={(e) => setPricePerToken(e.target.value)}
+                  placeholder="e.g. 42.50"
+                />
+                <KycGate>
+                  <Button fullWidth onClick={createLimitOrder}>
+                    Place sell order
+                  </Button>
+                </KycGate>
+              </div>
             </Card>
           )}
 
-          {(pAdmin || (isOwner && !contractListingData.buyBack)) && (
-            <div className="pt-2">
-              <p className="mb-3 flex items-center gap-2 text-[11px] font-semibold tracking-wide text-amber-600 uppercase dark:text-amber-500">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"
-                  />
-                </svg>
-                Owner controls
-              </p>
+          {/* Owner & admin controls */}
+          {(pAdmin || (isOwner && !listing.buyBack)) && (
+            <Card className="border-amber-200/70 bg-gradient-to-b from-amber-50/70 to-white p-5 dark:border-amber-900/50 dark:from-amber-950/20 dark:to-slate-900">
+              <div className="mb-4 flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Owner controls</p>
+                  <p className="text-xs text-amber-600/80 dark:text-amber-400/70">
+                    Sensitive on-chain actions — double check before confirming
+                  </p>
+                </div>
+              </div>
 
-              <div className="space-y-6">
+              <div className="space-y-5">
                 {pAdmin && (
-                  <Card className="border-amber-200 bg-amber-50/40 p-5 dark:border-amber-900/60 dark:bg-amber-950/10">
-                    <SectionLabel>Admin · Update Token Price</SectionLabel>
-                    <div className="mb-3 flex justify-between text-sm">
-                      <span className="text-slate-500">Current Price</span>
-                      <span className="font-medium text-slate-700 dark:text-slate-200">
-                        ${contractListingData.pricePerToken}
+                  <div>
+                    <SectionLabel>Update token price</SectionLabel>
+                    <div className="mb-2 flex items-center justify-between text-sm">
+                      <span className="text-slate-500 dark:text-slate-400">Current price per token</span>
+                      <span className="font-semibold text-slate-700 tabular-nums dark:text-slate-200">
+                        {formatUsd(listing.pricePerToken)}
                       </span>
                     </div>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={newPropAmount}
-                      onChange={(e) => setNewPropAmount(e.target.value)}
-                      placeholder="Enter amount"
-                      className="mb-3"
-                    />
-                    <Button fullWidth onClick={changePropertyPriceAdm}>
-                      Update
-                    </Button>
-                  </Card>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={newPropAmount}
+                        onChange={(e) => setNewPropAmount(e.target.value)}
+                        placeholder="New price"
+                      />
+                      <Button variant="secondary" className="shrink-0" onClick={changePropertyPriceAdm}>
+                        Update
+                      </Button>
+                    </div>
+                  </div>
                 )}
 
-                {isOwner && !contractListingData.buyBack && (
-                  <Card className="border-amber-200 bg-amber-50/40 p-5 dark:border-amber-900/60 dark:bg-amber-950/10">
-                    <SectionLabel>Initiate Buyback Program</SectionLabel>
-                    <div className="mb-3 flex justify-between text-sm">
-                      <span className="text-slate-500">Current Price</span>
-                      <span className="font-medium text-slate-700 dark:text-slate-200">
-                        ${contractListingData.pricePerToken}
-                      </span>
-                    </div>
+                {isOwner && !listing.buyBack && (
+                  <div className="border-t border-amber-200/60 pt-4 dark:border-amber-900/40">
+                    <SectionLabel tone="red">Initiate buyback</SectionLabel>
+                    <p className="-mt-2 mb-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                      Delist the property and let holders sell back at your chosen price (recommended ≥ 10% above the
+                      current price).
+                    </p>
                     <Input
                       type="number"
-                      min="1"
+                      min="0"
                       value={bbPrice}
                       onChange={(e) => setBBPrice(e.target.value)}
-                      placeholder="Enter new buyback amount"
+                      placeholder="Buyback price per token"
                       className="mb-2"
                     />
-                    <p className="mb-3 text-xs text-slate-500">
-                      New buyback amount should be at least 10% more than the current price.
-                    </p>
-                    <Button fullWidth onClick={ownerBuyBack}>
-                      Initiate
+                    <Button variant="danger" fullWidth onClick={ownerBuyBack}>
+                      Delist & activate buyback
                     </Button>
-                  </Card>
+                  </div>
                 )}
               </div>
-            </div>
+            </Card>
           )}
         </div>
       </div>
 
-      {showPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <Card className="w-96 p-6">
-            <h2 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Enter Email for KYC</h2>
-            <Input
-              type="email"
-              placeholder="you@example.com"
-              value={refId}
-              onChange={(e) => setRefId(e.target.value)}
-              className="mb-4"
-            />
-            <Button id="blockpass-kyc-connect-button" fullWidth onClick={handleKycSubmit}>
-              Start KYC
-            </Button>
-          </Card>
+      {/* KYC dialog */}
+      <Dialog
+        open={showPopup}
+        onClose={() => setShowPopup(false)}
+        title="Verify your identity"
+        description="KYC is required to buy and sell tokens. Enter the reference you used (e.g. your email) and continue with Blockpass."
+      >
+        <Input
+          type="email"
+          label="Reference ID (email)"
+          placeholder="you@example.com"
+          value={refId}
+          onChange={(e) => setRefId(e.target.value)}
+        />
+        <div className="mt-5 flex gap-2">
+          <Button variant="secondary" className="flex-1" onClick={() => setShowPopup(false)}>
+            Cancel
+          </Button>
+          <Button id="blockpass-kyc-connect-button" className="flex-1" onClick={handleKycSubmit} loading={isSubmitting}>
+            Continue with Blockpass
+          </Button>
         </div>
-      )}
+      </Dialog>
     </AppLayout>
   );
 };

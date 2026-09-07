@@ -1,18 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
+import { motion } from 'motion/react';
 import AppLayout from '../components/layout/AppLayout';
 import PropertyCard from '../components/property/PropertyCard';
+import PropertyGridSkeleton from '../components/property/PropertyGridSkeleton';
 import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import Spinner from '../components/ui/Spinner';
 import EmptyState from '../components/ui/EmptyState';
+import Badge from '../components/ui/Badge';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
+import { formatNumber, formatUsd, shortenAddress } from '../lib/utils';
 
 const DEFAULT_LISTING_PRICE = 40;
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+};
+const rise = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.32, ease: 'easeOut' } },
+};
 
 const ListMarketplacePage = () => {
   const [properties, setProperties] = useState([]);
@@ -21,6 +34,13 @@ const ListMarketplacePage = () => {
   const [fractionalEvents, setFractionalEvents] = useState({});
   const [tokensInputs, setTokenInputs] = useState({});
   const [userTokenBalances, setUserTokenBalances] = useState([]);
+  const [busyId, setBusyId] = useState(null);
+
+  const totals = useMemo(() => {
+    let balance = 0;
+    for (const t of userTokenBalances) balance += Number(t.balance) || 0;
+    return { count: userTokenBalances.length, balance };
+  }, [userTokenBalances]);
 
   const fetchProperties = async (address) => {
     try {
@@ -90,11 +110,12 @@ const ListMarketplacePage = () => {
 
   const listToMarketplace = async (tokenId) => {
     const inputValue = tokensInputs[tokenId];
-    if (!inputValue) {
+    if (!inputValue || Number(inputValue) <= 0) {
       toast.error('Please enter the number of tokens to list.');
       return;
     }
 
+    setBusyId(tokenId);
     try {
       const signer = await web3Service.getSigner();
       const tokensToListForProp = ethers.utils.parseUnits(inputValue.toString(), 18);
@@ -134,10 +155,13 @@ const ListMarketplacePage = () => {
       }));
 
       toast.success('Successfully listed to marketplace!');
+      setTokenInputs((prev) => ({ ...prev, [tokenId]: '' }));
       fetchUserTokenBalance();
     } catch (error) {
       console.error('Error listing tokens:', error);
       toast.error('Transaction Failed.');
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -168,11 +192,17 @@ const ListMarketplacePage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [properties, userAddress]);
 
+  const balanceFor = (id) => {
+    const found = userTokenBalances.find((b) => b.propertyId === id);
+    return found ? found.balance : '0';
+  };
+
   return (
     <AppLayout>
       <PageHeader
+        eyebrow="Your assets"
         title="List to Marketplace"
-        description="Make your fractionalized property shares available for purchase."
+        description="Put your fractional shares up for sale. Shares are listed at a $40 default price per token and buyers pay with USDC."
         icon={
           <path
             strokeLinecap="round"
@@ -181,62 +211,142 @@ const ListMarketplacePage = () => {
           />
         }
       />
-      {loading ? (
-        <Spinner words={['properties', 'balances', 'listings', 'properties']} />
-      ) : properties.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {properties.map((prop) => {
-            const tokenBalanceObj = userTokenBalances.find((b) => b.propertyId === prop.propertyId);
-            const availableBalance = tokenBalanceObj ? tokenBalanceObj.balance : '0';
 
+      {!loading && (
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          <StatCard
+            label="Fractionalized assets"
+            value={formatNumber(properties.length, 0)}
+            tone="brand"
+            icon={<ListIcon />}
+          />
+          <StatCard
+            label="Shares you hold"
+            value={formatNumber(totals.balance, 0)}
+            sub="across your portfolio"
+            tone="success"
+            icon={<CoinsIcon />}
+          />
+          <StatCard
+            label="Default listing price"
+            value={formatUsd(DEFAULT_LISTING_PRICE)}
+            sub="per token (USDC)"
+            tone="warning"
+            icon={<PriceIcon />}
+          />
+        </div>
+      )}
+
+      {loading ? (
+        <PropertyGridSkeleton />
+      ) : properties.length > 0 ? (
+        <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          {properties.map((prop) => {
+            const availableBalance = balanceFor(prop.propertyId);
+            const listingDone = fractionalEvents[prop.propertyId];
             return (
-              <PropertyCard key={prop.propertyId} property={prop}>
-                <div className="space-y-3 border-t border-slate-200 pt-2 dark:border-slate-800">
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Your balance:{' '}
-                    <span className="font-medium text-slate-700 dark:text-slate-200">{availableBalance}</span>
-                  </p>
-                  <Input
-                    label="Tokens to list"
-                    type="number"
-                    placeholder="e.g. 500"
-                    value={tokensInputs[prop.propertyId] || ''}
-                    onChange={(e) => handleInputChange(prop.propertyId, e.target.value)}
-                  />
-                  <Button fullWidth onClick={() => listToMarketplace(prop.propertyId)}>
-                    List Property
-                  </Button>
-                  <p className="text-xs text-slate-500">
-                    Default listing price is{' '}
-                    <span className="font-medium text-slate-600 dark:text-slate-300">${DEFAULT_LISTING_PRICE}</span> per
-                    share.
-                  </p>
-                  {fractionalEvents[prop.propertyId] && (
-                    <div className="space-y-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs break-all text-emerald-700 dark:text-emerald-300">
-                      <p>
-                        <span className="text-emerald-600/70 dark:text-emerald-400/70">Share Token:</span>{' '}
-                        {fractionalEvents[prop.propertyId].shareToken}
-                      </p>
-                      <p>
-                        <span className="text-emerald-600/70 dark:text-emerald-400/70">Total Listed:</span>{' '}
-                        {fractionalEvents[prop.propertyId].totalShares}
-                      </p>
-                      <p>
-                        <span className="text-emerald-600/70 dark:text-emerald-400/70">Price/Token:</span> $
-                        {fractionalEvents[prop.propertyId].pricePerToken}
+              <motion.div key={prop.propertyId} variants={rise} className="h-full">
+                <PropertyCard property={prop}>
+                  {listingDone ? (
+                    <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-3.5 dark:border-emerald-900/60 dark:bg-emerald-950/30">
+                      <div className="mb-2 flex items-center justify-between">
+                        <Badge tone="success" dot>
+                          Live on marketplace
+                        </Badge>
+                        <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                          {formatNumber(listingDone.remainingTokens)} remaining
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-xs text-emerald-800/80 dark:text-emerald-200/70">
+                        <p className="flex items-center justify-between">
+                          <span>Price per token</span>
+                          <span className="font-mono font-semibold">{formatUsd(listingDone.pricePerToken)}</span>
+                        </p>
+                        <p className="truncate">
+                          <span className="mr-1.5 text-emerald-700/60 dark:text-emerald-300/50">Token</span>
+                          {shortenAddress(listingDone.shareToken, 10, 6)}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between rounded-xl bg-indigo-50/70 px-3.5 py-2.5 text-[13px] dark:bg-indigo-500/10">
+                        <span className="font-medium text-slate-500 dark:text-slate-400">Your balance</span>
+                        <span className="font-bold text-indigo-700 tabular-nums dark:text-indigo-300">
+                          {formatNumber(availableBalance)} tokens
+                        </span>
+                      </div>
+                      <Input
+                        label="Tokens to list"
+                        type="number"
+                        min="0"
+                        placeholder="e.g. 500"
+                        value={tokensInputs[prop.propertyId] || ''}
+                        onChange={(e) => handleInputChange(prop.propertyId, e.target.value)}
+                        hint={
+                          Number(availableBalance) > 0
+                            ? `Available: ${formatNumber(availableBalance)} tokens`
+                            : 'No share balance found for this wallet'
+                        }
+                      />
+                      <Button
+                        fullWidth
+                        disabled={Number(availableBalance) <= 0}
+                        loading={busyId === prop.propertyId}
+                        onClick={() => listToMarketplace(prop.propertyId)}
+                      >
+                        List at ${DEFAULT_LISTING_PRICE}/token
+                      </Button>
+                      <p className="text-center text-[11px] text-slate-400 dark:text-slate-500">
+                        Approve the marketplace, then the shares go live instantly
                       </p>
                     </div>
                   )}
-                </div>
-              </PropertyCard>
+                </PropertyCard>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       ) : (
-        <EmptyState>No fractionalized properties found for this wallet.</EmptyState>
+        <EmptyState
+          title="No fractionalized assets found"
+          action={
+            <Button variant="soft" size="sm" onClick={() => (window.location.href = '/fractionalize-property')}>
+              Fractionalize a property
+            </Button>
+          }
+        >
+          Properties appear here once they are fractionalized and owned by your connected wallet.
+        </EmptyState>
       )}
     </AppLayout>
   );
 };
+
+const ListIcon = () => (
+  <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M3 3h1.5v3A2.25 2.25 0 0 0 6.75 8.25h13.5m-13.5 0a2.25 2.25 0 0 1-2.25 2.25m13.5 0v3a2.25 2.25 0 0 1-2.25 2.25H10.5m-9 9h6m0 0v-6m0 6H3m3 0a2.25 2.25 0 0 1-2.25-2.25V15m13.5-9.75v-1.5A2.25 2.25 0 0 0 15 2.25H9a2.25 2.25 0 0 0-2.25 2.25v1.5"
+    />
+  </svg>
+);
+
+const CoinsIcon = () => (
+  <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"
+    />
+  </svg>
+);
+
+const PriceIcon = () => (
+  <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182.552-.44 1.278-.659 2.003-.659.725 0 1.45.22 2.003.659L14.5 8.5" />
+  </svg>
+);
 
 export default ListMarketplacePage;

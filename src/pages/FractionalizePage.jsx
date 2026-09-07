@@ -1,27 +1,39 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
+import { motion } from 'motion/react';
 import AppLayout from '../components/layout/AppLayout';
 import PropertyCard from '../components/property/PropertyCard';
+import PropertyGridSkeleton from '../components/property/PropertyGridSkeleton';
 import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
 import Button from '../components/ui/Button';
-import Spinner from '../components/ui/Spinner';
 import EmptyState from '../components/ui/EmptyState';
+import Badge from '../components/ui/Badge';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
 import usePropertiesFilteredBy from '../hooks/usePropertiesFilteredBy';
 import { getContractErrorMessage } from '../utils/web3Errors';
-
-const SHARES_PER_DOLLAR_DIVISOR = 40;
+import { expectedShares, formatNumber, formatUsd, shortenAddress } from '../lib/utils';
 
 const isNotFractionalized = async (property, propertyNftContract) => {
   const isFrac = await propertyNftContract.isFractionalized(property.propertyId);
   return !isFrac;
 };
 
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+};
+const rise = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.32, ease: 'easeOut' } },
+};
+
 const FractionalizePage = () => {
   const [userAddress, setUserAddress] = useState('');
   const [fractionalEvents, setFractionalEvents] = useState({});
+  const [busyId, setBusyId] = useState(null);
 
   const { properties, loading } = usePropertiesFilteredBy(
     () => (userAddress ? propertyApi.getOwnerProperties(userAddress) : Promise.resolve({ properties: [] })),
@@ -30,7 +42,18 @@ const FractionalizePage = () => {
     [userAddress],
   );
 
+  const totals = useMemo(() => {
+    let value = 0;
+    let shares = 0;
+    for (const p of properties) {
+      value += Number(p.propertyPrice) || 0;
+      shares += expectedShares(p.propertyPrice);
+    }
+    return { value, shares };
+  }, [properties]);
+
   const fractionalize = async (tokenId, complianceAddress) => {
+    setBusyId(tokenId);
     try {
       const propertyNftContract = await web3Service.getPropertyNftContract();
       const approveTx = await propertyNftContract.approve(contractsConfig.vault.address, tokenId);
@@ -54,6 +77,8 @@ const FractionalizePage = () => {
     } catch (error) {
       console.error('Error in Fractionalize:', error);
       toast.error(getContractErrorMessage(error, 'Fractionalization failed. Please try again.'));
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -70,8 +95,9 @@ const FractionalizePage = () => {
   return (
     <AppLayout>
       <PageHeader
+        eyebrow="Your assets"
         title="Fractionalize Property"
-        description="Split your tokenized properties into tradable fractional shares."
+        description="Split a tokenized property into a compliant share token. Fractionalized assets can then be listed on the marketplace or traded via the order book."
         icon={
           <path
             strokeLinecap="round"
@@ -80,48 +106,130 @@ const FractionalizePage = () => {
           />
         }
       />
-      {loading ? (
-        <Spinner words={['properties', 'shares', 'tokens', 'properties']} />
-      ) : properties.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {properties.map((prop) => (
-            <PropertyCard key={prop.propertyId} property={prop}>
-              <div className="space-y-3 border-t border-slate-200 pt-2 dark:border-slate-800">
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Yields{' '}
-                  <span className="font-medium text-slate-700 dark:text-slate-200">
-                    {Math.floor(Number(prop.propertyPrice) / SHARES_PER_DOLLAR_DIVISOR)}
-                  </span>{' '}
-                  fractional tokens
-                </p>
-                {!fractionalEvents[prop.propertyId] ? (
-                  <Button fullWidth onClick={() => fractionalize(prop.propertyId, prop.complianceAddress)}>
-                    Fractionalize Property
-                  </Button>
-                ) : (
-                  <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Fractionalized</p>
-                )}
-                {fractionalEvents[prop.propertyId] && (
-                  <div className="space-y-1 text-xs break-all text-slate-500">
-                    <p>
-                      <span className="text-slate-500 dark:text-slate-400">Share Token:</span>{' '}
-                      {fractionalEvents[prop.propertyId].shareToken}
-                    </p>
-                    <p>
-                      <span className="text-slate-500 dark:text-slate-400">Total Shares:</span>{' '}
-                      {fractionalEvents[prop.propertyId].totalShares}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </PropertyCard>
-          ))}
+
+      {!loading && (
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          <StatCard
+            label="Eligible properties"
+            value={formatNumber(properties.length, 0)}
+            tone="brand"
+            icon={<ChipIcon />}
+          />
+          <StatCard
+            label="Shares to be created"
+            value={formatNumber(totals.shares, 0)}
+            sub="at $1 / 40-token issuance"
+            tone="success"
+            icon={<CoinsIcon />}
+          />
+          <StatCard
+            label="Asset value unlocking"
+            value={formatUsd(totals.value, 0)}
+            sub="across eligible properties"
+            tone="warning"
+            icon={<TrendIcon />}
+          />
         </div>
+      )}
+
+      {loading ? (
+        <PropertyGridSkeleton />
+      ) : properties.length > 0 ? (
+        <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          {properties.map((prop) => {
+            const done = fractionalEvents[prop.propertyId];
+            return (
+              <motion.div key={prop.propertyId} variants={rise} className="h-full">
+                <PropertyCard property={prop}>
+                  {done ? (
+                    <SuccessPanel
+                      shareToken={done.shareToken}
+                      totalShares={done.totalShares}
+                      caption="This property is now fractionalized. List it on the marketplace to start selling shares."
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between rounded-xl bg-indigo-50/70 px-3.5 py-2.5 text-[13px] dark:bg-indigo-500/10">
+                        <span className="font-medium text-slate-500 dark:text-slate-400">Share supply created</span>
+                        <span className="font-bold text-indigo-700 tabular-nums dark:text-indigo-300">
+                          {expectedShares(prop.propertyPrice).toLocaleString()} tokens
+                        </span>
+                      </div>
+                      <Button fullWidth loading={busyId === prop.propertyId} onClick={() => fractionalize(prop.propertyId, prop.complianceAddress)}>
+                        Fractionalize property
+                      </Button>
+                      <p className="text-center text-[11px] text-slate-400 dark:text-slate-500">
+                        Approve the NFT, then the vault mints the share token
+                      </p>
+                    </div>
+                  )}
+                </PropertyCard>
+              </motion.div>
+            );
+          })}
+        </motion.div>
       ) : (
-        <EmptyState>No tokenized properties available to fractionalize.</EmptyState>
+        <EmptyState
+          title="No properties ready to fractionalize"
+          action={
+            <Button variant="soft" size="sm" onClick={() => (window.location.href = '/tokenize-property')}>
+              Tokenize a property first
+            </Button>
+          }
+        >
+          You don’t own any tokenized properties yet. Once an asset NFT is minted to your wallet it will appear here.
+        </EmptyState>
       )}
     </AppLayout>
   );
 };
+
+/* Shared success panel used by several asset pages */
+const SuccessPanel = ({ shareToken, totalShares, caption, label = 'Completed' }) => (
+  <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/60 p-3.5 dark:border-emerald-900/60 dark:bg-emerald-950/30">
+    <div className="mb-2 flex items-center justify-between">
+      <Badge tone="success" dot>
+        {label}
+      </Badge>
+      {totalShares && (
+        <span className="text-xs font-semibold text-emerald-700 tabular-nums dark:text-emerald-300">
+          {formatNumber(totalShares)} shares
+        </span>
+      )}
+    </div>
+    {shareToken && (
+      <p className="truncate font-mono text-[11px] text-emerald-700/80 dark:text-emerald-300/70">
+        {shortenAddress(shareToken, 10, 6)}
+      </p>
+    )}
+    {caption && <p className="mt-2 text-xs leading-relaxed text-emerald-800/80 dark:text-emerald-200/70">{caption}</p>}
+  </div>
+);
+
+const ChipIcon = () => (
+  <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"
+    />
+  </svg>
+);
+
+const CoinsIcon = () => (
+  <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"
+    />
+  </svg>
+);
+
+const TrendIcon = () => (
+  <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
+  </svg>
+);
 
 export default FractionalizePage;

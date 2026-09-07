@@ -17,6 +17,7 @@
     "axios": "^1.10.0",
     "ethers": "^5.7.0",
     "flowbite": "^3.1.2",
+    "motion": "^13.2.0",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

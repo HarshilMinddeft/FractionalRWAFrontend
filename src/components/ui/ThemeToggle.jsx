@@ -1,7 +1,8 @@
 import { useTheme } from '../../context/ThemeContext';
+import { cn } from '../../lib/utils';
 
 const SunIcon = () => (
-  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -11,7 +12,7 @@ const SunIcon = () => (
 );
 
 const MoonIcon = () => (
-  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -20,14 +21,19 @@ const MoonIcon = () => (
   </svg>
 );
 
-const ThemeToggle = () => {
+/** Icon toggle — positioning is controlled by the caller. */
+const ThemeToggle = ({ className }) => {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <button
+      type="button"
       onClick={toggleTheme}
       aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="fixed right-5 bottom-5 z-40 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-lg transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+      className={cn(
+        'inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-150 hover:border-slate-300 hover:text-slate-800 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-100',
+        className,
+      )}
     >
       {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
     </button>

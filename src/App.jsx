@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import TokenizePropertyPage from './pages/TokenizePropertyPage';
 import FractionalizePage from './pages/FractionalizePage';
@@ -19,6 +19,9 @@ const LegacyPropertyRedirect = () => {
 };
 
 function App() {
+  const location = useLocation();
+  const isHome = location.pathname === ROUTES.home;
+
   return (
     <>
       <Routes>
@@ -34,7 +37,12 @@ function App() {
 
         <Route path="/property/:id" element={<LegacyPropertyRedirect />} />
       </Routes>
-      <ThemeToggle />
+
+      {isHome && (
+        <div className="fixed right-5 bottom-5 z-[60]">
+          <ThemeToggle className="h-11 w-11 rounded-full shadow-lg" />
+        </div>
+      )}
     </>
   );
 }
