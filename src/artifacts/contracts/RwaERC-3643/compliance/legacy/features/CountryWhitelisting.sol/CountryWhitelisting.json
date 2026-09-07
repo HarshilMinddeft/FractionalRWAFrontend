@@ -1,8 +1,30 @@
 {
-  "_format": "hh-sol-artifact-1",
+  "_format": "hh3-artifact-1",
   "contractName": "CountryWhitelisting",
   "sourceName": "contracts/RwaERC-3643/compliance/legacy/features/CountryWhitelisting.sol",
   "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnableInvalidOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "OwnableUnauthorizedAccount",
+      "type": "error"
+    },
     {
       "anonymous": false,
       "inputs": [
@@ -499,5 +521,8 @@
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "linkReferences": {},
-  "deployedLinkReferences": {}
+  "deployedLinkReferences": {},
+  "immutableReferences": {},
+  "inputSourceName": "project/contracts/RwaERC-3643/compliance/legacy/features/CountryWhitelisting.sol",
+  "buildInfoId": "solc-0_8_24-fc5ea78e55132e6805ee09555bc3461228064b66"
 }

@@ -8,23 +8,30 @@ const api = axios.create({
   },
 });
 
+/**
+ * Every read endpoint wraps its payload as { success, message, data }.
+ * Callers want the payload itself (e.g. { properties: [...] }), so unwrap
+ * it here once rather than in each page.
+ */
+const unwrap = (response) => response.data?.data ?? response.data;
+
 export const propertyApi = {
   // Fetch properties owned by address
   getOwnerProperties: async (ownerAddress) => {
     const response = await api.get(`/Properties/getOwnerProperty?ownerAddress=${ownerAddress}`);
-    return response.data;
+    return unwrap(response);
   },
 
   // Fetch all marketplace properties summary
   getAllMarketplaceProperties: async () => {
     const response = await api.get(`/Properties/marketPlace/getAllPropertiesSummary`);
-    return response.data;
+    return unwrap(response);
   },
 
   // Fetch single property details by ID
   getPropertyById: async (propertyId) => {
     const response = await api.get(`/Properties/marketPlace/getPropertyById/${propertyId}`);
-    return response.data;
+    return unwrap(response);
   },
 
   // Register new user
@@ -38,13 +45,13 @@ export const propertyApi = {
     const response = await axios.post(`${envConfig.apiBaseUrl}/api/Properties/nftUpload`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    return response.data;
+    return unwrap(response);
   },
 
   // Upload metadata JSON to IPFS via backend
   uploadMetadata: async (metadataJSON) => {
     const response = await api.post(`/Properties/metadataUpload`, metadataJSON);
-    return response.data;
+    return unwrap(response);
   },
 
   // Store property entry in backend DB

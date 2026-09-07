@@ -1,5 +1,5 @@
 {
-  "_format": "hh-sol-artifact-1",
+  "_format": "hh3-artifact-1",
   "contractName": "ITREXGateway",
   "sourceName": "contracts/RwaERC-3643/factory/ITREXGateway.sol",
   "abi": [
@@ -585,5 +585,8 @@
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "linkReferences": {},
-  "deployedLinkReferences": {}
+  "deployedLinkReferences": {},
+  "immutableReferences": {},
+  "inputSourceName": "project/contracts/RwaERC-3643/factory/ITREXGateway.sol",
+  "buildInfoId": "solc-0_8_24-fc5ea78e55132e6805ee09555bc3461228064b66"
 }

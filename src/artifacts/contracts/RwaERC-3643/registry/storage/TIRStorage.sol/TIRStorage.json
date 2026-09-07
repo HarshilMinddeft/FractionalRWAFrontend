@@ -1,10 +1,13 @@
 {
-  "_format": "hh-sol-artifact-1",
+  "_format": "hh3-artifact-1",
   "contractName": "TIRStorage",
   "sourceName": "contracts/RwaERC-3643/registry/storage/TIRStorage.sol",
   "abi": [],
-  "bytecode": "0x6080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea26469706673582212200f95ff6cdc122ac2801322fc4b55813ccbb0946f73a79ccf23cbe86f15a54be564736f6c63430008140033",
-  "deployedBytecode": "0x6080604052600080fdfea26469706673582212200f95ff6cdc122ac2801322fc4b55813ccbb0946f73a79ccf23cbe86f15a54be564736f6c63430008140033",
+  "bytecode": "0x6080604052348015600e575f80fd5b50603e80601a5f395ff3fe60806040525f80fdfea2646970667358221220dd1b828958bfac728c0454d72353bb8465b683f887e0c5daf58051f28a4010da64736f6c63430008180033",
+  "deployedBytecode": "0x60806040525f80fdfea2646970667358221220dd1b828958bfac728c0454d72353bb8465b683f887e0c5daf58051f28a4010da64736f6c63430008180033",
   "linkReferences": {},
-  "deployedLinkReferences": {}
+  "deployedLinkReferences": {},
+  "immutableReferences": {},
+  "inputSourceName": "project/contracts/RwaERC-3643/registry/storage/TIRStorage.sol",
+  "buildInfoId": "solc-0_8_24-fc5ea78e55132e6805ee09555bc3461228064b66"
 }

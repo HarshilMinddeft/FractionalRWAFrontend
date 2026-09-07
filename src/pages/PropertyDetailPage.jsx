@@ -10,8 +10,22 @@ import Spinner from '../components/ui/Spinner';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
-import envConfig from '../config/env.config';
+import { ROUTES } from '../config/routes';
+import { useWeb3 } from '../context/Web3Context';
 import { getContractErrorMessage } from '../utils/web3Errors';
+import {
+  formatShares,
+  formatStable,
+  parseShares,
+  parseStable,
+  sharesTimesPrice,
+} from '../utils/units';
+
+/**
+ * Upper bound used only when the FeeManager can't be read; the marketplace
+ * transfers the real fee, so approving this much is safe, never binding.
+ */
+const FEE_FALLBACK_BPS = 500;
 
 const SectionLabel = ({ children }) => (
   <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-4">
@@ -179,19 +193,23 @@ const ImageCarousel = ({ images = [] }) => {
   );
 };
 
-const StatusBanner = ({ buyBack }) =>
+const StatusBanner = ({ buyBack, buyBackPrice }) =>
   buyBack ? (
-    <Card className="p-4 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 flex items-center gap-2">
+    <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 flex items-start gap-2.5">
       <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
       </svg>
-      <strong>The owner has delisted this property.</strong>
+      <span className="text-sm">
+        <strong>Buyback in progress.</strong> The owner has escrowed funds to repurchase shares at $
+        {buyBackPrice} each. New purchases are paused — you can sell your shares back at that price.
+      </span>
     </Card>
   ) : null;
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { address: currentSigner } = useWeb3();
 
   const [property, setProperty] = useState(null);
   const [buyTokensAmount, setBuyTokensAmount] = useState('');
@@ -200,10 +218,6 @@ const PropertyDetailPage = () => {
   const [contractListingData, setContractListingData] = useState('');
   const [orders, setOrders] = useState([]);
   const [buyAmounts, setBuyAmounts] = useState({});
-  const [pAdmin, setPAdmin] = useState('');
-  const [newPropAmount, setNewPropAmount] = useState('');
-  const [currentSigner, setCurrentSigner] = useState('');
-  const [bbPrice, setBBPrice] = useState('');
   const [sellingTokens, setSellingTokens] = useState('');
   const [refId, setRefId] = useState('');
   const [kycStatus, setKycStatus] = useState(false);
@@ -252,47 +266,62 @@ const PropertyDetailPage = () => {
       const checkListing = await marketplaceContract.listings(id);
       const listingData = {
         shareToken: checkListing.propertyToken,
-        totalShares: Number(ethers.utils.formatUnits(checkListing.totalTokens, 18)).toString(),
-        pricePerToken: Number(ethers.utils.formatUnits(checkListing.pricePerToken, 6)).toString(),
-        remainingTokens: Number(ethers.utils.formatUnits(checkListing.remainingTokens, 18)).toString(),
-        buyBackPrice: Number(ethers.utils.formatUnits(checkListing.buyBackPrice, 6)).toString(),
+        totalShares: formatShares(checkListing.totalTokens),
+        pricePerToken: formatStable(checkListing.pricePerToken),
+        remainingTokens: formatShares(checkListing.remainingTokens),
+        buyBackPrice: formatStable(checkListing.buyBackPrice),
         buyBack: checkListing.buyBack,
       };
       setContractListingData(listingData);
-
-      const address = await web3Service.getWalletAddress();
-      if (address) {
-        setCurrentSigner(address);
-        if (address === envConfig.adminWalletAddress) {
-          setPAdmin(address);
-        }
-
-        try {
-          const provider = web3Service.getProvider();
-          const identityRegistryCheck = new ethers.Contract(
-            contractsConfig.identityRegistry.address,
-            contractsConfig.identityRegistry.abi,
-            provider
-          );
-          const kycCheck = await identityRegistryCheck.isVerified(address);
-          setKycStatus(kycCheck);
-        } catch (kycErr) {
-          console.error('KYC check error:', kycErr);
-        }
-      }
     } catch (err) {
       console.error('Error fetching property details:', err);
     }
   };
 
+  /**
+   * Sale fee the marketplace will pull from the buyer on top of the price.
+   * Read from the FeeManager the marketplace points at; if that read fails
+   * we fall back to the maximum plausible fee so the approval is never short
+   * (an over-approval is harmless — the contract only transfers the real fee).
+   */
+  const estimateSaleFee = async (totalPrice) => {
+    try {
+      const provider = web3Service.getReadOnlyProvider();
+      const marketplace = web3Service.getReadOnlyMarketplaceContract();
+      const feeManager = new ethers.Contract(
+        await marketplace.feeManager(),
+        contractsConfig.feeManager.abi,
+        provider
+      );
+
+      const version = await feeManager.currentFeeVersion();
+      const [config, denominator] = await Promise.all([
+        feeManager.getFeeConfig(version),
+        feeManager.BPS_DENOMINATOR(),
+      ]);
+      return totalPrice.mul(config.saleFeeBps).div(denominator);
+    } catch (err) {
+      console.error('Could not read sale fee, approving a safe upper bound:', err);
+      return totalPrice.mul(FEE_FALLBACK_BPS).div(10000);
+    }
+  };
+
   const buyPropertyTokens = async () => {
     try {
-      const tokensToBuy = ethers.utils.parseUnits(buyTokensAmount.toString(), 18);
+      const tokensToBuy = parseShares(buyTokensAmount);
+
+      // The marketplace pulls the sale price *and* the sale fee from the
+      // buyer, so the allowance has to cover both — approving only the
+      // token amount leaves the fee transfer to revert.
+      const marketplaceRead = web3Service.getReadOnlyMarketplaceContract();
+      const listing = await marketplaceRead.listings(id);
+      const totalPrice = sharesTimesPrice(tokensToBuy, listing.pricePerToken);
+      const feeAllowance = await estimateSaleFee(totalPrice);
 
       const stableCoinContract = await web3Service.getStableCoinContract();
       const approveTx = await stableCoinContract.approve(
         contractsConfig.marketplace.address,
-        tokensToBuy
+        totalPrice.add(feeAllowance)
       );
       await approveTx.wait();
 
@@ -324,8 +353,8 @@ const PropertyDetailPage = () => {
             id: order.id.toString(),
             token: order.token,
             seller: order.seller,
-            amount: Number(ethers.utils.formatUnits(order.amount, 18)).toString(),
-            pricePerToken: Number(ethers.utils.formatUnits(order.pricePerToken, 6)).toString(),
+            amount: formatShares(order.amount),
+            pricePerToken: formatStable(order.pricePerToken),
           });
         }
       }
@@ -337,12 +366,18 @@ const PropertyDetailPage = () => {
 
   const buyFromLimit = async (orderId, buyAmount) => {
     try {
-      const formBuyAmount = ethers.utils.parseUnits(buyAmount.toString(), 18);
+      const formBuyAmount = parseShares(buyAmount);
+
+      // fillOrder takes a share count, but the allowance it spends is
+      // stablecoin — approve the cost of those shares, not the share count.
+      const orderBookRead = web3Service.getReadOnlyOrderBookContract();
+      const order = await orderBookRead.orders(orderId);
+      const cost = sharesTimesPrice(formBuyAmount, order.pricePerToken);
 
       const stableCoinContract = await web3Service.getStableCoinContract();
       const approveTx = await stableCoinContract.approve(
         contractsConfig.orderBook.address,
-        formBuyAmount
+        cost
       );
       await approveTx.wait();
 
@@ -360,14 +395,11 @@ const PropertyDetailPage = () => {
 
   const createLimitOrder = async () => {
     try {
-      const signer = await web3Service.getSigner();
-      const formBuyAmount = ethers.utils.parseUnits(orderSellAmount.toString(), 18);
-      const formOrderTokenAmount = ethers.utils.parseUnits(opricePerToken.toString(), 6);
+      const formBuyAmount = parseShares(orderSellAmount);
+      const formOrderTokenAmount = parseStable(opricePerToken);
 
-      const propertyTokenContract = new ethers.Contract(
-        contractListingData.shareToken,
-        contractsConfig.vault.abi,
-        signer
+      const propertyTokenContract = await web3Service.getShareTokenContract(
+        contractListingData.shareToken
       );
 
       const approveTx = await propertyTokenContract.approve(
@@ -392,21 +424,6 @@ const PropertyDetailPage = () => {
     }
   };
 
-  const changePropertyPriceAdm = async () => {
-    try {
-      const pTokenPrice = ethers.utils.parseUnits(newPropAmount.toString(), 6);
-      const marketplaceContract = await web3Service.getMarketplaceContract();
-      const updateTx = await marketplaceContract.updatePropertyPrice(id, pTokenPrice);
-      await updateTx.wait();
-
-      fetchDetails();
-      toast.success('Property price updated successfully!');
-    } catch (error) {
-      console.error('Error updating property price:', error);
-      toast.error(getContractErrorMessage(error, 'Failed to update property price. Please try again.'));
-    }
-  };
-
   const cancelLimitOrder = async (orderId) => {
     try {
       const orderBookContract = await web3Service.getOrderBookContract();
@@ -421,47 +438,12 @@ const PropertyDetailPage = () => {
     }
   };
 
-  const ownerBuyBack = async () => {
-    try {
-      const stableCoinContract = await web3Service.getStableCoinContract();
-      const marketplaceContract = await web3Service.getMarketplaceContract();
-
-      const remainingTokens = ethers.utils.parseUnits(
-        contractListingData.remainingTokens.toString(),
-        18
-      );
-      const buyBackPrice = ethers.utils.parseUnits(bbPrice.toString(), 6);
-
-      const requiredStablecoin = remainingTokens
-        .mul(buyBackPrice)
-        .div(ethers.constants.WeiPerEther);
-
-      const approveTx = await stableCoinContract.approve(
-        contractsConfig.marketplace.address,
-        requiredStablecoin
-      );
-      await approveTx.wait();
-
-      const activateTx = await marketplaceContract.activateBuyBack(id, buyBackPrice);
-      await activateTx.wait();
-
-      fetchDetails();
-      toast.success('Buyback activated successfully!');
-    } catch (error) {
-      console.error('Error activating buyback:', error);
-      toast.error(getContractErrorMessage(error, 'Failed to activate buyback. Please try again.'));
-    }
-  };
-
   const sellBackTokensContract = async () => {
     try {
-      const convertTokens = ethers.utils.parseUnits(sellingTokens.toString(), 18);
-      const signer = await web3Service.getSigner();
+      const convertTokens = parseShares(sellingTokens);
 
-      const propertyTokenContract = new ethers.Contract(
-        contractListingData.shareToken,
-        contractsConfig.vault.abi,
-        signer
+      const propertyTokenContract = await web3Service.getShareTokenContract(
+        contractListingData.shareToken
       );
 
       const approveTx = await propertyTokenContract.approve(
@@ -502,6 +484,28 @@ const PropertyDetailPage = () => {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    if (!currentSigner) {
+      setKycStatus(false);
+      return;
+    }
+    const checkKyc = async () => {
+      try {
+        const provider = web3Service.getProvider();
+        const identityRegistryCheck = new ethers.Contract(
+          contractsConfig.identityRegistry.address,
+          contractsConfig.identityRegistry.abi,
+          provider
+        );
+        const kycCheck = await identityRegistryCheck.isVerified(currentSigner);
+        setKycStatus(kycCheck);
+      } catch (kycErr) {
+        console.error('KYC check error:', kycErr);
+      }
+    };
+    checkKyc();
+  }, [currentSigner]);
 
   const isOwner = useMemo(
     () => property?.propertyOwnerWallet?.toLowerCase() === currentSigner.toLowerCase(),
@@ -565,7 +569,10 @@ const PropertyDetailPage = () => {
       </div>
 
       <div className="mb-6">
-        <StatusBanner buyBack={contractListingData.buyBack} />
+        <StatusBanner
+          buyBack={contractListingData.buyBack}
+          buyBackPrice={contractListingData.buyBackPrice}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -747,56 +754,16 @@ const PropertyDetailPage = () => {
             </Card>
           )}
 
-          {(pAdmin || (isOwner && !contractListingData.buyBack)) && (
-            <div className="pt-2">
-              <p className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-500">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-                </svg>
-                Owner controls
+          {isOwner && !contractListingData.buyBack && (
+            <Card className="p-5 border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/10">
+              <SectionLabel>Buyback Program</SectionLabel>
+              <p className="text-sm text-slate-500 -mt-2 mb-4">
+                Offer to repurchase shares from your investors. The full cost is escrowed up front.
               </p>
-
-              <div className="space-y-6">
-                {pAdmin && (
-                  <Card className="p-5 border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/10">
-                    <SectionLabel>Admin · Update Token Price</SectionLabel>
-                    <div className="flex justify-between text-sm mb-3">
-                      <span className="text-slate-500">Current Price</span>
-                      <span className="text-slate-700 dark:text-slate-200 font-medium">${contractListingData.pricePerToken}</span>
-                    </div>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={newPropAmount}
-                      onChange={(e) => setNewPropAmount(e.target.value)}
-                      placeholder="Enter amount"
-                      className="mb-3"
-                    />
-                    <Button fullWidth onClick={changePropertyPriceAdm}>Update</Button>
-                  </Card>
-                )}
-
-                {isOwner && !contractListingData.buyBack && (
-                  <Card className="p-5 border-amber-200 dark:border-amber-900/60 bg-amber-50/40 dark:bg-amber-950/10">
-                    <SectionLabel>Initiate Buyback Program</SectionLabel>
-                    <div className="flex justify-between text-sm mb-3">
-                      <span className="text-slate-500">Current Price</span>
-                      <span className="text-slate-700 dark:text-slate-200 font-medium">${contractListingData.pricePerToken}</span>
-                    </div>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={bbPrice}
-                      onChange={(e) => setBBPrice(e.target.value)}
-                      placeholder="Enter new buyback amount"
-                      className="mb-2"
-                    />
-                    <p className="text-xs text-slate-500 mb-3">New buyback amount should be at least 10% more than the current price.</p>
-                    <Button fullWidth onClick={ownerBuyBack}>Initiate</Button>
-                  </Card>
-                )}
-              </div>
-            </div>
+              <Button variant="secondary" fullWidth onClick={() => navigate(ROUTES.buyBack)}>
+                Manage Buyback
+              </Button>
+            </Card>
           )}
         </div>
       </div>

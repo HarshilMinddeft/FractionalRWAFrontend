@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import {
   createWeb3Modal,
   defaultConfig,
+  useDisconnect,
   useWeb3Modal,
   useWeb3ModalAccount,
   useWeb3ModalProvider,
@@ -12,12 +13,12 @@ import { setModalProvider } from '../services/web3Service';
 
 const projectId = envConfig.walletConnectProjectId;
 
-const sonicTestnet = {
-  chainId: envConfig.sonicChainIdDec,
-  name: 'Sonic Testnet',
-  currency: 'S',
-  explorerUrl: envConfig.sonicExplorerUrl,
-  rpcUrl: envConfig.sonicRpcUrl,
+const robinhoodTestnet = {
+  chainId: envConfig.robinhoodChainIdDec,
+  name: 'Robinhood Testnet',
+  currency: 'RH',
+  explorerUrl: envConfig.robinhoodExplorerUrl,
+  rpcUrl: envConfig.robinhoodRpcUrl,
 };
 
 const metadata = {
@@ -30,12 +31,12 @@ const metadata = {
 createWeb3Modal({
   ethersConfig: defaultConfig({
     metadata,
-    defaultChainId: envConfig.sonicChainIdDec,
+    defaultChainId: envConfig.robinhoodChainIdDec,
     enableEIP6963: true,
     enableInjected: true,
     enableCoinbase: true,
   }),
-  chains: [sonicTestnet],
+  chains: [robinhoodTestnet],
   projectId,
   themeMode: 'light',
 });
@@ -52,6 +53,7 @@ const Web3Context = createContext({
 
 export const Web3Provider = ({ children }) => {
   const { open } = useWeb3Modal();
+  const { disconnect } = useDisconnect();
   const { address, isConnected, chainId } = useWeb3ModalAccount();
   const { walletProvider } = useWeb3ModalProvider();
 
@@ -59,25 +61,21 @@ export const Web3Provider = ({ children }) => {
   const [signer, setSigner] = useState(null);
 
   useEffect(() => {
-    const initProvider = async () => {
-      if (isConnected && walletProvider) {
-        const web3Provider = new ethers.providers.Web3Provider(walletProvider);
-        const web3Signer = web3Provider.getSigner();
-        setProvider(web3Provider);
-        setSigner(web3Signer);
-        setModalProvider(walletProvider);
-      } else if (window.ethereum) {
-        const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-        setProvider(web3Provider);
-        setSigner(null);
-        setModalProvider(null);
-      } else {
-        setProvider(null);
-        setSigner(null);
-        setModalProvider(null);
-      }
-    };
-    initProvider();
+    // Only ever wire up the provider Web3Modal actually connected — never a
+    // raw window.ethereum. With more than one wallet extension installed,
+    // that global can belong to a different extension than the one the user
+    // picked in the modal, silently misrouting reads/writes to it.
+    if (isConnected && walletProvider) {
+      const web3Provider = new ethers.providers.Web3Provider(walletProvider);
+      const web3Signer = web3Provider.getSigner();
+      setProvider(web3Provider);
+      setSigner(web3Signer);
+      setModalProvider(walletProvider);
+    } else {
+      setProvider(null);
+      setSigner(null);
+      setModalProvider(null);
+    }
   }, [isConnected, walletProvider]);
 
   const value = useMemo(
@@ -88,9 +86,9 @@ export const Web3Provider = ({ children }) => {
       provider,
       signer,
       connectWallet: () => open(),
-      disconnectWallet: () => open({ view: 'Account' }),
+      disconnectWallet: () => disconnect(),
     }),
-    [address, isConnected, chainId, provider, signer, open]
+    [address, isConnected, chainId, provider, signer, open, disconnect]
   );
 
   return <Web3Context.Provider value={value}>{children}</Web3Context.Provider>;
