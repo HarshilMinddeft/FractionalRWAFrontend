@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils';
  * Input
  * @param {string} [label]
  * @param {string} [hint]
+ * @param {'neutral'|'positive'|'negative'} [hintTone] color variant for `hint` when there's no `error`
  * @param {string} [error]
  * @param {React.ReactNode} [leadingIcon] node rendered inside left side
  * @param {string} [prefix] static text adornment on the left (e.g. "$")
@@ -12,6 +13,7 @@ import { cn } from '../../lib/utils';
 const Input = ({
   label,
   hint,
+  hintTone = 'neutral',
   error,
   leadingIcon,
   prefix,
@@ -56,7 +58,20 @@ const Input = ({
           </span>
         )}
       </span>
-      {hint && !error && <span className="mt-1.5 block text-xs text-slate-400 dark:text-slate-500">{hint}</span>}
+      {hint && !error && (
+        <span
+          className={cn(
+            'mt-1.5 block text-xs font-medium',
+            hintTone === 'positive'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : hintTone === 'negative'
+                ? 'text-amber-600 dark:text-amber-500'
+                : 'font-normal text-slate-400 dark:text-slate-500',
+          )}
+        >
+          {hint}
+        </span>
+      )}
       {error && <span className="mt-1.5 block text-xs font-medium text-red-500 dark:text-red-400">{error}</span>}
     </label>
   );

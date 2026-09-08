@@ -12,7 +12,11 @@ import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import envConfig from '../config/env.config';
 import contractsConfig from '../config/contracts.config';
-import { expectedShares, formatUsd, shortenAddress } from '../lib/utils';
+import { useWeb3 } from '../context/Web3Context';
+import { useZodForm } from '../hooks/useZodForm';
+import { tokenizePropertySchema, parseLeadingNumber } from '../schemas/propertySchema';
+import { evenlyDividingTiers, PRICE_STEP } from '../utils/units';
+import { formatUsd, shortenAddress } from '../lib/utils';
 
 /* ------------------------------------------------------------------ */
 /* Pieces                                                               */
@@ -79,7 +83,7 @@ const fmtSize = (bytes) => {
 };
 
 /** Drop-zone style picker row. Preview image optional (object URL for the primary shot). */
-const FilePicker = ({ kind = 'file', preview, fileName, meta, description, accept, multiple, required, onFiles }) => (
+const FilePicker = ({ kind = 'file', preview, fileName, meta, description, accept, multiple, required, error, onFiles }) => (
   <label className="group flex cursor-pointer items-center gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 transition-all hover:border-indigo-300 hover:bg-indigo-50/30 dark:border-slate-700 dark:bg-slate-900/50 dark:hover:border-indigo-700 dark:hover:bg-indigo-500/5">
     <input type="file" className="sr-only" accept={accept} multiple={multiple} required={required} onChange={onFiles} />
     <span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-50 text-slate-400 ring-1 ring-slate-100 transition-colors group-hover:text-indigo-600 dark:bg-slate-800 dark:text-slate-500 dark:ring-slate-700">
@@ -101,7 +105,9 @@ const FilePicker = ({ kind = 'file', preview, fileName, meta, description, accep
         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{fileName || description}</span>
         {required && <span className="text-red-400">*</span>}
       </span>
-      <span className="mt-0.5 block truncate text-xs text-slate-400 dark:text-slate-500">{meta || 'Click to browse'}</span>
+      <span className="mt-0.5 block truncate text-xs text-slate-400 dark:text-slate-500">
+        {error || meta || 'Click to browse'}
+      </span>
     </span>
     <span className="flex shrink-0 items-center gap-2">
       {fileName && <Badge tone="success">Ready</Badge>}
@@ -113,6 +119,32 @@ const FilePicker = ({ kind = 'file', preview, fileName, meta, description, accep
     </span>
   </label>
 );
+
+/**
+ * Live check on whether the entered property price can later be split into
+ * whole shares at Fractionalize time. FractionalVault mints
+ * propertyPrice / basePrice shares with no remainder allowed
+ * (SHARE_DECIMALS == 0), and basePrice is offered in $10 steps there — so a
+ * price with no evenly-dividing $10 tier can never be fractionalized. Flags
+ * that at entry time rather than letting it surface as a dead end later.
+ */
+const getPriceDivisibilityHint = (rawValue) => {
+  const price = parseLeadingNumber(rawValue);
+  if (Number.isNaN(price) || price <= 0) return null;
+
+  const validTiers = evenlyDividingTiers(price);
+  if (validTiers.length === 0) {
+    return {
+      tone: 'negative',
+      text: `No $${PRICE_STEP}-multiple price per share divides $${price} evenly — this property won't be fractionalizable later. Choose a price that's a multiple of $${PRICE_STEP}.`,
+    };
+  }
+
+  return {
+    tone: 'positive',
+    text: `Divisible at $${validTiers.join(', $')} per share once fractionalized.`,
+  };
+};
 
 const FLOW_STEPS = [
   { title: 'Primary image → IPFS', detail: 'Stored on IPFS; used as the NFT artwork' },
@@ -127,10 +159,11 @@ const FLOW_STEPS = [
 /* ------------------------------------------------------------------ */
 
 const TokenizePropertyPage = () => {
+  const { address, isConnected } = useWeb3();
   const [singleImage, setSingleImage] = useState(null);
   const [primaryPreview, setPrimaryPreview] = useState(null);
   const [multipleImages, setMultipleImages] = useState([]);
-  const [userAddress, setUserAddress] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [pdfFile, setPdfFile] = useState(null);
   const [propUploadStatus, setProUploadStatus] = useState('');
   const [uploadStatus, setUploadStatus] = useState('');
@@ -148,15 +181,34 @@ const TokenizePropertyPage = () => {
     location: '',
   });
 
-  const isAdminUser = userAddress === envConfig.adminWalletAddress;
-  const expectedTokenCount = useMemo(() => expectedShares(formData.propertyPrice), [formData.propertyPrice]);
+  const { errors, validate, clearError } = useZodForm(tokenizePropertySchema);
+
+  // Estimated share count once fractionalized, using the cheapest evenly-
+  // dividing $10 tier so the preview stays a useful upper bound rather than
+  // assuming a fixed $40/share price that may not even divide evenly.
+  const expectedTokenCount = useMemo(() => {
+    const price = parseLeadingNumber(formData.propertyPrice);
+    if (Number.isNaN(price) || price <= 0) return 0;
+    const [cheapestTier] = evenlyDividingTiers(price);
+    return cheapestTier ? Math.floor(price / cheapestTier) : 0;
+  }, [formData.propertyPrice]);
+
   const fileCount = (singleImage ? 1 : 0) + multipleImages.length + (pdfFile ? 1 : 0);
+
+  const priceHint = useMemo(
+    () => (formData.propertyPrice ? getPriceDivisibilityHint(formData.propertyPrice) : null),
+    [formData.propertyPrice],
+  );
 
   const handleInputChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    clearError(e.target.name);
   };
 
-  const handleSingleImageChange = (e) => setSingleImage(e.target.files[0]);
+  const handleSingleImageChange = (e) => {
+    setSingleImage(e.target.files[0]);
+    clearError('singleImage');
+  };
   const handleMultipleImagesChange = (e) => setMultipleImages([...e.target.files]);
   const handlePdfChange = (e) => setPdfFile(e.target.files[0]);
 
@@ -174,11 +226,21 @@ const TokenizePropertyPage = () => {
     const fd = new FormData();
     fd.append('file', file);
     const data = await propertyApi.uploadNftImage(fd);
-    return `${envConfig.ipfsGateway}${data.IpfsHash}`;
+    return data.url || `${envConfig.ipfsGateway}${data.IpfsHash}`;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const { success, data } = validate({ ...formData, singleImage });
+    if (!success) {
+      toast.error('Please fix the highlighted fields.');
+      return;
+    }
+
+    const propertySize = parseLeadingNumber(data.propertySize);
+    const propertyPrice = parseLeadingNumber(data.propertyPrice);
+
     setBusy(true);
     setUploadStatus('Uploading to IPFS…');
 
@@ -244,8 +306,8 @@ const TokenizePropertyPage = () => {
           formData.propertyOwnerWallet,
           metadataUrl,
           formData.location,
-          Number(formData.propertySize),
-          Number(formData.propertyPrice),
+          propertySize,
+          propertyPrice,
         );
 
         const receipt = await transaction.wait();
@@ -310,15 +372,23 @@ const TokenizePropertyPage = () => {
     }
   };
 
+  // Admin gate reads AUTHORITY_ROLE / DEFAULT_ADMIN_ROLE from PropertyNFT
+  // directly rather than comparing to a single configured address — a
+  // wallet granted the role on-chain works without redeploying this app,
+  // and one that had it revoked stops seeing a form that would only revert.
   useEffect(() => {
-    const init = async () => {
-      const address = await web3Service.getWalletAddress();
-      if (address) {
-        setUserAddress(address.toLowerCase());
-      }
+    if (!isConnected || !address) {
+      setIsAdmin(false);
+      return;
+    }
+    let cancelled = false;
+    web3Service.isPropertyNftAdmin(address).then((result) => {
+      if (!cancelled) setIsAdmin(result);
+    });
+    return () => {
+      cancelled = true;
     };
-    init();
-  }, []);
+  }, [address, isConnected]);
 
   const hasSummary = formData.name || formData.location || formData.propertyPrice || formData.propertyOwnerWallet;
 
@@ -337,7 +407,7 @@ const TokenizePropertyPage = () => {
         }
       />
 
-      {!isAdminUser && userAddress ? (
+      {!isAdmin && address ? (
         <Card className="mx-auto max-w-xl p-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-500 dark:bg-amber-500/15 dark:text-amber-400">
             <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
@@ -350,7 +420,8 @@ const TokenizePropertyPage = () => {
           </div>
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">Admin access required</h2>
           <p className="mx-auto mt-2 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-            Only the platform admin wallet can register new properties. Connect the admin wallet to continue.
+            Only the marketplace authority or admin wallet can register new properties. Connect an authorized wallet
+            to continue.
           </p>
           <Badge tone="warning" className="mt-4">
             Unauthorized account
@@ -405,15 +476,17 @@ const TokenizePropertyPage = () => {
             ) : (
               <form onSubmit={handleSubmit}>
                 <div className="divide-y divide-slate-100 px-6 pb-6 sm:px-10 dark:divide-slate-800">
-                  {/* 01 Asset identity */}                <section className="py-6 first:pt-6">
-                  <SectionHead title="Property" />
-                  <div className="space-y-4">
+                  {/* 01 Asset identity */}
+                  <section className="py-6 first:pt-6">
+                    <SectionHead title="Property" />
+                    <div className="space-y-4">
                       <Input
                         name="name"
                         label="Property name"
                         value={formData.name}
                         onChange={handleInputChange}
                         placeholder="e.g. Harbourview Tower, Unit 4B"
+                        error={errors.name}
                         required
                       />
                       <Input
@@ -422,6 +495,7 @@ const TokenizePropertyPage = () => {
                         value={formData.location}
                         onChange={handleInputChange}
                         placeholder="e.g. Dubai Marina"
+                        error={errors.location}
                         required
                       />
                       <Input
@@ -433,12 +507,10 @@ const TokenizePropertyPage = () => {
                         value={formData.propertyPrice}
                         onChange={handleInputChange}
                         placeholder="500,000"
+                        error={errors.propertyPrice}
+                        hint={priceHint?.text}
+                        hintTone={priceHint?.tone}
                         required
-                        hint={
-                          expectedTokenCount > 0
-                            ? `≈ ${expectedTokenCount.toLocaleString('en-US')} fractional tokens once listed`
-                            : undefined
-                        }
                       />
                       <Input
                         name="propertySize"
@@ -449,13 +521,15 @@ const TokenizePropertyPage = () => {
                         value={formData.propertySize}
                         onChange={handleInputChange}
                         placeholder="1,850"
+                        error={errors.propertySize}
                         required
                       />
                     </div>
                   </section>
 
                   {/* 02 Ownership */}
-                  <section className="py-6 first:pt-6">                  <SectionHead title="Ownership" />
+                  <section className="py-6 first:pt-6">
+                    <SectionHead title="Ownership" />
                     <Input
                       name="propertyOwnerWallet"
                       label="Owner wallet address"
@@ -464,19 +538,22 @@ const TokenizePropertyPage = () => {
                       onChange={handleInputChange}
                       placeholder="0x…"
                       className="font-mono text-[13px]"
+                      error={errors.propertyOwnerWallet}
                       required
                     />
                   </section>
 
                   {/* 03 Story & details */}
-                  <section className="py-6 first:pt-6">                  <SectionHead title="Listing content" />
-                  <div className="space-y-4">
-                    <Input
-                      name="features"
+                  <section className="py-6 first:pt-6">
+                    <SectionHead title="Listing content" />
+                    <div className="space-y-4">
+                      <Input
+                        name="features"
                         label="Features"
                         value={formData.features}
                         onChange={handleInputChange}
                         placeholder="e.g. Beach access, gym, parking, concierge"
+                        error={errors.features}
                       />
                       <Textarea
                         name="offering"
@@ -485,6 +562,7 @@ const TokenizePropertyPage = () => {
                         value={formData.offering}
                         onChange={handleInputChange}
                         placeholder="Yield structure, token supply and exit mechanics…"
+                        error={errors.offering}
                       />
                       <Textarea
                         name="details"
@@ -493,6 +571,7 @@ const TokenizePropertyPage = () => {
                         value={formData.details}
                         onChange={handleInputChange}
                         placeholder="Condition, build year, renovations…"
+                        error={errors.details}
                       />
                       <Textarea
                         name="management"
@@ -501,13 +580,15 @@ const TokenizePropertyPage = () => {
                         value={formData.management}
                         onChange={handleInputChange}
                         placeholder="Property management company"
+                        error={errors.management}
                       />
                     </div>
                   </section>
 
                   {/* 04 Media & documents */}
-                  <section className="py-6 first:pt-6">                  <SectionHead title="Media & documents" />
-                  <div className="space-y-4">
+                  <section className="py-6 first:pt-6">
+                    <SectionHead title="Media & documents" />
+                    <div className="space-y-4">
                       <FilePicker
                         kind="image"
                         label="Primary image"
@@ -516,8 +597,8 @@ const TokenizePropertyPage = () => {
                         description="JPG or PNG · becomes the NFT artwork"
                         preview={primaryPreview}
                         fileName={singleImage?.name}
-                        fileSize={singleImage?.size}
                         meta={singleImage ? fmtSize(singleImage.size) : 'Click to browse'}
+                        error={errors.singleImage}
                         onFiles={handleSingleImageChange}
                       />
                       <FilePicker

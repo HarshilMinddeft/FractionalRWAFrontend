@@ -3,8 +3,7 @@ import { useWeb3 } from '../../context/Web3Context';
 import envConfig from '../../config/env.config';
 import { cn } from '../../lib/utils';
 import { NAV_GROUPS } from '../../config/navigation';
-
-const isAdmin = (address) => address?.toLowerCase() === envConfig.adminWalletAddress;
+import useAuthorityRole from '../../hooks/useAuthorityRole';
 
 const Logo = () => (
   <div className="flex items-center gap-2.5">
@@ -57,7 +56,11 @@ const Sidebar = ({ open = false, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { address } = useWeb3();
-  const admin = isAdmin(address);
+
+  // Admin nav appears for the configured admin wallet or any wallet holding
+  // the marketplace's on-chain authority role — the same rule the pages enforce.
+  const { isAuthority } = useAuthorityRole(address);
+  const admin = address?.toLowerCase() === envConfig.adminWalletAddress || isAuthority;
 
   const go = (path) => {
     navigate(path);
@@ -143,10 +146,10 @@ const Sidebar = ({ open = false, onClose }) => {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
-              Sonic Testnet
+              Robinhood Testnet
             </span>
             <a
-              href={envConfig.sonicExplorerUrl}
+              href={envConfig.robinhoodExplorerUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-[11px] font-semibold text-indigo-600 hover:underline dark:text-indigo-400"

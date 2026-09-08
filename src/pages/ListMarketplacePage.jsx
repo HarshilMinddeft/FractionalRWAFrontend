@@ -9,11 +9,22 @@ import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import Select from '../components/ui/Select';
 import EmptyState from '../components/ui/EmptyState';
 import Badge from '../components/ui/Badge';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
+import { useWeb3 } from '../context/Web3Context';
+import {
+  formatShares,
+  formatStable,
+  isValidPriceTier,
+  parseShares,
+  parseStable,
+  PRICE_STEP,
+  PRICE_TIERS,
+} from '../utils/units';
 import { formatNumber, formatUsd, shortenAddress } from '../lib/utils';
 
 const DEFAULT_LISTING_PRICE = 40;
@@ -28,11 +39,14 @@ const rise = {
 };
 
 const ListMarketplacePage = () => {
+  const { address: userAddress } = useWeb3();
   const [properties, setProperties] = useState([]);
-  const [userAddress, setUserAddress] = useState('');
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
   const [tokensInputs, setTokenInputs] = useState({});
+  const [priceInputs, setPriceInputs] = useState({});
+  const [existingListings, setExistingListings] = useState({});
+  const [fractionalizeBasePrices, setFractionalizeBasePrices] = useState({});
   const [userTokenBalances, setUserTokenBalances] = useState([]);
   const [busyId, setBusyId] = useState(null);
 
@@ -48,12 +62,33 @@ const ListMarketplacePage = () => {
       const allProps = data.properties || [];
 
       const propertyNftContract = web3Service.getReadOnlyPropertyNftContract();
+      const marketplaceContract = web3Service.getReadOnlyMarketplaceContract();
+      const vaultContract = web3Service.getReadOnlyVaultContract();
       const filteredProps = [];
       for (const prop of allProps) {
         try {
           const isFrac = await propertyNftContract.isFractionalized(prop.propertyId);
-          if (isFrac) {
-            filteredProps.push(prop);
+          if (!isFrac) continue;
+
+          filteredProps.push(prop);
+
+          // An active listing already has a price; only a new listing lets the
+          // owner choose one, so record which case each property is in.
+          const listing = await marketplaceContract.listings(prop.propertyId);
+          setExistingListings((prev) => ({
+            ...prev,
+            [prop.propertyId]: listing.active ? formatStable(listing.pricePerToken) : null,
+          }));
+
+          // The vault doesn't store the base price Fractionalize used, but
+          // propertyPrice / totalShares recovers it exactly (that's how
+          // totalShares was derived in the first place).
+          if (!listing.active) {
+            const { totalShares } = await vaultContract.fractionalData(prop.propertyId);
+            if (!totalShares.isZero()) {
+              const basePrice = Number(prop.propertyPrice) / Number(formatShares(totalShares));
+              setFractionalizeBasePrices((prev) => ({ ...prev, [prop.propertyId]: basePrice }));
+            }
           }
         } catch (err) {
           console.error(`Error checking fractionalization for token ${prop.propertyId}:`, err);
@@ -68,10 +103,8 @@ const ListMarketplacePage = () => {
   };
 
   const fetchUserTokenBalance = async () => {
+    if (!userAddress) return;
     try {
-      const address = await web3Service.getWalletAddress();
-      if (!address) return;
-
       const vaultContract = web3Service.getReadOnlyVaultContract();
       const balances = [];
 
@@ -88,13 +121,13 @@ const ListMarketplacePage = () => {
               provider,
             );
 
-            const balance = await tokenContract.balanceOf(address);
+            const balance = await tokenContract.balanceOf(userAddress);
 
             balances.push({
               propertyId: prop.propertyId,
               propertyName: prop.propertyName,
               tokenAddress: propertyShareTokenAddr,
-              balance: ethers.utils.formatUnits(balance, 18),
+              balance: formatShares(balance),
             });
           }
         } catch (err) {
@@ -115,16 +148,21 @@ const ListMarketplacePage = () => {
       return;
     }
 
+    const listingPrice = priceInputs[tokenId] ?? DEFAULT_LISTING_PRICE;
+    if (!isValidPriceTier(listingPrice)) {
+      toast.error(`Price per share must be a multiple of $${PRICE_STEP}.`);
+      return;
+    }
+
     setBusyId(tokenId);
     try {
-      const signer = await web3Service.getSigner();
-      const tokensToListForProp = ethers.utils.parseUnits(inputValue.toString(), 18);
+      const tokensToListForProp = parseShares(inputValue);
 
       const vaultContract = await web3Service.getVaultContract();
       const propertyToken = await vaultContract.fractionalData(tokenId);
       const propertyShareTokenAddr = propertyToken.tokenAddress;
 
-      const propertyTokensTxn = new ethers.Contract(propertyShareTokenAddr, contractsConfig.vault.abi, signer);
+      const propertyTokensTxn = await web3Service.getShareTokenContract(propertyShareTokenAddr);
 
       const marketplaceContract = await web3Service.getMarketplaceContract();
       const checkListingData = await marketplaceContract.listings(tokenId);
@@ -134,25 +172,32 @@ const ListMarketplacePage = () => {
       await approveTx.wait();
 
       if (!checkListing) {
-        const listTx = await marketplaceContract.listProperty(tokenId, propertyShareTokenAddr, tokensToListForProp);
+        // listProperty takes the share token itself (not the tokenId) and the
+        // opening price; the marketplace derives the tokenId from the token.
+        const listTx = await marketplaceContract.listProperty(
+          propertyShareTokenAddr,
+          tokensToListForProp,
+          parseStable(listingPrice),
+        );
         await listTx.wait();
       } else {
-        const addTokensTx = await marketplaceContract.addMoreTokensToListing(tokenId, tokensToListForProp);
+        const addTokensTx = await marketplaceContract.addTokensToListing(tokenId, tokensToListForProp);
         await addTokensTx.wait();
       }
 
       const afterListingData = await marketplaceContract.listings(tokenId);
       const listingInfo = {
         shareToken: afterListingData.propertyToken,
-        totalShares: Number(ethers.utils.formatUnits(afterListingData.totalTokens, 18)).toString(),
-        pricePerToken: Number(ethers.utils.formatUnits(afterListingData.pricePerToken, 6)).toString(),
-        remainingTokens: Number(ethers.utils.formatUnits(afterListingData.remainingTokens, 18)).toString(),
+        totalShares: formatShares(afterListingData.totalTokens),
+        pricePerToken: formatStable(afterListingData.pricePerToken),
+        remainingTokens: formatShares(afterListingData.remainingTokens),
       };
 
       setFractionalEvents((prev) => ({
         ...prev,
         [tokenId]: listingInfo,
       }));
+      setExistingListings((prev) => ({ ...prev, [tokenId]: listingInfo.pricePerToken }));
 
       toast.success('Successfully listed to marketplace!');
       setTokenInputs((prev) => ({ ...prev, [tokenId]: '' }));
@@ -173,17 +218,12 @@ const ListMarketplacePage = () => {
   };
 
   useEffect(() => {
-    const init = async () => {
-      const address = await web3Service.getWalletAddress();
-      if (address) {
-        setUserAddress(address);
-        fetchProperties(address);
-      } else {
-        setLoading(false);
-      }
-    };
-    init();
-  }, []);
+    if (userAddress) {
+      fetchProperties(userAddress);
+    } else {
+      setLoading(false);
+    }
+  }, [userAddress]);
 
   useEffect(() => {
     if (properties.length > 0 && userAddress) {
@@ -202,7 +242,7 @@ const ListMarketplacePage = () => {
       <PageHeader
         eyebrow="Your assets"
         title="List to Marketplace"
-        description="Put your fractional shares up for sale. Shares are listed at a $40 default price per token and buyers pay with USDC."
+        description="Put your fractional shares up for sale. Price per share defaults to what the property was fractionalized at, and buyers pay with USDC."
         icon={
           <path
             strokeLinecap="round"
@@ -228,9 +268,9 @@ const ListMarketplacePage = () => {
             icon={<CoinsIcon />}
           />
           <StatCard
-            label="Default listing price"
+            label="Suggested listing price"
             value={formatUsd(DEFAULT_LISTING_PRICE)}
-            sub="per token (USDC)"
+            sub="per token (USDC) · adjustable"
             tone="warning"
             icon={<PriceIcon />}
           />
@@ -240,10 +280,28 @@ const ListMarketplacePage = () => {
       {loading ? (
         <PropertyGridSkeleton />
       ) : properties.length > 0 ? (
-        <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3"
+        >
           {properties.map((prop) => {
             const availableBalance = balanceFor(prop.propertyId);
             const listingDone = fractionalEvents[prop.propertyId];
+            const listedPrice = existingListings[prop.propertyId];
+
+            // Default the dropdown to the price per share this property was
+            // fractionalized at, snapped to the nearest offered tier — the
+            // owner can still pick a different tier before listing.
+            const basePrice = fractionalizeBasePrices[prop.propertyId];
+            const defaultPrice = basePrice
+              ? PRICE_TIERS.reduce((closest, tier) =>
+                  Math.abs(tier - basePrice) < Math.abs(closest - basePrice) ? tier : closest,
+                )
+              : DEFAULT_LISTING_PRICE;
+            const selectedPrice = priceInputs[prop.propertyId] ?? defaultPrice;
+
             return (
               <motion.div key={prop.propertyId} variants={rise} className="h-full">
                 <PropertyCard property={prop}>
@@ -289,13 +347,32 @@ const ListMarketplacePage = () => {
                             : 'No share balance found for this wallet'
                         }
                       />
+                      {listedPrice ? (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Already listed at{' '}
+                          <span className="font-medium text-slate-600 dark:text-slate-300">${listedPrice}</span> per
+                          share. These tokens will be added to that listing at the same price.
+                        </p>
+                      ) : (
+                        <Select
+                          label="Price per share"
+                          value={selectedPrice}
+                          onChange={(e) => setPriceInputs((prev) => ({ ...prev, [prop.propertyId]: e.target.value }))}
+                        >
+                          {PRICE_TIERS.map((tier) => (
+                            <option key={tier} value={tier}>
+                              ${tier}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
                       <Button
                         fullWidth
                         disabled={Number(availableBalance) <= 0}
                         loading={busyId === prop.propertyId}
                         onClick={() => listToMarketplace(prop.propertyId)}
                       >
-                        List at ${DEFAULT_LISTING_PRICE}/token
+                        {listedPrice ? 'Add to listing' : `List at $${selectedPrice}/token`}
                       </Button>
                       <p className="text-center text-[11px] text-slate-400 dark:text-slate-500">
                         Approve the marketplace, then the shares go live instantly

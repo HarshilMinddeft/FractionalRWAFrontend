@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { motion } from 'motion/react';
 import AppLayout from '../components/layout/AppLayout';
@@ -7,14 +7,20 @@ import PropertyGridSkeleton from '../components/property/PropertyGridSkeleton';
 import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 import Button from '../components/ui/Button';
+import Select from '../components/ui/Select';
 import EmptyState from '../components/ui/EmptyState';
 import Badge from '../components/ui/Badge';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
 import usePropertiesFilteredBy from '../hooks/usePropertiesFilteredBy';
+import { useWeb3 } from '../context/Web3Context';
 import { getContractErrorMessage } from '../utils/web3Errors';
-import { expectedShares, formatNumber, formatUsd, shortenAddress } from '../lib/utils';
+import { evenlyDividingTiers, PRICE_STEP } from '../utils/units';
+import { formatNumber, formatUsd, shortenAddress } from '../lib/utils';
+
+/** Suggested price per share, in whole dollars, when the owner hasn't chosen one. */
+const DEFAULT_BASE_PRICE = 40;
 
 const isNotFractionalized = async (property, propertyNftContract) => {
   const isFrac = await propertyNftContract.isFractionalized(property.propertyId);
@@ -30,9 +36,16 @@ const rise = {
   show: { opacity: 1, y: 0, transition: { duration: 0.32, ease: 'easeOut' } },
 };
 
+/** Cheapest evenly-dividing tier — used for the estimate before the owner picks one. */
+const cheapestTierFor = (propertyPrice) => {
+  const tiers = evenlyDividingTiers(propertyPrice);
+  return tiers.includes(DEFAULT_BASE_PRICE) ? DEFAULT_BASE_PRICE : tiers[0];
+};
+
 const FractionalizePage = () => {
-  const [userAddress, setUserAddress] = useState('');
+  const { address: userAddress } = useWeb3();
   const [fractionalEvents, setFractionalEvents] = useState({});
+  const [basePrices, setBasePrices] = useState({});
   const [busyId, setBusyId] = useState(null);
 
   const { properties, loading } = usePropertiesFilteredBy(
@@ -47,12 +60,13 @@ const FractionalizePage = () => {
     let shares = 0;
     for (const p of properties) {
       value += Number(p.propertyPrice) || 0;
-      shares += expectedShares(p.propertyPrice);
+      const tier = cheapestTierFor(p.propertyPrice);
+      shares += tier ? Math.floor(Number(p.propertyPrice) / tier) : 0;
     }
     return { value, shares };
   }, [properties]);
 
-  const fractionalize = async (tokenId, complianceAddress) => {
+  const fractionalize = async (tokenId, complianceAddress, basePrice) => {
     setBusyId(tokenId);
     try {
       const propertyNftContract = await web3Service.getPropertyNftContract();
@@ -60,7 +74,13 @@ const FractionalizePage = () => {
       await approveTx.wait();
 
       const vaultContract = await web3Service.getVaultContract();
-      const vaultTx = await vaultContract.fractionalizeProperty(tokenId, complianceAddress);
+      // _basePrice divides the NFT's propertyPrice, which is stored as a
+      // whole-dollar figure — so it is passed unscaled, not in stablecoin units.
+      const vaultTx = await vaultContract.fractionalizeProperty(
+        tokenId,
+        complianceAddress,
+        Math.floor(Number(basePrice)),
+      );
       await vaultTx.wait();
 
       const propertyToken = await vaultContract.fractionalData(tokenId);
@@ -81,16 +101,6 @@ const FractionalizePage = () => {
       setBusyId(null);
     }
   };
-
-  useEffect(() => {
-    const init = async () => {
-      const address = await web3Service.getWalletAddress();
-      if (address) {
-        setUserAddress(address);
-      }
-    };
-    init();
-  }, []);
 
   return (
     <AppLayout>
@@ -118,7 +128,7 @@ const FractionalizePage = () => {
           <StatCard
             label="Shares to be created"
             value={formatNumber(totals.shares, 0)}
-            sub="at $1 / 40-token issuance"
+            sub="at the cheapest divisible price"
             tone="success"
             icon={<CoinsIcon />}
           />
@@ -135,9 +145,19 @@ const FractionalizePage = () => {
       {loading ? (
         <PropertyGridSkeleton />
       ) : properties.length > 0 ? (
-        <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3"
+        >
           {properties.map((prop) => {
+            const validTiers = evenlyDividingTiers(prop.propertyPrice);
+            const defaultTier = validTiers.includes(DEFAULT_BASE_PRICE) ? DEFAULT_BASE_PRICE : validTiers[0];
+            const basePrice = basePrices[prop.propertyId] ?? String(defaultTier ?? '');
+            const shares = Number(basePrice) > 0 ? Math.floor(Number(prop.propertyPrice) / Number(basePrice)) : 0;
             const done = fractionalEvents[prop.propertyId];
+
             return (
               <motion.div key={prop.propertyId} variants={rise} className="h-full">
                 <PropertyCard property={prop}>
@@ -149,13 +169,36 @@ const FractionalizePage = () => {
                     />
                   ) : (
                     <div className="space-y-3">
+                      {validTiers.length > 0 ? (
+                        <Select
+                          label="Price per share"
+                          value={basePrice}
+                          onChange={(e) => setBasePrices((prev) => ({ ...prev, [prop.propertyId]: e.target.value }))}
+                        >
+                          {validTiers.map((tier) => (
+                            <option key={tier} value={tier}>
+                              ${tier}
+                            </option>
+                          ))}
+                        </Select>
+                      ) : (
+                        <p className="text-xs font-medium text-red-500 dark:text-red-400">
+                          No ${PRICE_STEP}-multiple price evenly divides ${prop.propertyPrice} — this property
+                          cannot be fractionalized into whole shares.
+                        </p>
+                      )}
                       <div className="flex items-center justify-between rounded-xl bg-indigo-50/70 px-3.5 py-2.5 text-[13px] dark:bg-indigo-500/10">
                         <span className="font-medium text-slate-500 dark:text-slate-400">Share supply created</span>
                         <span className="font-bold text-indigo-700 tabular-nums dark:text-indigo-300">
-                          {expectedShares(prop.propertyPrice).toLocaleString()} tokens
+                          {shares.toLocaleString()} tokens
                         </span>
                       </div>
-                      <Button fullWidth loading={busyId === prop.propertyId} onClick={() => fractionalize(prop.propertyId, prop.complianceAddress)}>
+                      <Button
+                        fullWidth
+                        loading={busyId === prop.propertyId}
+                        disabled={shares === 0}
+                        onClick={() => fractionalize(prop.propertyId, prop.complianceAddress, basePrice)}
+                      >
                         Fractionalize property
                       </Button>
                       <p className="text-center text-[11px] text-slate-400 dark:text-slate-500">

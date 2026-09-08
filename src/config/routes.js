@@ -5,6 +5,8 @@ export const ROUTES = {
   redeemProperty: '/redeem-property',
   listProperty: '/list-property',
   marketplace: '/marketplace',
+  buyBack: '/buyback',
+  updatePrice: '/update-price',
   cancelListing: '/cancel-listing',
   propertyDetails: '/properties/:id',
   identityVerification: '/identity-verification',

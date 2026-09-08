@@ -13,8 +13,10 @@ import Badge from '../components/ui/Badge';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
+import { useWeb3 } from '../context/Web3Context';
 import { getContractErrorMessage } from '../utils/web3Errors';
-import { expectedShares, formatNumber } from '../lib/utils';
+import { formatShares } from '../utils/units';
+import { formatNumber } from '../lib/utils';
 
 const stagger = {
   hidden: {},
@@ -26,13 +28,14 @@ const rise = {
 };
 
 const CancelListingPage = () => {
+  const { address: currentSigner } = useWeb3();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
   const [userTokenBalances, setUserTokenBalances] = useState([]);
-  const [currentSigner, setCurrentSigner] = useState('');
   const [propertyShares, setPropertyShares] = useState({});
   const [listingOwners, setListingOwners] = useState({});
+  const [lockedByBuyBack, setLockedByBuyBack] = useState({});
   const [busyId, setBusyId] = useState(null);
 
   const totals = useMemo(() => {
@@ -50,27 +53,28 @@ const CancelListingPage = () => {
 
       const marketplaceContract = web3Service.getReadOnlyMarketplaceContract();
       const filteredProps = [];
-      const shares = {};
-      const owners = {};
       for (const prop of allProps) {
         try {
           const checkListing = await marketplaceContract.listings(prop.propertyId);
-          const buyBack = checkListing.buyBack;
-          const sh = Number(ethers.utils.formatUnits(checkListing.totalTokens, 18)).toString();
-          const owner = checkListing.owner;
+          if (!checkListing.active) continue;
 
-          if (buyBack) {
-            filteredProps.push(prop);
-            shares[prop.propertyId] = sh;
-            owners[prop.propertyId] = owner;
-          }
+          filteredProps.push(prop);
+          setPropertyShares((prev) => ({
+            ...prev,
+            [prop.propertyId]: formatShares(checkListing.totalTokens),
+          }));
+          setListingOwners((prev) => ({ ...prev, [prop.propertyId]: checkListing.owner }));
+          // A listing with escrow still committed to holders can't be
+          // cancelled until the claim window closes and the owner withdraws.
+          setLockedByBuyBack((prev) => ({
+            ...prev,
+            [prop.propertyId]: !checkListing.buyBackEscrow.isZero(),
+          }));
         } catch (err) {
           console.error(`Error checking marketplace listing for token ${prop.propertyId}:`, err);
         }
       }
       setProperties(filteredProps);
-      setPropertyShares(shares);
-      setListingOwners(owners);
     } catch (err) {
       console.error('Error fetching properties:', err);
     } finally {
@@ -79,10 +83,8 @@ const CancelListingPage = () => {
   };
 
   const fetchUserTokenBalance = async () => {
+    if (!currentSigner) return;
     try {
-      const address = await web3Service.getWalletAddress();
-      if (!address) return;
-
       const provider = web3Service.getProvider();
       const vaultContract = web3Service.getReadOnlyVaultContract();
       const balances = [];
@@ -93,19 +95,18 @@ const CancelListingPage = () => {
           const tokenAddress = fractionalData.tokenAddress;
 
           if (tokenAddress && tokenAddress !== ethers.constants.AddressZero) {
-            const tokenContract = new ethers.Contract(tokenAddress, contractsConfig.vault.abi, provider);
+            const tokenContract = new ethers.Contract(tokenAddress, contractsConfig.shareToken.abi, provider);
 
-            const [balance, symbol, decimals] = await Promise.all([
-              tokenContract.balanceOf(address),
+            const [balance, symbol] = await Promise.all([
+              tokenContract.balanceOf(currentSigner),
               tokenContract.symbol(),
-              tokenContract.decimals(),
             ]);
 
             balances.push({
               propertyId: prop.propertyId,
               tokenAddress,
               symbol,
-              balance: ethers.utils.formatUnits(balance, decimals),
+              balance: formatShares(balance),
             });
           }
         } catch (err) {
@@ -128,7 +129,7 @@ const CancelListingPage = () => {
       const listing = await listTokensContract.listings(tokenId);
       const listingData = {
         propertyTokenAddress: listing.propertyToken,
-        remainingTokens: listing.remainingTokens.toString(),
+        remainingTokens: formatShares(listing.remainingTokens),
       };
 
       setFractionalEvents((prev) => ({
@@ -145,21 +146,14 @@ const CancelListingPage = () => {
   };
 
   useEffect(() => {
-    if (properties.length > 0) {
+    if (properties.length > 0 && currentSigner) {
       fetchUserTokenBalance();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [properties]);
+  }, [properties, currentSigner]);
 
   useEffect(() => {
-    const init = async () => {
-      const address = await web3Service.getWalletAddress();
-      if (address) {
-        setCurrentSigner(address);
-      }
-      fetchProperties();
-    };
-    init();
+    fetchProperties();
   }, []);
 
   return (
@@ -167,7 +161,7 @@ const CancelListingPage = () => {
       <PageHeader
         eyebrow="Your assets"
         title="Cancel Listing"
-        description="End a buyback program: withdraw the shares that are still held in the marketplace contract and delist the property."
+        description="Delist your active properties and reclaim any unsold shares. Listings with an open buyback stay locked until the claim window closes."
         icon={
           <path
             strokeLinecap="round"
@@ -180,13 +174,13 @@ const CancelListingPage = () => {
       {!loading && (
         <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           <StatCard
-            label="Buyback listings"
+            label="Active listings"
             value={formatNumber(totals.count, 0)}
             tone="danger"
             icon={<CancelIcon />}
           />
           <StatCard
-            label="Shares in escrow"
+            label="Shares listed"
             value={formatNumber(totals.shares, 0)}
             sub="held by the marketplace"
             tone="warning"
@@ -205,12 +199,18 @@ const CancelListingPage = () => {
       {loading ? (
         <PropertyGridSkeleton />
       ) : properties.length > 0 ? (
-        <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3"
+        >
           {properties.map((prop) => {
             const tokenInfo = userTokenBalances.find((tkn) => tkn.propertyId === prop.propertyId);
             const isOwner = listingOwners[prop.propertyId]?.toLowerCase() === currentSigner?.toLowerCase();
             const done = fractionalEvents[prop.propertyId];
             const shares = propertyShares[prop.propertyId];
+            const locked = lockedByBuyBack[prop.propertyId];
 
             return (
               <motion.div key={prop.propertyId} variants={rise} className="h-full">
@@ -221,7 +221,7 @@ const CancelListingPage = () => {
                         Delisted successfully
                       </Badge>
                       <p className="mt-2 text-xs leading-relaxed text-emerald-800/80 dark:text-emerald-200/70">
-                        The buyback program was closed. Shares are no longer listed on the marketplace.
+                        The listing was closed and any unsold shares were returned to your wallet.
                       </p>
                     </div>
                   ) : tokenInfo && isOwner ? (
@@ -229,29 +229,34 @@ const CancelListingPage = () => {
                       <div className="space-y-1.5 rounded-xl bg-red-50/70 px-3.5 py-2.5 text-[13px] dark:bg-red-950/20">
                         <Row label="Your balance" value={`${formatNumber(tokenInfo.balance)} ${tokenInfo.symbol || ''}`} />
                         <Row label="Total listed" value={`${formatNumber(shares)} shares`} />
-                        <Row
-                          label="Expected share count"
-                          value={formatNumber(expectedShares(prop.propertyPrice))}
-                        />
                         <p className="truncate pt-1 font-mono text-[10.5px] text-red-400/70 dark:text-red-300/50">
                           {tokenInfo.tokenAddress}
                         </p>
                       </div>
-                      <Button
-                        fullWidth
-                        variant="danger"
-                        loading={busyId === prop.propertyId}
-                        onClick={() => cancelListing(prop.propertyId)}
-                      >
-                        Delist property
-                      </Button>
-                      <p className="text-center text-[11px] text-slate-400 dark:text-slate-500">
-                        Ends the buyback and withdraws escrowed shares to your wallet
-                      </p>
+                      {locked ? (
+                        <div className="rounded-xl bg-amber-50 px-3.5 py-3 text-[12.5px] leading-relaxed text-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
+                          A funded buyback is still open on this listing. Withdraw the remaining escrow from the
+                          Buyback Program page once the claim window closes, then delist.
+                        </div>
+                      ) : (
+                        <>
+                          <Button
+                            fullWidth
+                            variant="danger"
+                            loading={busyId === prop.propertyId}
+                            onClick={() => cancelListing(prop.propertyId)}
+                          >
+                            Delist property
+                          </Button>
+                          <p className="text-center text-[11px] text-slate-400 dark:text-slate-500">
+                            Returns any unsold shares to your wallet
+                          </p>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <div className="rounded-xl bg-slate-50 px-3.5 py-3 text-center text-[13px] font-medium text-slate-400 dark:bg-slate-950/50 dark:text-slate-500">
-                      Buyback program active — the listing owner can delist from their wallet.
+                      Listed by another wallet — only the listing owner can delist.
                     </div>
                   )}
                 </PropertyCard>
@@ -261,14 +266,14 @@ const CancelListingPage = () => {
         </motion.div>
       ) : (
         <EmptyState
-          title="No active buyback listings"
+          title="No active listings"
           action={
             <Button variant="soft" size="sm" onClick={() => (window.location.href = '/marketplace')}>
               Back to the marketplace
             </Button>
           }
         >
-          Properties show up here once their owner activates a buyback program from the property page.
+          Your active marketplace listings appear here once you list a fractionalized property for sale.
         </EmptyState>
       )}
     </AppLayout>

@@ -32,7 +32,7 @@ const AppLayout = ({ children, maxWidth = '1180px' }) => {
 
         <footer className="border-t border-slate-200/70 py-5 dark:border-slate-800/70">
           <p className="px-4 text-center text-xs text-slate-400 dark:text-slate-500">
-            TrueFraction — fractionalized real-world assets on Sonic · Demo environment
+            TrueFraction — fractionalized real-world assets on Robinhood · Demo environment
           </p>
         </footer>
       </div>

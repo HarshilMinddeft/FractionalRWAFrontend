@@ -13,6 +13,7 @@ import Badge from '../components/ui/Badge';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
+import { useWeb3 } from '../context/Web3Context';
 import { getContractErrorMessage } from '../utils/web3Errors';
 import { expectedShares, formatNumber, formatUsd, shortenAddress } from '../lib/utils';
 
@@ -26,6 +27,7 @@ const rise = {
 };
 
 const RedeemTokensPage = () => {
+  const { address } = useWeb3();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
@@ -76,11 +78,15 @@ const RedeemTokensPage = () => {
 
       const propertyToken = await vaultContract.fractionalData(tokenId);
       const propertyShareTokenAddr = propertyToken.tokenAddress;
-      const totalTokens = propertyToken.totalShares;
 
-      const propertyTokensTxn = new ethers.Contract(propertyShareTokenAddr, contractsConfig.vault.abi, signer);
+      const propertyTokensTxn = await web3Service.getShareTokenContract(propertyShareTokenAddr);
 
-      const approveTx = await propertyTokensTxn.approve(contractsConfig.vault.address, totalTokens);
+      // redeemShares pulls whatever the caller actually holds, which is less
+      // than totalShares whenever any shares were sold and not bought back.
+      const owner = await signer.getAddress();
+      const ownerBalance = await propertyTokensTxn.balanceOf(owner);
+
+      const approveTx = await propertyTokensTxn.approve(contractsConfig.vault.address, ownerBalance);
       await approveTx.wait();
 
       const vaultTx = await vaultContract.redeemShares(tokenId);
@@ -111,16 +117,12 @@ const RedeemTokensPage = () => {
   };
 
   useEffect(() => {
-    const init = async () => {
-      const address = await web3Service.getWalletAddress();
-      if (address) {
-        fetchProperties(address);
-      } else {
-        setLoading(false);
-      }
-    };
-    init();
-  }, []);
+    if (address) {
+      fetchProperties(address);
+    } else {
+      setLoading(false);
+    }
+  }, [address]);
 
   return (
     <AppLayout>
