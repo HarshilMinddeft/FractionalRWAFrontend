@@ -32,28 +32,28 @@ const TopFold = () => {
             <img
               className="tf-r-diamond-img"
               alt="diamond-banner"
-              src="https://ipfs.io/ipfs/QmTP8QzjTPTDEGHzyAvbauTMKPJKWphUr8gWKx1rm7sgQQ"
+              src="https://brown-leading-scallop-142.mypinata.cloud/ipfs/bafkreicouqxxw3kqtrws2rrghgom6p7d5diuoepo4gdztx7nf4itbet4wy"
             />
           </div>
           <div className="tf-r-diamond-items absolute-center">
             <img
               className="tf-r-diamond-img"
               alt="diamond-banner"
-              src="https://ipfs.io/ipfs/QmfGVm5vDqwYZ7eX59HGapSScxJrGaj74XPDZUm7tVh6cF"
+              src="https://brown-leading-scallop-142.mypinata.cloud/ipfs/QmfRYuVo7gDzUeodqHtnMxqZuBXoPLQAkyyhzmMGEHfety"
             />
           </div>
           <div className="tf-r-diamond-items absolute-center">
             <img
               className="tf-r-diamond-img"
               alt="diamond-banner"
-              src="https://ipfs.io/ipfs/QmQSosWCn9TV6Sg7pQ4TxeRjeZFfq6Ay5QqEy94wE1wk8H"
+              src="https://brown-leading-scallop-142.mypinata.cloud/ipfs/QmQSosWCn9TV6Sg7pQ4TxeRjeZFfq6Ay5QqEy94wE1wk8H"
             />
           </div>
           <div className="tf-r-diamond-items absolute-center">
             <img
               className="tf-r-diamond-img"
               alt="diamond-banner"
-              src="https://ipfs.io/ipfs/QmSxWvDuXCdf5K8Hipt2muSBXHhQPSc3sqTnNX9yBeayCJ"
+              src="https://brown-leading-scallop-142.mypinata.cloud/ipfs/QmeinPk44AMkxDt8xnh3BxrstppHQKrBiYVD46GEPgQK54"
             />
           </div>
         </div>

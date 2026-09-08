@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useWeb3 } from '../context/Web3Context';
 import AppLayout from '../components/layout/AppLayout';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import propertyApi from '../api/propertyApi';
 
 const PERKS = [
   {
@@ -54,25 +56,102 @@ const ShieldCheck = () => (
 
 const BlockpassKycPage = () => {
   const [refId, setRefId] = useState('');
-  const { isConnected, connectWallet } = useWeb3();
+  // Set once the user confirms their reference ID — only then is the
+  // Blockpass widget armed, so it isn't re-instantiated on every keystroke.
+  const [confirmedRefId, setConfirmedRefId] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { address, isConnected, connectWallet } = useWeb3();
 
-  const handleStartKYC = () => {
+  const handleConfirmRefId = () => {
     if (!refId) {
-      return alert('Please enter a reference ID (e.g., wallet or email)');
+      alert('Please enter a reference ID (e.g., wallet or email)');
+      return;
     }
-
+    if (!isConnected || !address) {
+      alert('Connect your wallet first so the verification can be linked to it.');
+      return;
+    }
     if (!window.BlockpassKYCConnect) {
-      return alert('Blockpass script not loaded yet');
+      alert('Blockpass script not loaded yet');
+      return;
     }
+    setConfirmedRefId(refId);
+  };
+
+  /**
+   * Blockpass's SDK attaches its own click listener to the element named by
+   * `elementId` when `startKYCConnect()` runs — it has no imperative "open"
+   * call. Arming it from inside that same button's onClick is one tick too
+   * late, since the click has already finished dispatching by the time the
+   * listener attaches. It has to be armed once the button already exists in
+   * the DOM, before the user clicks it — hence a ref-confirm step gates a
+   * second button that Blockpass's own listener catches directly.
+   *
+   * The SDK also has no `.off()` — `startKYCConnect()` only removes its
+   * *own* previous click listener by reference, so a second instance built
+   * for the same button (e.g. React StrictMode's dev-mode double-invoke of
+   * this effect) leaves both instances' click handlers attached at once.
+   * Clicking then opens two independent iframe sessions, and whichever one
+   * the user actually completes may not be the instance this effect's
+   * closures point to — so the real callback silently never fires.
+   * `blockpassInstanceRef` makes sure only one `BlockpassKYCConnect` is ever
+   * constructed per `confirmedRefId`, so a second StrictMode invocation is a
+   * no-op instead of a duplicate, competing widget.
+   */
+  const blockpassInstanceRef = useRef(null);
+
+  useEffect(() => {
+    if (!confirmedRefId || !window.BlockpassKYCConnect) return undefined;
+    if (blockpassInstanceRef.current?.refId === confirmedRefId) return undefined;
 
     const blockpass = new window.BlockpassKYCConnect('truefractionkyc_7bf80', {
-      refId,
+      refId: confirmedRefId,
+      // Pre-fills the applicant email field in the widget so it defaults to
+      // what the user typed, rather than silently falling back to whichever
+      // Blockpass account happens to be logged in in this browser. Only
+      // passed when the reference actually looks like an email — this field
+      // also accepts a wallet address, which the email prefill isn't for.
+      // The user can still switch accounts inside the widget; Blockpass
+      // doesn't let a merchant force a specific identity.
+      ...(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(confirmedRefId) ? { email: confirmedRefId } : {}),
       elementId: 'blockpass-kyc-connect-button',
       mainColor: '800080',
     });
+    blockpassInstanceRef.current = { refId: confirmedRefId, blockpass };
 
+    const handleSuccess = async () => {
+      setIsSubmitting(true);
+      try {
+        // Blockpass's own webhook would normally call /blockpass-webhook
+        // once its review completes, but that requires a paid plan we're
+        // not on — so the frontend triggers the same on-chain identity
+        // flow directly once the widget itself reports success. addNewUser
+        // must run first: the webhook handler looks the user up by refId
+        // and does nothing if that row doesn't exist yet.
+        await propertyApi.addNewUser({
+          refId: confirmedRefId,
+          userWalletAddress: address,
+          kycActive: false,
+        });
+        toast.info('Verifying your identity on-chain — this can take a moment…');
+        await propertyApi.triggerKycWebhook(confirmedRefId);
+        toast.success('Identity verified successfully!');
+      } catch (err) {
+        console.error('Error completing KYC registration:', err);
+        toast.error('Verified with Blockpass, but on-chain registration failed. Please contact support.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+    const handleCancelled = () => setIsSubmitting(false);
+
+    // 'KYCConnectCancel', not '...Cancelled' — matches the SDK's own event name.
+    blockpass.on('KYCConnectSuccess', handleSuccess);
+    blockpass.on('KYCConnectCancel', handleCancelled);
     blockpass.startKYCConnect();
-  };
+
+    return undefined;
+  }, [confirmedRefId, address]);
 
   return (
     <AppLayout>
@@ -146,11 +225,22 @@ const BlockpassKycPage = () => {
             type="text"
             placeholder="Your wallet or email"
             value={refId}
-            onChange={(e) => setRefId(e.target.value)}
+            onChange={(e) => {
+              setRefId(e.target.value);
+              setConfirmedRefId('');
+            }}
             hint="Use the same reference whenever you trade on the platform"
+            disabled={Boolean(confirmedRefId)}
           />
 
-          <Button id="blockpass-kyc-connect-button" size="lg" fullWidth className="mt-4" onClick={handleStartKYC}>
+          <Button
+            id={confirmedRefId ? 'blockpass-kyc-connect-button' : undefined}
+            size="lg"
+            fullWidth
+            className="mt-4"
+            onClick={confirmedRefId ? undefined : handleConfirmRefId}
+            loading={isSubmitting}
+          >
             <span className="flex items-center gap-2">
               Continue with Blockpass
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

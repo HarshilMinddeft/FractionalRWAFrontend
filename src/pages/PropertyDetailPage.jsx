@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
@@ -273,41 +273,120 @@ const PropertyDetailPage = () => {
   const [orderSellAmount, setOrderSellAmount] = useState('');
   const [opricePerToken, setPricePerToken] = useState('');
   const [contractListingData, setContractListingData] = useState({});
+  // Sale fee rate (bps / denominator), read once from the FeeManager the
+  // marketplace points at. Kept as a rate rather than a computed amount so
+  // the "Estimated total" preview can recompute instantly as the buyer
+  // types, without an on-chain round trip per keystroke.
+  const [saleFeeRate, setSaleFeeRate] = useState(null);
+  const [usdcBalance, setUsdcBalance] = useState(null);
+  const [shareBalance, setShareBalance] = useState(null);
   const [orders, setOrders] = useState([]);
   const [buyAmounts, setBuyAmounts] = useState({});
   const [sellingTokens, setSellingTokens] = useState('');
   const [refId, setRefId] = useState('');
+  // Set once the user confirms their reference ID — only then is the
+  // Blockpass widget armed, so it isn't re-instantiated on every keystroke.
+  const [confirmedRefId, setConfirmedRefId] = useState('');
   const [kycStatus, setKycStatus] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCompleteKYCClick = () => setShowPopup(true);
+  const handleCompleteKYCClick = () => {
+    setConfirmedRefId('');
+    setShowPopup(true);
+  };
 
-  const handleKycSubmit = async () => {
+  const handleConfirmRefId = () => {
     if (!refId) {
       toast.error('Please enter a reference ID (e.g., email)');
       return;
     }
-    const payload = {
-      refId,
-      userWalletAddress: currentSigner,
-      kycActive: true,
-    };
+    setConfirmedRefId(refId);
+  };
+
+  /**
+   * Wires the Blockpass widget to the "Continue with Blockpass" button.
+   *
+   * Blockpass's SDK works by attaching its own click listener to the
+   * element named by `elementId` when `startKYCConnect()` runs — it does
+   * not expose an imperative "open" call. Calling it from inside that same
+   * button's onClick is one tick too late: the click has already finished
+   * dispatching by the time the listener attaches, so the widget never
+   * opens. It has to be armed while the dialog is open and the button
+   * already exists in the DOM, before the user clicks it.
+   *
+   * The SDK has no `.off()` — `startKYCConnect()` only removes its *own*
+   * previous click listener by reference, so a second instance created for
+   * the same button (e.g. React StrictMode's dev-mode double-invoke of this
+   * effect) leaves both instances' click handlers attached at once. Clicking
+   * then opens two independent iframe sessions, and whichever one the user
+   * actually completes may not be the instance this effect's closures point
+   * to — so the real callback silently never fires. `instanceRef` makes sure
+   * only one `BlockpassKYCConnect` is ever constructed per `confirmedRefId`,
+   * so the effect's second StrictMode invocation is a no-op.
+   */
+  const blockpassInstanceRef = useRef(null);
+
+  useEffect(() => {
+    if (!showPopup || !confirmedRefId || !window.BlockpassKYCConnect) return undefined;
+    if (blockpassInstanceRef.current?.refId === confirmedRefId) return undefined;
 
     const blockpass = new window.BlockpassKYCConnect('truefraction_12597', {
-      refId,
+      refId: confirmedRefId,
+      // Pre-fills the applicant email field in the widget so it defaults to
+      // what the user typed here, rather than silently falling back to
+      // whichever Blockpass account happens to be logged in in this
+      // browser. The user can still switch accounts inside the widget —
+      // Blockpass doesn't let a merchant force a specific identity — but
+      // this at least makes the default match what they entered.
+      email: confirmedRefId,
       elementId: 'blockpass-kyc-connect-button',
       mainColor: '800080',
     });
+    blockpassInstanceRef.current = { refId: confirmedRefId, blockpass };
 
+    const handleSuccess = async () => {
+      setIsSubmitting(true);
+      try {
+        // Blockpass's own webhook would normally call /blockpass-webhook
+        // once its review completes, but that requires a paid plan we're
+        // not on — so the frontend triggers the same on-chain identity
+        // flow directly once the widget itself reports success. addNewUser
+        // must run first: the webhook handler looks the user up by refId
+        // and does nothing if that row doesn't exist yet.
+        await propertyApi.addNewUser({
+          refId: confirmedRefId,
+          userWalletAddress: currentSigner,
+          kycActive: false,
+        });
+        toast.info('Verifying your identity on-chain — this can take a moment…');
+        await propertyApi.triggerKycWebhook(confirmedRefId);
+        await checkKyc();
+        toast.success('Identity verified successfully!');
+        setShowPopup(false);
+      } catch (err) {
+        console.error('Error completing KYC registration:', err);
+        toast.error('Verified with Blockpass, but on-chain registration failed. Please contact support.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+    const handleCancelled = () => setIsSubmitting(false);
+
+    // 'KYCConnectCancel', not '...Cancelled' — matches the SDK's own event name.
+    blockpass.on('KYCConnectSuccess', handleSuccess);
+    blockpass.on('KYCConnectCancel', handleCancelled);
     blockpass.startKYCConnect();
-    if (isSubmitting) {
-      setShowPopup(false);
-      return;
-    }
-    setIsSubmitting(true);
-    await propertyApi.addNewUser(payload);
-  };
+
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPopup, confirmedRefId, currentSigner]);
+
+  // Widget instance is tied to one dialog session — drop it once the dialog
+  // closes so reopening starts clean instead of reusing a stale instance.
+  useEffect(() => {
+    if (!showPopup) blockpassInstanceRef.current = null;
+  }, [showPopup]);
 
   const fetchDetails = async () => {
     try {
@@ -333,12 +412,49 @@ const PropertyDetailPage = () => {
   };
 
   /**
-   * Sale fee the marketplace will pull from the buyer on top of the price.
-   * Read from the FeeManager the marketplace points at; if that read fails
-   * we fall back to the maximum plausible fee so the approval is never short
-   * (an over-approval is harmless — the contract only transfers the real fee).
+   * Connected wallet's USDC and share-token balances for this property, so
+   * the buy/sell cards can show what the user actually holds rather than
+   * making them check a wallet extension separately.
    */
-  const estimateSaleFee = async (totalPrice) => {
+  const fetchWalletBalances = async (shareTokenAddress) => {
+    if (!currentSigner) {
+      setUsdcBalance(null);
+      setShareBalance(null);
+      return;
+    }
+    try {
+      const provider = web3Service.getReadOnlyProvider();
+      const stableCoinContract = new ethers.Contract(
+        contractsConfig.stableCoin.address,
+        contractsConfig.stableCoin.abi,
+        provider,
+      );
+      const usdc = await stableCoinContract.balanceOf(currentSigner);
+      setUsdcBalance(formatStable(usdc));
+    } catch (err) {
+      console.error('Error fetching USDC balance:', err);
+    }
+
+    if (!shareTokenAddress || shareTokenAddress === ethers.constants.AddressZero) {
+      setShareBalance(null);
+      return;
+    }
+    try {
+      const provider = web3Service.getReadOnlyProvider();
+      const shareTokenContract = new ethers.Contract(shareTokenAddress, contractsConfig.shareToken.abi, provider);
+      const shares = await shareTokenContract.balanceOf(currentSigner);
+      setShareBalance(formatShares(shares));
+    } catch (err) {
+      console.error('Error fetching share token balance:', err);
+    }
+  };
+
+  /**
+   * Reads the marketplace's current sale fee rate once, so both the live
+   * "Estimated total" preview and the actual purchase approval agree on the
+   * same number without re-hitting the chain on every render or keystroke.
+   */
+  const fetchSaleFeeRate = async () => {
     try {
       const provider = web3Service.getReadOnlyProvider();
       const marketplace = web3Service.getReadOnlyMarketplaceContract();
@@ -353,11 +469,23 @@ const PropertyDetailPage = () => {
         feeManager.getFeeConfig(version),
         feeManager.BPS_DENOMINATOR(),
       ]);
-      return totalPrice.mul(config.saleFeeBps).div(denominator);
+      setSaleFeeRate({ bps: config.saleFeeBps, denominator });
     } catch (err) {
-      console.error('Could not read sale fee, approving a safe upper bound:', err);
+      console.error('Could not read sale fee rate, falling back to a safe upper bound:', err);
+      setSaleFeeRate({ bps: FEE_FALLBACK_BPS, denominator: 10000 });
+    }
+  };
+
+  /**
+   * Sale fee the marketplace will pull from the buyer on top of the price,
+   * as an on-chain BigNumber. Used to size the approval so the fee transfer
+   * never reverts for coming up short.
+   */
+  const estimateSaleFee = (totalPrice) => {
+    if (!saleFeeRate) {
       return totalPrice.mul(FEE_FALLBACK_BPS).div(10000);
     }
+    return totalPrice.mul(saleFeeRate.bps).div(saleFeeRate.denominator);
   };
 
   const buyPropertyTokens = async () => {
@@ -374,7 +502,7 @@ const PropertyDetailPage = () => {
       const marketplaceRead = web3Service.getReadOnlyMarketplaceContract();
       const listing = await marketplaceRead.listings(id);
       const totalPrice = sharesTimesPrice(tokensToBuy, listing.pricePerToken);
-      const feeAllowance = await estimateSaleFee(totalPrice);
+      const feeAllowance = estimateSaleFee(totalPrice);
 
       const stableCoinContract = await web3Service.getStableCoinContract();
       const approveTx = await stableCoinContract.approve(
@@ -389,6 +517,7 @@ const PropertyDetailPage = () => {
       toast.success('Tokens purchased successfully!');
       setBuyTokensAmount('');
       fetchDetails();
+      fetchWalletBalances(contractListingData.shareToken);
     } catch (error) {
       console.error('Error buying property tokens:', error);
       toast.error(getContractErrorMessage(error));
@@ -447,6 +576,7 @@ const PropertyDetailPage = () => {
 
       toast.success('Order filled successfully!');
       fetchOrders();
+      fetchWalletBalances(contractListingData.shareToken);
     } catch (error) {
       console.error('Error buying from limit order:', error);
       toast.error(getContractErrorMessage(error));
@@ -479,6 +609,7 @@ const PropertyDetailPage = () => {
       setOrderSellAmount('');
       setPricePerToken('');
       fetchOrders();
+      fetchWalletBalances(contractListingData.shareToken);
     } catch (error) {
       console.error('Error creating limit order:', error);
       toast.error(getContractErrorMessage(error));
@@ -493,6 +624,7 @@ const PropertyDetailPage = () => {
 
       toast.success('Order cancelled successfully!');
       fetchOrders();
+      fetchWalletBalances(contractListingData.shareToken);
     } catch (error) {
       console.error('Error cancelling order:', error);
       toast.error(getContractErrorMessage(error, 'Failed to cancel order. Please try again.'));
@@ -518,6 +650,7 @@ const PropertyDetailPage = () => {
 
       setSellingTokens('');
       fetchDetails();
+      fetchWalletBalances(contractListingData.shareToken);
       toast.success('Tokens sold back successfully!');
     } catch (error) {
       console.error('Error selling back tokens:', error);
@@ -546,26 +679,38 @@ const PropertyDetailPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Fee rate is a marketplace-wide setting, not per-property — fetch once.
   useEffect(() => {
+    fetchSaleFeeRate();
+  }, []);
+
+  useEffect(() => {
+    fetchWalletBalances(contractListingData.shareToken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSigner, contractListingData.shareToken]);
+
+  const checkKyc = async () => {
     if (!currentSigner) {
       setKycStatus(false);
       return;
     }
-    const checkKyc = async () => {
-      try {
-        const provider = web3Service.getProvider();
-        const identityRegistryCheck = new ethers.Contract(
-          contractsConfig.identityRegistry.address,
-          contractsConfig.identityRegistry.abi,
-          provider,
-        );
-        const kycCheck = await identityRegistryCheck.isVerified(currentSigner);
-        setKycStatus(kycCheck);
-      } catch (kycErr) {
-        console.error('KYC check error:', kycErr);
-      }
-    };
+    try {
+      const provider = web3Service.getProvider();
+      const identityRegistryCheck = new ethers.Contract(
+        contractsConfig.identityRegistry.address,
+        contractsConfig.identityRegistry.abi,
+        provider,
+      );
+      const kycCheck = await identityRegistryCheck.isVerified(currentSigner);
+      setKycStatus(kycCheck);
+    } catch (kycErr) {
+      console.error('KYC check error:', kycErr);
+    }
+  };
+
+  useEffect(() => {
     checkKyc();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSigner]);
 
   const isOwner = useMemo(
@@ -585,10 +730,17 @@ const PropertyDetailPage = () => {
   const soldPct = toPercent(Number(listing.totalShares || 0) - Number(listing.remainingTokens || 0), listing.totalShares);
   const pricePerToken = Number(listing.pricePerToken);
   const buyBackPrice = Number(listing.buyBackPrice);
-  const quickBuyCost =
+  const quickBuySubtotal =
     buyTokensAmount && Number(buyTokensAmount) > 0 && pricePerToken > 0
       ? Number(buyTokensAmount) * pricePerToken
       : null;
+  // Mirrors estimateSaleFee's on-chain math (subtotal * bps / denominator)
+  // in plain numbers, so the buyer sees the fee before signing anything.
+  const quickBuyFee =
+    quickBuySubtotal !== null && saleFeeRate
+      ? (quickBuySubtotal * Number(saleFeeRate.bps)) / Number(saleFeeRate.denominator)
+      : null;
+  const quickBuyCost = quickBuySubtotal !== null ? quickBuySubtotal + (quickBuyFee || 0) : null;
   const quickSellValue =
     sellingTokens && Number(sellingTokens) > 0 && buyBackPrice > 0
       ? Number(sellingTokens) * buyBackPrice
@@ -781,6 +933,17 @@ const PropertyDetailPage = () => {
               <p className="mb-4 mt-1 text-xs text-slate-400 dark:text-slate-500">
                 {formatNumber(listing.remainingTokens)} tokens still eligible for buyback.
               </p>
+
+              {currentSigner && (
+                <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs dark:border-slate-800 dark:bg-slate-950/60">
+                  <span className="text-slate-500 dark:text-slate-400">Your balances</span>
+                  <span className="font-semibold text-slate-700 tabular-nums dark:text-slate-200">
+                    {shareBalance !== null ? formatNumber(shareBalance) : '—'} tokens ·{' '}
+                    {usdcBalance !== null ? formatUsd(usdcBalance) : '—'} USDC
+                  </span>
+                </div>
+              )}
+
               <Input
                 type="number"
                 min="0"
@@ -832,6 +995,16 @@ const PropertyDetailPage = () => {
                   {formatNumber(soldPct, 0)}% of supply purchased
                 </p>
 
+                {currentSigner && (
+                  <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs dark:border-slate-800 dark:bg-slate-950/60">
+                    <span className="text-slate-500 dark:text-slate-400">Your balances</span>
+                    <span className="font-semibold text-slate-700 tabular-nums dark:text-slate-200">
+                      {usdcBalance !== null ? formatUsd(usdcBalance) : '—'} USDC ·{' '}
+                      {shareBalance !== null ? formatNumber(shareBalance) : '—'} tokens
+                    </span>
+                  </div>
+                )}
+
                 <Input
                   type="number"
                   min="0"
@@ -857,11 +1030,32 @@ const PropertyDetailPage = () => {
                 </div>
 
                 {quickBuyCost !== null && (
-                  <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-950/60">
-                    <span className="text-slate-500 dark:text-slate-400">Estimated total</span>
-                    <span className="font-bold text-slate-900 tabular-nums dark:text-white">
-                      {formatUsd(quickBuyCost)}
-                    </span>
+                  <div className="mb-4 space-y-1.5 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm dark:border-slate-800 dark:bg-slate-950/60">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
+                      <span className="font-medium text-slate-700 tabular-nums dark:text-slate-200">
+                        {formatUsd(quickBuySubtotal)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500 dark:text-slate-400">
+                        Marketplace fee
+                        {saleFeeRate && (
+                          <span className="ml-1 text-slate-400 dark:text-slate-500">
+                            ({(Number(saleFeeRate.bps) / Number(saleFeeRate.denominator) * 100).toFixed(2)}%)
+                          </span>
+                        )}
+                      </span>
+                      <span className="font-medium text-slate-700 tabular-nums dark:text-slate-200">
+                        {quickBuyFee !== null ? formatUsd(quickBuyFee) : '—'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-slate-200 pt-1.5 dark:border-slate-800">
+                      <span className="font-medium text-slate-600 dark:text-slate-300">Estimated total</span>
+                      <span className="font-bold text-slate-900 tabular-nums dark:text-white">
+                        {formatUsd(quickBuyCost)}
+                      </span>
+                    </div>
                   </div>
                 )}
 
@@ -1001,15 +1195,25 @@ const PropertyDetailPage = () => {
           label="Reference ID (email)"
           placeholder="you@example.com"
           value={refId}
-          onChange={(e) => setRefId(e.target.value)}
+          onChange={(e) => {
+            setRefId(e.target.value);
+            setConfirmedRefId('');
+          }}
+          disabled={Boolean(confirmedRefId)}
         />
         <div className="mt-5 flex gap-2">
           <Button variant="secondary" className="flex-1" onClick={() => setShowPopup(false)}>
             Cancel
           </Button>
-          <Button id="blockpass-kyc-connect-button" className="flex-1" onClick={handleKycSubmit} loading={isSubmitting}>
-            Continue with Blockpass
-          </Button>
+          {confirmedRefId ? (
+            <Button id="blockpass-kyc-connect-button" className="flex-1" loading={isSubmitting}>
+              Continue with Blockpass
+            </Button>
+          ) : (
+            <Button className="flex-1" onClick={handleConfirmRefId}>
+              Continue
+            </Button>
+          )}
         </div>
       </Dialog>
     </AppLayout>

@@ -53,8 +53,11 @@ const ListMarketplacePage = () => {
   const totals = useMemo(() => {
     let balance = 0;
     for (const t of userTokenBalances) balance += Number(t.balance) || 0;
-    return { count: userTokenBalances.length, balance };
-  }, [userTokenBalances]);
+
+    const listedCount = properties.filter((p) => existingListings[p.propertyId]).length;
+
+    return { count: userTokenBalances.length, balance, listedCount };
+  }, [userTokenBalances, properties, existingListings]);
 
   const fetchProperties = async (address) => {
     try {
@@ -268,9 +271,9 @@ const ListMarketplacePage = () => {
             icon={<CoinsIcon />}
           />
           <StatCard
-            label="Suggested listing price"
-            value={formatUsd(DEFAULT_LISTING_PRICE)}
-            sub="per token (USDC) · adjustable"
+            label="Already listed"
+            value={`${formatNumber(totals.listedCount, 0)} / ${formatNumber(properties.length, 0)}`}
+            sub="properties live on the marketplace"
             tone="warning"
             icon={<PriceIcon />}
           />

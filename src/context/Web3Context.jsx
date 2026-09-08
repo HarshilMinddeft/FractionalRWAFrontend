@@ -65,6 +65,14 @@ export const Web3Provider = ({ children }) => {
     // raw window.ethereum. With more than one wallet extension installed,
     // that global can belong to a different extension than the one the user
     // picked in the modal, silently misrouting reads/writes to it.
+    //
+    // Re-runs on `address` too: switching accounts in the wallet fires
+    // Web3Modal's own `accountsChanged` listener, which updates `address`
+    // without swapping the `walletProvider` object reference. Without
+    // `address` in the deps here, `getSigner()` would stay pinned to
+    // whichever account was selected when the wallet first connected —
+    // the UI would show the new address while every write transaction
+    // kept signing as the old one.
     if (isConnected && walletProvider) {
       const web3Provider = new ethers.providers.Web3Provider(walletProvider);
       const web3Signer = web3Provider.getSigner();
@@ -76,7 +84,7 @@ export const Web3Provider = ({ children }) => {
       setSigner(null);
       setModalProvider(null);
     }
-  }, [isConnected, walletProvider]);
+  }, [isConnected, walletProvider, address]);
 
   const value = useMemo(
     () => ({

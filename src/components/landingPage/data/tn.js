@@ -1,7 +1,7 @@
 export const TNRENDING_NFTS = [
   {
     id: 1,
-    banner: 'https://ipfs.io/ipfs/QmPUdEbHnUsF5hjc3uj4uXo1Bai2gpRtqankgcnNGWfgig',
+    banner: 'https://brown-leading-scallop-142.mypinata.cloud/ipfs/QmeinPk44AMkxDt8xnh3BxrstppHQKrBiYVD46GEPgQK54',
     userhandel: '923050 $',
     user_name: '217 McClallen',
     user_photo:
@@ -9,14 +9,14 @@ export const TNRENDING_NFTS = [
   },
   {
     id: 2,
-    banner: 'https://ipfs.io/ipfs/QmeinPk44AMkxDt8xnh3BxrstppHQKrBiYVD46GEPgQK54',
+    banner: 'https://brown-leading-scallop-142.mypinata.cloud/ipfs/QmUyNNiQbNLBQn6KfEG8Hf7KnwsDacN4ybn77LhpCPVdJ5',
     userhandel: '312500 $',
     user_name: '1580 Andover',
     user_photo: 'https://storage.googleapis.com/opensea-static/opensea-profile/3.png',
   },
   {
     id: 3,
-    banner: 'https://ipfs.io/ipfs/QmTMD56CXbKmtK7KpL5bmVEYLGPcLBEdsVFVBkTuMNdV65',
+    banner: 'https://brown-leading-scallop-142.mypinata.cloud/ipfs/QmRWP5gRGzNrCTJ5nUMcGZRhJZXtqJukFuiHpzRiVtZ13k',
     userhandel: '1490900 $',
     user_name: '230 Seacrest Ln',
     user_photo:
@@ -24,7 +24,7 @@ export const TNRENDING_NFTS = [
   },
   {
     id: 4,
-    banner: 'https://ipfs.io/ipfs/QmNyfdfDH1f2DnCmifQPmisxGfZxi1pnnsV7xQcUSNEYkb',
+    banner: 'https://brown-leading-scallop-142.mypinata.cloud/ipfs/QmT9ucFWioDHMZCey3JoLKNH3EYnrvzJDVtiv3M3rLqrrP',
     userhandel: '543550 $',
     user_name: '999 Canyon Rd',
     user_photo:

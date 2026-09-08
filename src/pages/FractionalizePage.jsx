@@ -126,9 +126,9 @@ const FractionalizePage = () => {
             icon={<ChipIcon />}
           />
           <StatCard
-            label="Shares to be created"
+            label="Shares to be created across all properties"
             value={formatNumber(totals.shares, 0)}
-            sub="at the cheapest divisible price"
+            sub="At each one's cheapest divisible price"
             tone="success"
             icon={<CoinsIcon />}
           />
