@@ -7,9 +7,9 @@ import { ROUTES } from '../../../../config/routes';
 const TfInfo = () => {
   const navigate = useNavigate();
   return (
-    <div className="mt-24 mb-28">
+    <div className="mt-12 mb-16 md:mt-24 md:mb-28">
       <div className="tf-left">
-        <div className="tf-heding">
+        <h2 className="tf-heding">
           With TrueFraction <br></br>
           <span className="">You can </span>
           <span className="heading-gradient">
@@ -30,7 +30,7 @@ const TfInfo = () => {
               repeat={Infinity}
             />
           </span>
-        </div>
+        </h2>
         <div className="tf-desc">
           TrueFraction is world first Usercentric Platform. Once property is tokenized by Truefraction SVP,
           PropertyOwner has full control over PropertyTokens then users can Fractionalize property Nft into tokens, List

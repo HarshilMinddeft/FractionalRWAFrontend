@@ -6,9 +6,9 @@ import InfoItem from './Infoitem';
 const Info = () => {
   return (
     <div className="info-section">
-      <div className="is-heading absolute-center">
+      <h2 className="is-heading absolute-center">
         <span className="heading-gradient"> How To Tokenize Your Property </span>
-      </div>
+      </h2>
       <div className="is-items-container">
         {INFO_ITEMS.map((_infoItem) => (
           <InfoItem key={_infoItem.id} item={_infoItem} />

@@ -2,7 +2,7 @@ import './tfInfo.css';
 
 const Erc3643 = () => {
   return (
-    <div className="mt-24 mb-28">
+    <div className="mt-12 mb-16 md:mt-24 md:mb-28">
       <div className="tf-left">
         <div className="tf-heding">
           {/* ERC-3643  <br></br> */}
@@ -27,7 +27,7 @@ const Erc3643 = () => {
               </span> */}
         </div>
       </div>
-      <img src="/Erc3643IMG.png" className="bg-transparent" alt="Logo" />
+      <img src="/Erc3643IMG.png" className="w-full h-auto bg-transparent" alt="Logo" />
     </div>
   );
 };

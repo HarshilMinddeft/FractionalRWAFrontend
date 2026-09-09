@@ -1,5 +1,5 @@
 .topfold {
-  height: 120vh;
+  min-height: 95vh;
   overflow: hidden;
 }
 
@@ -14,15 +14,18 @@
   font-size: 72px;
   font-weight: 600;
   line-height: 72px;
+  text-wrap: balance;
 }
 
 .tf-desc {
   font-size: 20px;
+  line-height: 1.6;
   margin: 24px 0px;
 }
 
 .tf-left-btns {
   margin-top: 25px;
+  justify-content: center;
   display: flex;
 }
 
@@ -63,8 +66,8 @@
 }
 
 .tf-r-diamond-items {
-  height: 280;
-  width: 200;
+  height: 207px;
+  width: 306px;
   overflow: hidden;
   margin: 3px;
   transform: rotate(-45deg);
@@ -75,7 +78,8 @@
 
 .tf-r-diamond-items img {
   height: 201px;
-  object-fit: contain;
+  width: 300px;
+  object-fit: cover;
   display: block;
 }
 
@@ -89,4 +93,85 @@
   left: 20%;
   top: 13%;
   transform: translate(-50%);
+}
+
+@media (max-width: 1024px) {
+  .topfold {
+    flex-direction: column;
+    padding: 32px 0px;
+    gap: 48px;
+  }
+
+  .tf-left {
+    padding-right: 0;
+    align-items: center;
+    text-align: center;
+  }
+
+  .tf-heding {
+    font-size: 44px;
+    line-height: 48px;
+  }
+
+  .tf-desc {
+    font-size: 18px;
+  }
+
+  .tf-r-bg-blob {
+    height: 320px;
+    width: 320px;
+    left: 50%;
+    top: 10%;
+  }
+
+  .tf-right-diamond {
+    transform: rotate(45deg) scale(0.7);
+  }
+}
+
+@media (max-width: 640px) {
+  .topfold {
+    min-height: auto;
+    padding: 20px 0px 28px;
+    gap: 40px;
+  }
+
+  .tf-heding {
+    font-size: 34px;
+    line-height: 40px;
+  }
+
+  .tf-desc {
+    font-size: 16px;
+    margin: 18px 0px;
+  }
+
+  .tf-left-btns {
+    width: 100%;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  .tf-right {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .tf-heding {
+    font-size: 30px;
+    line-height: 36px;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1279px) {
+  .tf-right-diamond {
+    transform: rotate(45deg) scale(0.65);
+  }
+}
+
+@media (min-width: 1280px) {
+  .tf-right-diamond {
+    transform: rotate(45deg) scale(0.8);
+  }
 }

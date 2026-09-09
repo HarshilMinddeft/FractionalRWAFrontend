@@ -15,3 +15,12 @@
 .secondary-btn {
   border: 2px solid var(--white);
 }
+
+@media (max-width: 640px) {
+  .button {
+    width: 100%;
+    text-align: center;
+    padding: 12px 28px;
+    font-size: 16px;
+  }
+}

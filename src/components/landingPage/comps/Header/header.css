@@ -5,3 +5,26 @@
   padding: 12px 0px 0px;
   letter-spacing: 12px;
 }
+
+@media (max-width: 768px) {
+  .header {
+    font-size: 26px;
+    letter-spacing: 8px;
+    padding: 8px 8px 0px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    font-size: 24px;
+    letter-spacing: 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .header {
+    font-size: 22px;
+    letter-spacing: 4px;
+    padding: 6px 4px 0px;
+  }
+}

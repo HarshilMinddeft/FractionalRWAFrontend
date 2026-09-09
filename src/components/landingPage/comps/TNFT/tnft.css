@@ -26,3 +26,40 @@
 .seemore-btn {
   font-size: 14px;
 }
+
+.trending-nfts .slick-prev {
+  left: 0px;
+  z-index: 1;
+}
+
+.trending-nfts .slick-next {
+  right: 0px;
+  z-index: 1;
+}
+
+@media (max-width: 1024px) {
+  .trending-nfts .slick-prev,
+  .trending-nfts .slick-next {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .trending-nfts {
+    padding: 32px 0px;
+  }
+
+  .tn-title {
+    font-size: 28px;
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tn-title {
+    font-size: 24px;
+    line-height: 32px;
+    margin-bottom: 20px;
+    white-space: nowrap;
+  }
+}

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { ethers } from 'ethers';
 import {
   createWeb3Modal,
@@ -61,6 +61,8 @@ export const Web3Provider = ({ children }) => {
   const [signer, setSigner] = useState(null);
 
   useEffect(() => {
+    // TEMP DEBUG — remove after diagnosing account-switch issue.
+    console.log('[Web3Context] effect run', { isConnected, address, walletProvider });
     // Only ever wire up the provider Web3Modal actually connected — never a
     // raw window.ethereum. With more than one wallet extension installed,
     // that global can belong to a different extension than the one the user
@@ -86,6 +88,40 @@ export const Web3Provider = ({ children }) => {
     }
   }, [isConnected, walletProvider, address]);
 
+  useEffect(() => {
+    // TEMP DEBUG — remove after diagnosing account-switch issue.
+    if (!walletProvider?.on) return undefined;
+    const onAccountsChanged = (accounts) => console.log('[Web3Context] raw accountsChanged event', accounts);
+    walletProvider.on('accountsChanged', onAccountsChanged);
+    return () => walletProvider.removeListener?.('accountsChanged', onAccountsChanged);
+  }, [walletProvider]);
+
+  const disconnectWallet = useCallback(async () => {
+    const rawProvider = walletProvider;
+
+    try {
+      await disconnect();
+    } catch (err) {
+      console.error('Wallet disconnect failed:', err);
+    } finally {
+      setProvider(null);
+      setSigner(null);
+      setModalProvider(null);
+    }
+    if (rawProvider?.request) {
+      try {
+        await rawProvider.request({
+          method: 'wallet_revokePermissions',
+          params: [{ eth_accounts: {} }],
+        });
+      } catch {
+        // Unsupported by this wallet/provider — nothing more we can do from
+        // the dApp side; the user will need to disconnect from the wallet's
+        // own UI if it doesn't support revocation.
+      }
+    }
+  }, [disconnect, walletProvider]);
+
   const value = useMemo(
     () => ({
       address: address?.toLowerCase() || '',
@@ -94,9 +130,9 @@ export const Web3Provider = ({ children }) => {
       provider,
       signer,
       connectWallet: () => open(),
-      disconnectWallet: () => disconnect(),
+      disconnectWallet,
     }),
-    [address, isConnected, chainId, provider, signer, open, disconnect],
+    [address, isConnected, chainId, provider, signer, open, disconnectWallet],
   );
 
   return <Web3Context.Provider value={value}>{children}</Web3Context.Provider>;

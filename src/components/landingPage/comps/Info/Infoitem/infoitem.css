@@ -20,3 +20,46 @@
   height: 150px;
   width: 150px;
 }
+
+@media (max-width: 1024px) {
+  .ii-icon {
+    height: 120px;
+    width: 120px;
+  }
+
+  .info-item {
+    margin: 0px 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .info-item {
+    width: 100%;
+    margin: 0px;
+  }
+
+  .ii-title {
+    font-size: 22px;
+  }
+
+  .ii-description {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ii-icon {
+    height: 110px;
+    width: 110px;
+  }
+
+  .ii-title {
+    font-size: 20px;
+    margin-top: 14px;
+  }
+
+  .ii-description {
+    font-size: 15px;
+    margin-top: 14px;
+  }
+}

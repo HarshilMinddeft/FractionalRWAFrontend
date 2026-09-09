@@ -8,10 +8,10 @@ const TopFold = () => {
   return (
     <div className="topfold absolute-center">
       <div className="tf-left">
-        <div className="tf-heding">
+        <h1 className="tf-heding">
           Unlock <br></br>
           <span className="heading-gradient">Fractional</span> Ownership of Real-World Assets
-        </div>
+        </h1>
         <div className="tf-desc">
           {' '}
           Step into the future of investing where properties, infrastructure, and real estate are no longer limited to

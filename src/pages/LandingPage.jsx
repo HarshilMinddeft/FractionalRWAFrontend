@@ -8,7 +8,7 @@ import Erc3643 from '../components/landingPage/comps/Erc-3643/Index';
 
 const LandingPage = () => {
   return (
-    <div className="mx-auto w-full max-w-[1360px]">
+    <div className="mx-auto w-full max-w-[1360px] px-4 sm:px-8">
       <Header />
       <TopFold />
       <TfInfo />

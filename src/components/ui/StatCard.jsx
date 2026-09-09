@@ -18,7 +18,7 @@ const TONES = {
  * @param {('neutral'|'brand'|'success'|'danger'|'warning')} [tone]
  */
 const StatCard = ({ label, value, sub, icon, tone = 'brand', className = '' }) => (
-  <Card className={cn('relative overflow-hidden p-4 sm:p-5', className)}>
+  <Card className={cn('relative h-full overflow-hidden p-4 sm:p-5', className)}>
     <div
       className={cn(
         'pointer-events-none absolute -top-10 -right-10 h-24 w-24 rounded-full opacity-60 blur-2xl',
@@ -28,16 +28,23 @@ const StatCard = ({ label, value, sub, icon, tone = 'brand', className = '' }) =
         tone === 'warning' && 'bg-amber-200/50 dark:bg-amber-500/10',
       )}
     />
-    <div className="relative flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <p className="text-xs font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">{label}</p>
-        <p className="mt-1.5 truncate text-xl font-bold tracking-tight text-slate-900 tabular-nums sm:text-2xl dark:text-white">
+    <div className="relative flex h-full items-start justify-between gap-3">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <p className="line-clamp-2 min-h-[2em] text-xs leading-tight font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
+          {label}
+        </p>
+        <p className="mt-2 truncate text-xl leading-none font-bold tracking-tight text-slate-900 tabular-nums sm:text-2xl dark:text-white">
           {value}
         </p>
-        {sub && <p className="mt-1 truncate text-xs text-slate-400 dark:text-slate-500">{sub}</p>}
+        <p className="mt-1.5 min-h-[1em] truncate text-xs text-slate-400 dark:text-slate-500">{sub}</p>
       </div>
       {icon && (
-        <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', TONES[tone])}>
+        <div
+          className={cn(
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+            TONES[tone],
+          )}
+        >
           {icon}
         </div>
       )}

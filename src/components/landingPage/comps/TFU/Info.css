@@ -1,8 +1,3 @@
-.topfold {
-  height: 120vh;
-  overflow: hidden;
-}
-
 .tf-left {
   display: flex;
   flex-direction: column;
@@ -18,6 +13,7 @@
 
 .tf-desc {
   font-size: 20px;
+  line-height: 1.6;
   margin: 24px 0px;
 }
 
@@ -50,35 +46,6 @@
   font-weight: 600px;
 }
 
-.tf-right {
-  display: flex;
-  flex: 1;
-  position: relative;
-}
-
-.tf-right-diamond {
-  display: flex;
-  flex-wrap: wrap;
-  transform: rotate(45deg);
-}
-
-.tf-r-diamond-items {
-  height: 280;
-  width: 200;
-  overflow: hidden;
-  margin: 3px;
-  transform: rotate(-45deg);
-  cursor: pointer;
-  border: 3px solid var(--white);
-  border-radius: 12px;
-}
-
-.tf-r-diamond-items img {
-  height: 201px;
-  object-fit: contain;
-  display: block;
-}
-
 .tn {
   height: 390px;
   width: 560px;
@@ -87,4 +54,46 @@
   position: absolute;
   left: 80%;
   transform: translate(-60%);
+}
+
+@media (max-width: 1024px) {
+  .tf-left {
+    padding-right: 0;
+    align-items: center;
+    text-align: center;
+  }
+
+  .tf-heding {
+    font-size: 44px;
+    line-height: 48px;
+  }
+
+  .tf-desc {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .tf-heding {
+    font-size: 34px;
+    line-height: 40px;
+  }
+
+  .tf-desc {
+    font-size: 16px;
+    margin: 18px 0px;
+  }
+
+  .tf-left-btns {
+    width: 100%;
+    justify-content: center;
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 360px) {
+  .tf-heding {
+    font-size: 30px;
+    line-height: 36px;
+  }
 }

@@ -3,19 +3,21 @@
 }
 
 .tc-inner-wrapper {
-  /* background: var(--text-gradiant-1); */
+  background: var(--text-gradiant-1);
   padding: 1px;
   border-radius: 18px;
 }
 
 .tc-content {
-  /* background-color: var(--background); */
+  background-color: var(--background);
   border-radius: 18px;
   padding: 18px;
 }
 
 .tc-banner {
   height: 300px;
+  width: 100%;
+  object-fit: cover;
   border-radius: 18px;
 }
 
@@ -50,4 +52,14 @@
 
 .tc-solana-logo {
   height: 36px;
+}
+
+@media (max-width: 640px) {
+  .tc-banner {
+    height: 220px;
+  }
+
+  .tc-content {
+    padding: 12px;
+  }
 }

@@ -1,9 +1,12 @@
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'react-toastify';
 import ThemeToggle from '../ui/ThemeToggle';
 import { useWeb3 } from '../../context/Web3Context';
 import { getPageMeta } from '../../config/navigation';
 import { shortenAddress } from '../../lib/utils';
+import envConfig from '../../config/env.config';
 
 const WalletIcon = () => (
   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
@@ -36,30 +39,163 @@ const ConnectPill = ({ onClick }) => (
   </button>
 );
 
-const ConnectedPill = ({ address, onClick }) => (
-  <motion.button
-    type="button"
-    initial={{ opacity: 0, y: -4 }}
-    animate={{ opacity: 1, y: 0 }}
-    onClick={onClick}
-    className="group inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white py-0 pr-2 pl-1.5 shadow-sm transition-all duration-150 hover:border-slate-300 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600"
-    title="Manage wallet"
-  >
-    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-indigo-500 to-violet-600 text-[10px] font-bold text-white">
-      {address.slice(2, 4).toUpperCase()}
-    </span>
-    <span className="hidden items-center gap-1.5 text-[13px] font-semibold text-slate-700 sm:flex dark:text-slate-200">
-      {shortenAddress(address, 5, 4)}
-      <span className="relative flex h-1.5 w-1.5">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-      </span>
-    </span>
-    <span className="text-slate-300 transition-colors group-hover:text-slate-500 dark:text-slate-600 dark:group-hover:text-slate-400">
-      <ChevronDown />
-    </span>
-  </motion.button>
+const CopyIcon = () => (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M8 7.5V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 20 6v7.5a2.25 2.25 0 0 1-2.25 2.25H16.5M8 7.5h-.75A2.25 2.25 0 0 0 5 9.75v8A2.25 2.25 0 0 0 7.25 20h7.5a2.25 2.25 0 0 0 2.25-2.25V16.5M8 7.5h6.5a2.25 2.25 0 0 1 2.25 2.25v6.5"
+    />
+  </svg>
 );
+
+const ExplorerIcon = () => (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-9 4.5L20.25 3.75M20.25 3.75h-6M20.25 3.75v6"
+    />
+  </svg>
+);
+
+const DisconnectIcon = () => (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"
+    />
+  </svg>
+);
+
+const ConnectedPill = ({ address, onDisconnect }) => {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const handlePointerDown = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      toast.success('Address copied');
+    } catch {
+      toast.error('Could not copy address');
+    }
+    setOpen(false);
+  };
+
+  const handleViewExplorer = () => {
+    setOpen(false);
+    if (!envConfig.robinhoodExplorerUrl) {
+      toast.info('Explorer link is not configured');
+      return;
+    }
+    window.open(
+      `${envConfig.robinhoodExplorerUrl.replace(/\/$/, '')}/address/${address}`,
+      '_blank',
+      'noopener,noreferrer',
+    );
+  };
+
+  const handleDisconnect = () => {
+    setOpen(false);
+    onDisconnect();
+  };
+
+  return (
+    <div ref={rootRef} className="relative">
+      <motion.button
+        type="button"
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={() => setOpen((prev) => !prev)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="group inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white py-0 pr-2 pl-1.5 shadow-sm transition-all duration-150 hover:border-slate-300 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600"
+        title="Manage wallet"
+      >
+        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-indigo-500 to-violet-600 text-[10px] font-bold text-white">
+          {address.slice(2, 4).toUpperCase()}
+        </span>
+        <span className="hidden items-center gap-1.5 text-[13px] font-semibold text-slate-700 sm:flex dark:text-slate-200">
+          {shortenAddress(address, 5, 4)}
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          </span>
+        </span>
+        <span
+          className={`text-slate-300 transition-transform duration-150 group-hover:text-slate-500 dark:text-slate-600 dark:group-hover:text-slate-400 ${open ? 'rotate-180' : ''}`}
+        >
+          <ChevronDown />
+        </span>
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.12 }}
+            role="menu"
+            className="absolute top-11 right-0 z-40 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1.5 shadow-lg shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30"
+          >
+            <div className="border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+              <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Connected wallet</p>
+              <p className="truncate text-[13px] font-semibold text-slate-700 dark:text-slate-200">
+                {shortenAddress(address, 8, 6)}
+              </p>
+            </div>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={handleCopy}
+              className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              <CopyIcon />
+              Copy address
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={handleViewExplorer}
+              className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              <ExplorerIcon />
+              View on explorer
+            </button>
+            <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+            <button
+              type="button"
+              role="menuitem"
+              onClick={handleDisconnect}
+              className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+            >
+              <DisconnectIcon />
+              Disconnect
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 const TopBar = ({ onMenuOpen }) => {
   const location = useLocation();
@@ -98,7 +234,7 @@ const TopBar = ({ onMenuOpen }) => {
 
         <div className="ml-auto flex items-center gap-2.5">
           {isConnected && address ? (
-            <ConnectedPill address={address} onClick={disconnectWallet} />
+            <ConnectedPill address={address} onDisconnect={disconnectWallet} />
           ) : (
             <ConnectPill onClick={connectWallet} />
           )}
