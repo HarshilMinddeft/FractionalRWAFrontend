@@ -5,7 +5,7 @@ import FractionalizePage from './pages/FractionalizePage';
 import RedeemTokensPage from './pages/RedeemTokensPage';
 import ListMarketplacePage from './pages/ListMarketplacePage';
 import MarketplacePage from './pages/MarketplacePage';
-import BuyBackPage from './pages/BuyBackPage';
+import WithdrawBuyBackPage from './pages/WithdrawBuyBackPage';
 import UpdatePricePage from './pages/UpdatePricePage';
 import CancelListingPage from './pages/CancelListingPage';
 import PropertyDetailPage from './pages/PropertyDetailPage';
@@ -33,7 +33,7 @@ function App() {
         <Route path={ROUTES.redeemProperty} element={<RedeemTokensPage />} />
         <Route path={ROUTES.listProperty} element={<ListMarketplacePage />} />
         <Route path={ROUTES.marketplace} element={<MarketplacePage />} />
-        <Route path={ROUTES.buyBack} element={<BuyBackPage />} />
+        <Route path={ROUTES.withdrawBuyBack} element={<WithdrawBuyBackPage />} />
         <Route path={ROUTES.updatePrice} element={<UpdatePricePage />} />
         <Route path={ROUTES.cancelListing} element={<CancelListingPage />} />
         <Route path={ROUTES.propertyDetails} element={<PropertyDetailPage />} />

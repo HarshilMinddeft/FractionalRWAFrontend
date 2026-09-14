@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import AppLayout from '../components/layout/AppLayout';
@@ -9,15 +9,21 @@ import Skeleton from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
 import { getPropertyDetailsPath } from '../config/routes';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import usePropertiesFilteredBy from '../hooks/usePropertiesFilteredBy';
 import { cn, formatNumber } from '../lib/utils';
 
+// cancelListing sets active = false in the same call that may open a
+// buyback, so a listing with a live buyback (holders can still sell back)
+// always has active == false too. Keep it visible here — it's still the
+// only way holders reach PropertyDetailPage to call sellTokensBack — rather
+// than filtering strictly on `active`, which would make it unreachable.  
 const isActivelyListed = async (property, marketplaceContract) => {
   const listing = await marketplaceContract.listings(property.propertyId);
-  return listing.active;
+  return listing.active || listing.buyBack;
 };
 
 const container = {
@@ -59,6 +65,35 @@ const MarketplacePage = () => {
     isActivelyListed,
     web3Service.getReadOnlyMarketplaceContract,
   );
+
+  // A property can show up here either as a normal buyable listing or as a
+  // cancelled listing with a still-open buyback (isActivelyListed keeps
+  // both) — flag the latter so the card doesn't read as "buy now" for
+  // something that's actually delisted and only sellable back.
+  const [buyBackOnly, setBuyBackOnly] = useState({});
+
+  useEffect(() => {
+    if (properties.length === 0) return;
+    let cancelled = false;
+
+    (async () => {
+      const marketplace = web3Service.getReadOnlyMarketplaceContract();
+      const flags = {};
+      for (const prop of properties) {
+        try {
+          const listing = await marketplace.listings(prop.propertyId);
+          flags[prop.propertyId] = !listing.active && listing.buyBack;
+        } catch (err) {
+          console.error(`Error checking buyback status for property ${prop.propertyId}:`, err);
+        }
+      }
+      if (!cancelled) setBuyBackOnly(flags);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [properties]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return properties;
@@ -171,10 +206,13 @@ const MarketplacePage = () => {
         >
           {sorted.map((prop) => (
             <motion.div key={prop.propertyId} variants={item} className="h-full">
-              <PropertyCard
-                property={prop}
-                onClick={() => navigate(getPropertyDetailsPath(prop.propertyId))}
-              />
+              <PropertyCard property={prop} onClick={() => navigate(getPropertyDetailsPath(prop.propertyId))}>
+                {buyBackOnly[prop.propertyId] && (
+                  <Badge tone="warning" dot>
+                    Buyback open — not for sale
+                  </Badge>
+                )}
+              </PropertyCard>
             </motion.div>
           ))}
         </motion.div>

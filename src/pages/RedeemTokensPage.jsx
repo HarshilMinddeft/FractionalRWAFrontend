@@ -15,6 +15,7 @@ import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
 import { useWeb3 } from '../context/Web3Context';
 import { getContractErrorMessage } from '../utils/web3Errors';
+import { formatShares } from '../utils/units';
 import { expectedShares, formatNumber, formatUsd, shortenAddress } from '../lib/utils';
 
 const stagger = {
@@ -31,6 +32,7 @@ const RedeemTokensPage = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fractionalEvents, setFractionalEvents] = useState({});
+  const [ownerBalances, setOwnerBalances] = useState({});
   const [busyId, setBusyId] = useState(null);
 
   const totals = useMemo(() => {
@@ -50,14 +52,24 @@ const RedeemTokensPage = () => {
 
       const propertyNftContract = web3Service.getReadOnlyPropertyNftContract();
       const marketplaceContract = web3Service.getReadOnlyMarketplaceContract();
+      const vaultContract = web3Service.getReadOnlyVaultContract();
       const filteredProps = [];
       for (const prop of allProps) {
         try {
-          const checkListing = await marketplaceContract.listings(prop.propertyId);
           const isFrac = await propertyNftContract.isFractionalized(prop.propertyId);
-          if (isFrac && !checkListing.active) {
-            filteredProps.push(prop);
-          }
+          if (!isFrac) continue;
+
+          // redeemShares now only requires marketplace.wasCancelled(tokenId)
+          // (set by cancelListing) plus holding your own balance — not 100%
+          // of supply, since any shares still out after a buyback window
+          // closes are simply forfeited by their holders, not blocking.
+          const wasCancelled = await marketplaceContract.wasCancelled(prop.propertyId);
+          if (!wasCancelled) continue;
+
+          const fracData = await vaultContract.fractionalData(prop.propertyId);
+          if (fracData.redeemed) continue;
+
+          filteredProps.push(prop);
         } catch (err) {
           console.error(`Error checking property ${prop.propertyId}:`, err);
         }
@@ -124,12 +136,38 @@ const RedeemTokensPage = () => {
     }
   }, [address]);
 
+  useEffect(() => {
+    if (!address || properties.length === 0) return;
+    let cancelled = false;
+
+    (async () => {
+      const vaultContract = web3Service.getReadOnlyVaultContract();
+      const provider = web3Service.getProvider();
+      const balances = {};
+      for (const prop of properties) {
+        try {
+          const fracData = await vaultContract.fractionalData(prop.propertyId);
+          const tokenContract = new ethers.Contract(fracData.tokenAddress, contractsConfig.shareToken.abi, provider);
+          const balance = await tokenContract.balanceOf(address);
+          balances[prop.propertyId] = formatShares(balance);
+        } catch (err) {
+          console.error(`Error fetching share balance for property ${prop.propertyId}:`, err);
+        }
+      }
+      if (!cancelled) setOwnerBalances(balances);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [address, properties]);
+
   return (
     <AppLayout>
       <PageHeader
         eyebrow="Your assets"
         title="Redeem Property"
-        description="When all outstanding shares are returned to you, redeem the token supply to unbind the compliance contract and reclaim full ownership of the underlying asset."
+        description="Once a listing is cancelled (and any buyback window has run its course), redeem your shares to unbind the compliance contract and reclaim full ownership of the underlying asset."
         icon={
           <path
             strokeLinecap="round"
@@ -191,27 +229,29 @@ const RedeemTokensPage = () => {
                     <div className="space-y-3">
                       <div className="space-y-1.5 rounded-xl bg-slate-50 px-3.5 py-2.5 text-[13px] dark:bg-slate-950/50">
                         <div className="flex items-center justify-between">
-                          <span className="text-slate-400 dark:text-slate-500">Outstanding supply</span>
+                          <span className="text-slate-400 dark:text-slate-500">Your share balance</span>
                           <span className="font-bold text-slate-700 tabular-nums dark:text-slate-200">
-                            {expectedShares(prop.propertyPrice).toLocaleString()} tokens
+                            {formatNumber(ownerBalances[prop.propertyId] ?? 0)} tokens
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-slate-400 dark:text-slate-500">Returned to you</span>
+                          <span className="text-slate-400 dark:text-slate-500">Listing</span>
                           <span className="font-bold text-emerald-600 tabular-nums dark:text-emerald-400">
-                            100% required
+                            Cancelled — ready to redeem
                           </span>
                         </div>
                       </div>
                       <Button
                         fullWidth
                         loading={busyId === prop.propertyId}
+                        disabled={!(Number(ownerBalances[prop.propertyId]) > 0)}
                         onClick={() => redeemTokens(prop.propertyId, prop.complianceAddress)}
                       >
                         Redeem & reclaim asset
                       </Button>
                       <p className="text-center text-[11px] text-slate-400 dark:text-slate-500">
-                        Approve the share token, burn the supply, unbind compliance
+                        Burns your share balance and unbinds compliance — any shares other holders never sold back
+                        stay with them
                       </p>
                     </div>
                   )}

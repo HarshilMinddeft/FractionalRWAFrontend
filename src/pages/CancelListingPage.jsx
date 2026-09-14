@@ -8,6 +8,7 @@ import PropertyGridSkeleton from '../components/property/PropertyGridSkeleton';
 import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
 import EmptyState from '../components/ui/EmptyState';
 import Badge from '../components/ui/Badge';
 import web3Service from '../services/web3Service';
@@ -15,8 +16,18 @@ import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
 import { useWeb3 } from '../context/Web3Context';
 import { getContractErrorMessage } from '../utils/web3Errors';
-import { formatShares } from '../utils/units';
+import { formatShares, formatStable, parseStable } from '../utils/units';
 import { formatNumber } from '../lib/utils';
+import { ROUTES } from '../config/routes';
+
+/** Buyback must be priced at least 10% above the listing price (contract rule). */
+const MIN_BUYBACK_MULTIPLIER = 1.1;
+
+const formatDeadline = (timestamp) =>
+  new Date(Number(timestamp) * 1000).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
 
 const stagger = {
   hidden: {},
@@ -36,6 +47,10 @@ const CancelListingPage = () => {
   const [propertyShares, setPropertyShares] = useState({});
   const [listingOwners, setListingOwners] = useState({});
   const [lockedByBuyBack, setLockedByBuyBack] = useState({});
+  const [buyBackDeadlines, setBuyBackDeadlines] = useState({});
+  const [listingPrices, setListingPrices] = useState({});
+  const [outstandingShares, setOutstandingShares] = useState({});
+  const [buyBackPrices, setBuyBackPrices] = useState({});
   const [busyId, setBusyId] = useState(null);
 
   const totals = useMemo(() => {
@@ -58,17 +73,34 @@ const CancelListingPage = () => {
           const checkListing = await marketplaceContract.listings(prop.propertyId);
           if (!checkListing.active) continue;
 
+          const outstanding = await marketplaceContract.outstandingTokens(prop.propertyId);
+
           filteredProps.push(prop);
           setPropertyShares((prev) => ({
             ...prev,
             [prop.propertyId]: formatShares(checkListing.totalTokens),
           }));
+          setOutstandingShares((prev) => ({
+            ...prev,
+            [prop.propertyId]: formatShares(outstanding),
+          }));
+          setListingPrices((prev) => ({
+            ...prev,
+            [prop.propertyId]: formatStable(checkListing.pricePerToken),
+          }));
           setListingOwners((prev) => ({ ...prev, [prop.propertyId]: checkListing.owner }));
           // A listing with escrow still committed to holders can't be
-          // cancelled until the claim window closes and the owner withdraws.
+          // cancelled again until the claim window closes and the owner
+          // withdraws — cancelListing itself reverts (BuyBackActive) in
+          // that state, since the escrow is already locked to a live
+          // buyback price.
           setLockedByBuyBack((prev) => ({
             ...prev,
             [prop.propertyId]: !checkListing.buyBackEscrow.isZero(),
+          }));
+          setBuyBackDeadlines((prev) => ({
+            ...prev,
+            [prop.propertyId]: checkListing.buyBackDeadline.toString(),
           }));
         } catch (err) {
           console.error(`Error checking marketplace listing for token ${prop.propertyId}:`, err);
@@ -119,24 +151,47 @@ const CancelListingPage = () => {
     }
   };
 
-  const cancelListing = async (tokenId) => {
+  const cancelListing = async (tokenId, buyBackPriceInput) => {
     setBusyId(tokenId);
     try {
-      const listTokensContract = await web3Service.getMarketplaceContract();
-      const cancelTx = await listTokensContract.cancelListing(tokenId);
+      const hasOutstanding = Number(outstandingShares[tokenId]) > 0;
+      const marketplaceContract = await web3Service.getMarketplaceContract();
+
+      // cancelListing only reads buyBackPrice when shares are still
+      // outstanding (it activates a buyback for them in the same call) — 0
+      // is fine to pass otherwise, since the contract ignores it.
+      const buyBackPrice = hasOutstanding ? parseStable(buyBackPriceInput) : ethers.constants.Zero;
+
+      if (hasOutstanding) {
+        // Ask the contract what it will pull rather than recomputing it
+        // here, so the approval can never come up short of what
+        // cancelListing needs to escrow.
+        const deposit = await marketplaceContract.buyBackDepositRequired(tokenId, buyBackPrice);
+        const stableCoin = await web3Service.getStableCoinContract();
+        const approveTx = await stableCoin.approve(contractsConfig.marketplace.address, deposit);
+        await approveTx.wait();
+      }
+
+      const cancelTx = await marketplaceContract.cancelListing(tokenId, buyBackPrice);
       await cancelTx.wait();
 
-      const listing = await listTokensContract.listings(tokenId);
+      const listing = await marketplaceContract.listings(tokenId);
       const listingData = {
         propertyTokenAddress: listing.propertyToken,
         remainingTokens: formatShares(listing.remainingTokens),
+        buyBackActivated: listing.buyBack,
+        buyBackDeadline: listing.buyBackDeadline.toString(),
       };
 
       setFractionalEvents((prev) => ({
         ...prev,
         [tokenId]: listingData,
       }));
-      toast.success('Listing cancelled successfully.');
+      toast.success(
+        hasOutstanding
+          ? 'Listing cancelled — buyback activated for outstanding shares.'
+          : 'Listing cancelled successfully.',
+      );
     } catch (error) {
       console.error('Transaction error:', error);
       toast.error(getContractErrorMessage(error, 'Failed to cancel listing. Please try again.'));
@@ -211,6 +266,11 @@ const CancelListingPage = () => {
             const done = fractionalEvents[prop.propertyId];
             const shares = propertyShares[prop.propertyId];
             const locked = lockedByBuyBack[prop.propertyId];
+            const outstanding = Number(outstandingShares[prop.propertyId] || 0);
+            const buyBackDeadline = buyBackDeadlines[prop.propertyId];
+            const listingPrice = Number(listingPrices[prop.propertyId] || 0);
+            const minBuyBackPrice = (listingPrice * MIN_BUYBACK_MULTIPLIER).toFixed(2);
+            const buyBackPriceInput = buyBackPrices[prop.propertyId] || '';
 
             return (
               <motion.div key={prop.propertyId} variants={rise} className="h-full">
@@ -221,35 +281,109 @@ const CancelListingPage = () => {
                         Delisted successfully
                       </Badge>
                       <p className="mt-2 text-xs leading-relaxed text-emerald-800/80 dark:text-emerald-200/70">
-                        The listing was closed and any unsold shares were returned to your wallet.
+                        {done.buyBackActivated
+                          ? 'The listing was closed, unsold shares were returned to your wallet, and a buyback was activated for outstanding shares.'
+                          : 'The listing was closed and any unsold shares were returned to your wallet.'}
                       </p>
+                      {done.buyBackActivated && done.buyBackDeadline && (
+                        <>
+                          <p className="mt-2 flex items-center justify-between rounded-lg bg-white/60 px-3 py-2 text-xs font-semibold text-emerald-800 dark:bg-slate-900/40 dark:text-emerald-300">
+                            <span>Withdrawable from</span>
+                            <span className="tabular-nums">{formatDeadline(done.buyBackDeadline)}</span>
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            fullWidth
+                            className="mt-2"
+                            onClick={() => (window.location.href = ROUTES.withdrawBuyBack)}
+                          >
+                            Go to Withdraw Buyback
+                          </Button>
+                        </>
+                      )}
                     </div>
                   ) : tokenInfo && isOwner ? (
                     <div className="space-y-2.5">
                       <div className="space-y-1.5 rounded-xl bg-red-50/70 px-3.5 py-2.5 text-[13px] dark:bg-red-950/20">
-                        <Row label="Your balance" value={`${formatNumber(tokenInfo.balance)} ${tokenInfo.symbol || ''}`} />
+                        <Row label="Your current balance" value={`${formatNumber(tokenInfo.balance)} shares`} />
                         <Row label="Total listed" value={`${formatNumber(shares)} shares`} />
+                        <Row label="Held by investors" value={`${formatNumber(outstanding)} shares`} />
                         <p className="truncate pt-1 font-mono text-[10.5px] text-red-400/70 dark:text-red-300/50">
                           {tokenInfo.tokenAddress}
                         </p>
                       </div>
                       {locked ? (
-                        <div className="rounded-xl bg-amber-50 px-3.5 py-3 text-[12.5px] leading-relaxed text-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
-                          A funded buyback is still open on this listing. Withdraw the remaining escrow from the
-                          Buyback Program page once the claim window closes, then delist.
+                        <div className="space-y-2 rounded-xl bg-amber-50 px-3.5 py-3 text-[12.5px] leading-relaxed text-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
+                          <p>
+                            A funded buyback is still open on this listing. Withdraw the remaining escrow once the
+                            claim window closes, then delist.
+                          </p>
+                          {buyBackDeadline && (
+                            <p className="flex items-center justify-between rounded-lg bg-white/60 px-3 py-2 font-semibold dark:bg-slate-900/40">
+                              <span>Withdrawable from</span>
+                              <span className="tabular-nums">{formatDeadline(buyBackDeadline)}</span>
+                            </p>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            fullWidth
+                            onClick={() => (window.location.href = ROUTES.withdrawBuyBack)}
+                          >
+                            Go to Withdraw Buyback
+                          </Button>
                         </div>
                       ) : (
                         <>
+                          {outstanding > 0 && (
+                            <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900/60 dark:bg-amber-950/20">
+                              <p className="text-[12.5px] leading-relaxed text-amber-800 dark:text-amber-300">
+                                {formatNumber(outstanding)} shares are still held by investors. Delisting requires
+                                setting a buyback price so they can sell back, The full cost is escrowed (pulled as
+                                USDC) from your wallet up front, in the same transaction.
+                              </p>
+                              <Input
+                                label="Buyback price per share (USDC)"
+                                type="number"
+                                min={minBuyBackPrice}
+                                step="0.01"
+                                value={buyBackPriceInput}
+                                onChange={(e) =>
+                                  setBuyBackPrices((prev) => ({ ...prev, [prop.propertyId]: e.target.value }))
+                                }
+                                placeholder={`Min $${minBuyBackPrice}`}
+                                error={
+                                  buyBackPriceInput && Number(buyBackPriceInput) < Number(minBuyBackPrice)
+                                    ? `Must be at least $${minBuyBackPrice} — 10% above the $${listingPrice} listing price`
+                                    : undefined
+                                }
+                              />
+                              <div className="flex items-center justify-between rounded-lg bg-white/60 px-3 py-2 text-[12.5px] dark:bg-slate-900/40">
+                                <span className="font-medium text-amber-800 dark:text-amber-300">
+                                  USDC you&apos;ll approve &amp; escrow
+                                </span>
+                                <span className="font-bold text-amber-900 tabular-nums dark:text-amber-200">
+                                  {Number(buyBackPriceInput) > 0
+                                    ? `$${formatNumber(outstanding * Number(buyBackPriceInput))}`
+                                    : '—'}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                           <Button
                             fullWidth
                             variant="danger"
                             loading={busyId === prop.propertyId}
-                            onClick={() => cancelListing(prop.propertyId)}
+                            disabled={outstanding > 0 && !(Number(buyBackPriceInput) >= Number(minBuyBackPrice))}
+                            onClick={() => cancelListing(prop.propertyId, buyBackPriceInput)}
                           >
                             Delist property
                           </Button>
                           <p className="text-center text-[11px] text-slate-400 dark:text-slate-500">
-                            Returns any unsold shares to your wallet
+                            {outstanding > 0
+                              ? 'Approves and escrows the USDC buyback deposit, then delists and returns unsold shares'
+                              : 'No USDC required — nothing is outstanding, so this just delists and returns unsold shares'}
                           </p>
                         </>
                       )}
@@ -281,9 +415,11 @@ const CancelListingPage = () => {
 };
 
 const Row = ({ label, value }) => (
-  <div className="flex items-center justify-between">
-    <span className="text-slate-400 dark:text-slate-500">{label}</span>
-    <span className="font-semibold text-slate-700 tabular-nums dark:text-slate-200">{value}</span>
+  <div className="flex items-center justify-between gap-3">
+    <span className="shrink-0 text-slate-400 dark:text-slate-500">{label}</span>
+    <span className="min-w-0 truncate text-right font-semibold text-slate-700 tabular-nums dark:text-slate-200">
+      {value}
+    </span>
   </div>
 );
 

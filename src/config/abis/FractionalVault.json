@@ -17,6 +17,16 @@
     },
     {
       "inputs": [],
+      "name": "ListingNotCancelled",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "MarketplaceNotSet",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "NotFractionalized",
       "type": "error"
     },
@@ -132,6 +142,19 @@
         }
       ],
       "name": "Initialized",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "marketplace",
+          "type": "address"
+        }
+      ],
+      "name": "MarketplaceSet",
       "type": "event"
     },
     {
@@ -484,6 +507,19 @@
     },
     {
       "inputs": [],
+      "name": "marketplace",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "propertyNFT",
       "outputs": [
         {
@@ -566,6 +602,19 @@
         }
       ],
       "name": "setIdentityRegistry",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_marketplace",
+          "type": "address"
+        }
+      ],
+      "name": "setMarketplace",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

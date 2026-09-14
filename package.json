@@ -12,6 +12,7 @@
     "check-format": "prettier --check ."
   },
   "dependencies": {
+    "@leenguyen/react-flip-clock-countdown": "^1.7.2",
     "@tailwindcss/vite": "^4.0.7",
     "@web3modal/ethers5": "^5.1.11",
     "axios": "^1.10.0",

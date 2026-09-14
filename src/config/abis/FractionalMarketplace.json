@@ -587,24 +587,6 @@
         },
         {
           "internalType": "uint256",
-          "name": "buyBackPrice",
-          "type": "uint256"
-        }
-      ],
-      "name": "activateBuyBack",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "tokenId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
           "name": "additionalTokens",
           "type": "uint256"
         }
@@ -661,6 +643,11 @@
         {
           "internalType": "uint256",
           "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "buyBackPrice",
           "type": "uint256"
         }
       ],
@@ -858,6 +845,11 @@
           "internalType": "uint256",
           "name": "buyBackDeadline",
           "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "cancelled",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -1064,6 +1056,25 @@
           "internalType": "address",
           "name": "",
           "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "wasCancelled",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",

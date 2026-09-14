@@ -914,55 +914,77 @@ const PropertyDetailPage = () => {
 
         {/* ---------------- RIGHT RAIL ---------------- */}
         <div className="space-y-6 lg:sticky lg:top-24">
-          {listing.buyBack ? (
-            <Card className="p-5">
-              <SectionLabel>Sell back to treasury</SectionLabel>
-              <div className="mb-1 flex items-end justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
-                    Buyback price / token
-                  </p>
-                  <p className="text-2xl font-bold tracking-tight text-slate-900 tabular-nums dark:text-white">
-                    {formatUsd(listing.buyBackPrice)}
-                  </p>
-                </div>
-                <Badge tone="success" dot>
-                  Guaranteed
+          {listing.buyBack && isOwner ? (
+            <Card className="overflow-hidden border-amber-200/70 p-0 dark:border-amber-900/50">
+              <div className="items-center justify-between gap-3 border-b border-amber-200/70 bg-amber-50/70 px-5 py-3 dark:border-amber-900/50 dark:bg-amber-950/20">
+                <Badge tone="warning" dot className="shrink-0">
+                  Owner view
                 </Badge>
               </div>
-              <p className="mb-4 mt-1 text-xs text-slate-400 dark:text-slate-500">
-                {formatNumber(listing.remainingTokens)} tokens still eligible for buyback.
-              </p>
 
-              {currentSigner && (
-                <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs dark:border-slate-800 dark:bg-slate-950/60">
-                  <span className="text-slate-500 dark:text-slate-400">Your balances</span>
-                  <span className="font-semibold text-slate-700 tabular-nums dark:text-slate-200">
-                    {shareBalance !== null ? formatNumber(shareBalance) : '—'} tokens ·{' '}
-                    {usdcBalance !== null ? formatUsd(usdcBalance) : '—'} USDC
-                  </span>
-                </div>
-              )}
-
-              <Input
-                type="number"
-                min="0"
-                value={sellingTokens}
-                onChange={(e) => setSellingTokens(e.target.value)}
-                placeholder="Number of tokens"
-                label="Tokens to sell"
-                className="mb-2"
-              />
-              {quickSellValue !== null && (
-                <p className="mb-4 rounded-lg bg-indigo-50/70 px-3 py-2 text-xs font-medium text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
-                  You will receive ≈ <strong>{formatUsd(quickSellValue)}</strong> stablecoin.
+              <div className="p-5">
+                <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
+                  Buyback price / token
                 </p>
-              )}
-              <KycGate>
-                <Button fullWidth onClick={sellBackTokensContract}>
-                  Sell tokens back
+                <p className="mt-1 text-2xl font-bold tracking-tight text-slate-900 tabular-nums dark:text-white">
+                  {formatUsd(listing.buyBackPrice)}
+                </p>
+
+                <p className="mt-3 mb-5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  {formatNumber(listing.remainingTokens)} tokens still eligible for buyback. Holders can sell back at
+                  this price until the claim window closes.
+                </p>
+
+                <Button fullWidth variant="secondary" onClick={() => navigate(ROUTES.withdrawBuyBack)}>
+                  Manage escrow &amp; withdraw
                 </Button>
-              </KycGate>
+              </div>
+            </Card>
+          ) : listing.buyBack ? (
+            <Card className="overflow-hidden border-emerald-200/70 p-0 dark:border-emerald-900/50">
+              <div className="items-center justify-between gap-3 border-b border-emerald-200/70 bg-emerald-50/70 px-5 py-3 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                <SectionLabel>Sell back to treasury</SectionLabel>
+
+              </div>
+
+              <div className="p-5">
+                <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
+                  Buyback price / token
+                </p>
+                <p className="mt-1 text-2xl mb-3 font-bold tracking-tight text-slate-900 tabular-nums dark:text-white">
+                  {formatUsd(listing.buyBackPrice)}
+                </p>
+ 
+                {currentSigner && (
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-slate-100 bg-slate-50 px-3.5 py-2.5 text-xs dark:border-slate-800 dark:bg-slate-950/60">
+                    <span className="text-slate-500 dark:text-slate-400">Your balances</span>
+                    <span className="font-semibold text-slate-700 tabular-nums dark:text-slate-200">
+                      {shareBalance !== null ? formatNumber(shareBalance) : '—'} tokens ·{' '}
+                      {usdcBalance !== null ? formatUsd(usdcBalance) : '—'} USDC
+                    </span>
+                  </div>
+                )}
+
+                <Input
+                  type="number"
+                  min="0"
+                  value={sellingTokens}
+                  onChange={(e) => setSellingTokens(e.target.value)}
+                  placeholder="Number of tokens"
+                  label="Tokens to sell"
+                  className="mb-2"
+                />
+                {quickSellValue !== null && (
+                  <p className="mb-4 rounded-lg bg-indigo-50/70 px-3 py-2 text-xs font-medium text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
+                    You will receive ≈ <strong>{formatUsd(quickSellValue)}</strong> stablecoin.
+                  </p>
+                )}
+                <KycGate>
+                  <Button fullWidth onClick={sellBackTokensContract}>
+                    Sell tokens back
+                  </Button>
+                </KycGate>
+              </div>
             </Card>
           ) : (
             <Card className="overflow-hidden">
@@ -1169,17 +1191,6 @@ const PropertyDetailPage = () => {
             </Card>
           )}
 
-          {isOwner && !listing.buyBack && (
-            <Card className="border-amber-200/70 bg-gradient-to-b from-amber-50/70 to-white p-5 dark:border-amber-900/50 dark:from-amber-950/20 dark:to-slate-900">
-              <SectionLabel tone="red">Owner controls</SectionLabel>
-              <p className="-mt-2 mb-4 text-sm text-slate-500 dark:text-slate-400">
-                Offer to repurchase shares from your investors. The full cost is escrowed up front.
-              </p>
-              <Button variant="secondary" fullWidth onClick={() => navigate(ROUTES.buyBack)}>
-                Manage buyback
-              </Button>
-            </Card>
-          )}
         </div>
       </div>
 

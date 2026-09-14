@@ -33,6 +33,8 @@ const CUSTOM_ERRORS = {
   NotFractionalized: 'This property has not been fractionalized.',
   ZeroShares: 'You hold no shares to redeem.',
   TransferFailed: 'The token transfer failed.',
+  MarketplaceNotSet: 'The vault is not linked to the marketplace yet. Please contact support.',
+  ListingNotCancelled: 'Cancel the marketplace listing for this property before redeeming.',
 };
 
 const KNOWN_ERRORS = [
