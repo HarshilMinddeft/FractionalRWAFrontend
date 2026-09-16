@@ -168,6 +168,11 @@ const TokenizePropertyPage = () => {
   const [propUploadStatus, setProUploadStatus] = useState('');
   const [uploadStatus, setUploadStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  // Index into FLOW_STEPS for the step currently in flight — -1 before
+  // submit. Drives the sidebar's per-step check/spinner state instead of a
+  // single `busy` flag, which previously marked every step "done" the
+  // instant the whole submit started.
+  const [currentStep, setCurrentStep] = useState(-1);
   const [formData, setFormData] = useState({
     propertyId: '',
     name: '',
@@ -242,6 +247,7 @@ const TokenizePropertyPage = () => {
     const propertyPrice = parseLeadingNumber(data.propertyPrice);
 
     setBusy(true);
+    setCurrentStep(0);
     setUploadStatus('Uploading to IPFS…');
 
     try {
@@ -277,28 +283,25 @@ const TokenizePropertyPage = () => {
           contractsConfig.compliance.bytecode,
           signer,
         );
-        toast.info('Deploying Compliance Contract.');
+        setCurrentStep(1);
         setUploadStatus('Deploying compliance contract…');
         const complianceContract = await complianceFactory.deploy();
         await complianceContract.deployed();
-        toast.success('Deployed Compliance');
 
         complianceAddress = complianceContract.address;
 
-        toast.info('Initializing Compliance Contract.');
         setUploadStatus('Initializing compliance contract…');
         const initTx = await complianceContract.init();
         await initTx.wait();
-        toast.success('Compliance Contract Initialized');
 
         const complianceCont = new ethers.Contract(complianceAddress, contractsConfig.compliance.abi, signer);
-        toast.info('Transferring Ownership.');
+        setCurrentStep(2);
         setUploadStatus('Transferring ownership to the asset owner…');
         const changeOwnerCompliance = await complianceCont.transferOwnership(formData.propertyOwnerWallet);
         await changeOwnerCompliance.wait();
 
         const propertyNftContract = await web3Service.getPropertyNftContract();
-        toast.info('Minting Property NFT.');
+        setCurrentStep(3);
         setUploadStatus('Minting the property NFT…');
         const transaction = await propertyNftContract.mintProperty(
           formData.name,
@@ -321,7 +324,8 @@ const TokenizePropertyPage = () => {
         );
       }
 
-      setUploadStatus('Uploading gallery images…');
+      setCurrentStep(4);
+      setUploadStatus('');
       const multiImageUrls = [];
       for (const file of multipleImages) {
         const url = await uploadToPinata(file);
@@ -331,7 +335,6 @@ const TokenizePropertyPage = () => {
       let pdfUrl = '';
       if (pdfFile) pdfUrl = await uploadToPinata(pdfFile);
 
-      toast.info('Saving Data.');
       setUploadStatus('Registering the property…');
       const finalPayload = {
         propertyId: tokenpId,
@@ -358,6 +361,7 @@ const TokenizePropertyPage = () => {
     } catch (err) {
       console.error(err);
       setUploadStatus('');
+      setCurrentStep(-1);
       if (err instanceof Error) {
         if (err.message.includes('user rejected')) {
           toast.error('Transaction Rejected.');
@@ -431,7 +435,21 @@ const TokenizePropertyPage = () => {
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_350px]">
           {/* ==================== MAIN FORM ==================== */}
           <Card className="overflow-hidden">
-            {propUploadStatus ? (
+            {propUploadStatus && busy ? (
+              <div className="flex flex-col items-center px-6 py-14 text-center sm:py-16">
+                <div className="relative mb-5 flex h-16 w-16 items-center justify-center">
+                  <span className="absolute inset-0 rounded-full border-[3px] border-indigo-100 dark:border-indigo-500/20" />
+                  <span className="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent border-t-indigo-600 dark:border-t-indigo-400" />
+                  <span className="h-2 w-2 rounded-full bg-indigo-600 dark:bg-indigo-400" />
+                </div>
+                <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  NFT minted — finishing up
+                </h2>
+                <p className="mt-1.5 max-w-md text-sm text-slate-500 dark:text-slate-400">
+                  {uploadStatus || 'Publishing the gallery and registering the property…'}
+                </p>
+              </div>
+            ) : propUploadStatus ? (
               <div className="flex flex-col items-center px-6 py-14 text-center sm:py-16">
                 <div className="relative mb-5">
                   <span className="absolute -inset-4 rounded-full bg-emerald-400/20 blur-xl" />
@@ -552,7 +570,7 @@ const TokenizePropertyPage = () => {
                         label="Features"
                         value={formData.features}
                         onChange={handleInputChange}
-                        placeholder="e.g. Beach access, gym, parking, concierge"
+                        placeholder="e.g. 3 bedrooms, 2 bathrooms, pool, gym…"
                         error={errors.features}
                       />
                       <Textarea
@@ -561,7 +579,7 @@ const TokenizePropertyPage = () => {
                         rows={4}
                         value={formData.offering}
                         onChange={handleInputChange}
-                        placeholder="Yield structure, token supply and exit mechanics…"
+                        placeholder="e.g. neighborhood livability, local job market, commuter access, and demand drivers behind this offering…"
                         error={errors.offering}
                       />
                       <Textarea
@@ -641,7 +659,13 @@ const TokenizePropertyPage = () => {
                       </span>
                     )}
                   </div>
-                  <Button type="submit" size="lg" loading={busy} className="sm:min-w-52">
+                  <Button
+                    type="submit"
+                    size="lg"
+                    loading={busy}
+                    disabled={priceHint?.tone === 'negative'}
+                    className="sm:min-w-52"
+                  >
                     {busy ? 'Registering…' : 'Register property'}
                   </Button>
                 </div>
@@ -663,29 +687,31 @@ const TokenizePropertyPage = () => {
               </div>
               <ol className="space-y-4">
                 {FLOW_STEPS.map((step, i) => {
-                  const running = busy && i === FLOW_STEPS.length - 1;
-                  const past = busy;
+                  // currentStep is the step in flight; anything before it is
+                  // done, and nothing is "done" before submit (-1).
+                  const running = i === currentStep;
+                  const done = currentStep > i || (currentStep === -1 && Boolean(propUploadStatus) && !busy);
                   return (
-                    <li key={step.title} className="relative flex gap-3">
+                    <li key={step.title} className="relative flex items-start gap-3">
                       {i < FLOW_STEPS.length - 1 && (
                         <span className="absolute top-6 left-[11px] h-[calc(100%-8px)] w-px bg-slate-100 dark:bg-slate-800" />
                       )}
                       <span
                         className={`relative z-10 mt-0.5 flex h-[23px] w-[23px] shrink-0 items-center justify-center rounded-full text-[10px] font-bold ring-4 ring-white dark:ring-slate-900 ${
-                          past
+                          done || running
                             ? 'bg-indigo-600 text-white'
                             : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
                         }`}
                       >
                         {running ? (
                           <span className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-white/40 border-t-white" />
-                        ) : past ? (
+                        ) : done ? (
                           '✓'
                         ) : (
                           i + 1
                         )}
                       </span>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1 text-left">
                         <p className="text-[13px] font-semibold text-slate-700 dark:text-slate-200">{step.title}</p>
                         <p className="mt-0.5 text-xs leading-relaxed text-slate-400 dark:text-slate-500">{step.detail}</p>
                       </div>

@@ -639,11 +639,9 @@ const PropertyDetailPage = () => {
     try {
       const convertTokens = parseShares(sellingTokens);
 
-      const propertyTokenContract = await web3Service.getShareTokenContract(contractListingData.shareToken);
-
-      const approveTx = await propertyTokenContract.approve(contractsConfig.marketplace.address, convertTokens);
-      await approveTx.wait();
-
+      // sellTokensBack now burns the caller's shares directly via the
+      // marketplace's agent role on the Token contract (Token.burn), rather
+      // than pulling them in with transferFrom — no ERC-20 approval needed.
       const marketplaceContract = await web3Service.getMarketplaceContract();
       const sellTx = await marketplaceContract.sellTokensBack(id, convertTokens);
       await sellTx.wait();

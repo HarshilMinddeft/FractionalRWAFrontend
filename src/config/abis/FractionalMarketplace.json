@@ -57,6 +57,11 @@
     },
     {
       "inputs": [],
+      "name": "MinBuyBackPremiumNotSet",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "NoOutstandingTokens",
       "type": "error"
     },
@@ -274,6 +279,19 @@
         }
       ],
       "name": "ListingCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint16",
+          "name": "minBuyBackPremiumBps",
+          "type": "uint16"
+        }
+      ],
+      "name": "MinBuyBackPremiumBpsSet",
       "type": "event"
     },
     {
@@ -534,6 +552,19 @@
           "internalType": "bytes32",
           "name": "",
           "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "BPS_DENOMINATOR",
+      "outputs": [
+        {
+          "internalType": "uint16",
+          "name": "",
+          "type": "uint16"
         }
       ],
       "stateMutability": "view",
@@ -850,6 +881,24 @@
           "internalType": "bool",
           "name": "cancelled",
           "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "soldTokens",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "minBuyBackPremiumBps",
+      "outputs": [
+        {
+          "internalType": "uint16",
+          "name": "",
+          "type": "uint16"
         }
       ],
       "stateMutability": "view",
@@ -950,6 +999,19 @@
         }
       ],
       "name": "setFeeManager",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint16",
+          "name": "_minBuyBackPremiumBps",
+          "type": "uint16"
+        }
+      ],
+      "name": "setMinBuyBackPremiumBps",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
