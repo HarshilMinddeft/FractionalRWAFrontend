@@ -10,6 +10,7 @@ import UpdatePricePage from './pages/UpdatePricePage';
 import CancelListingPage from './pages/CancelListingPage';
 import PropertyDetailPage from './pages/PropertyDetailPage';
 import BlockpassKycPage from './pages/BlockpassKycPage';
+import UpdateBuyBackBPS from './pages/UpdateBuyBackBPS';
 import ThemeToggle from './components/ui/ThemeToggle';
 import { ROUTES, getPropertyDetailsPath } from './config/routes';
 import './App.css';
@@ -38,6 +39,7 @@ function App() {
         <Route path={ROUTES.cancelListing} element={<CancelListingPage />} />
         <Route path={ROUTES.propertyDetails} element={<PropertyDetailPage />} />
         <Route path={ROUTES.identityVerification} element={<BlockpassKycPage />} />
+        <Route path={ROUTES.updateBuyBackBPS} element={<UpdateBuyBackBPS />} />
 
         <Route path="/property/:id" element={<LegacyPropertyRedirect />} />
       </Routes>
