@@ -90,7 +90,6 @@ const WithdrawCard = ({ listing, onWithdraw }) => {
       <StatRow label="Buyback price" value={`$${listing.buyBackPrice}`} emphasis />
       <StatRow label="Escrow remaining" value={`$${listing.buyBackEscrow}`} />
       <StatRow label="Total shares issued" value={listing.totalTokens} />
-      <StatRow label="Shares in user wallets" value={listing.outstandingTokens} />
 
       {nothingLeft ? (
         <p className="text-center text-xs text-slate-500 dark:text-slate-400">

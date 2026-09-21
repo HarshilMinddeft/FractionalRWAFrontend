@@ -125,6 +125,17 @@ export const NAV_GROUPS = [
           />
         ),
       },
+      {
+        path: ROUTES.updateBuyBackBPS,
+        label: 'Update Buyback BPS',
+        icon: (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M6 12h12M6 12a2.25 2.25 0 1 1-4.5 0A2.25 2.25 0 0 1 6 12Zm12 0a2.25 2.25 0 1 1 4.5 0A2.25 2.25 0 0 1 18 12ZM12 6h6m-6 0a2.25 2.25 0 1 1-4.5 0A2.25 2.25 0 0 1 12 6Zm0 12h6m-6 0a2.25 2.25 0 1 1-4.5 0A2.25 2.25 0 0 1 12 18Z"
+        />
+        ),
+      },
     ],
   },
 ];
@@ -140,6 +151,7 @@ export const PAGE_META = {
   [ROUTES.identityVerification]: { title: 'Verify Identity', section: 'Compliance' },
   [ROUTES.tokenizeProperty]: { title: 'Tokenize Property', section: 'Administration' },
   [ROUTES.updatePrice]: { title: 'Change Property Price', section: 'Administration' },
+  [ROUTES.updateBuyBackBPS]: { title: 'Update Buyback BPS', section: 'Administration' },
 };
 
 export const getPageMeta = (pathname) => {

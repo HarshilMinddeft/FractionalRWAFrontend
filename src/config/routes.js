@@ -10,6 +10,7 @@ export const ROUTES = {
   cancelListing: '/cancel-listing',
   propertyDetails: '/properties/:id',
   identityVerification: '/identity-verification',
+  updateBuyBackBPS: '/update-buyback-bps',
 };
 
 export const getPropertyDetailsPath = (propertyId) => `/properties/${propertyId}`;

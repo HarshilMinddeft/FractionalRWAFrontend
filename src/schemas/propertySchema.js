@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
 import { z } from 'zod';
+import { evenlyDividingTiers, PRICE_STEP } from '../utils/units';
 
 /**
  * Property Size / Price are collected as free text (e.g. "4151 Sqft",
@@ -31,7 +32,22 @@ const walletAddress = (fieldLabel) =>
  */
 export const tokenizePropertySchema = z.object({
   name: requiredText('Property Name'),
-  propertyPrice: numericText('Property Price'),
+  // FractionalVault.fractionalizeProperty mints propertyPrice / basePrice
+  // shares with no remainder allowed (SHARE_DECIMALS == 0), and basePrice
+  // is only ever offered in $10 steps at fractionalize time — so a price
+  // with no evenly-dividing $10 tier can never be fractionalized later.
+  // Caught here, at entry, rather than letting the property mint as a dead
+  // end that has to be fixed after the fact.
+  propertyPrice: numericText('Property Price').superRefine((value, ctx) => {
+    const price = parseLeadingNumber(value);
+    if (Number.isNaN(price) || price <= 0) return; // already reported by numericText's own refinements
+    if (evenlyDividingTiers(price).length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `No $${PRICE_STEP}-multiple price per share divides $${price} evenly — choose a price that's a multiple of $${PRICE_STEP}.`,
+      });
+    }
+  }),
   propertySize: numericText('Property Size'),
   propertyOwnerWallet: walletAddress('Property Owner Wallet'),
   features: requiredText('Features'),
