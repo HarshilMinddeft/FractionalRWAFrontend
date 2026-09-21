@@ -1,7 +1,7 @@
 .info-item {
   display: flex;
   gap: 28px;
-  padding-bottom: 48px;
+  padding-bottom: 88px;
 }
 
 .info-item-last {
@@ -40,7 +40,7 @@
   position: relative;
   width: 2px;
   flex: 1;
-  min-height: 32px;
+  min-height: 64px;
   margin-top: 8px;
   background: var(--card-border);
   overflow: hidden;
@@ -87,7 +87,11 @@
 @media (max-width: 640px) {
   .info-item {
     gap: 18px;
-    padding-bottom: 36px;
+    padding-bottom: 56px;
+  }
+
+  .ii-connector {
+    min-height: 40px;
   }
 
   .ii-icon-wrap {

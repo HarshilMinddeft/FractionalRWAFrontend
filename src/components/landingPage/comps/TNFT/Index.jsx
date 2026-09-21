@@ -41,7 +41,7 @@ const TNFT = () => {
       <ScrollReveal as="div" className="tn-heading-wrap absolute-center" direction="up" scale>
         <span className="tn-eyebrow">Marketplace</span>
         <h2 className="tn-title">
-          <span className="heading-gradient">Trending Properties</span>
+          <span className="tn-title-gradient">Trending Properties</span>
         </h2>
       </ScrollReveal>
       <ScrollReveal direction="up" delay={0.1} viewportAmount={0.1}>

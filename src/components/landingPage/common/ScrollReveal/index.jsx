@@ -17,6 +17,9 @@ const ScrollReveal = ({
   className = '',
   as = 'div',
   viewportAmount = 0.2,
+  viewportMargin = '0px',
+  once = true,
+  ...rest
 }) => {
   const offset = DIRECTION_OFFSET[direction] ?? DIRECTION_OFFSET.up;
   const Component = motion[as] ?? motion.div;
@@ -26,8 +29,9 @@ const ScrollReveal = ({
       className={className}
       initial={{ opacity: 0, x: offset.x, y: offset.y, scale: scale ? 0.94 : 1 }}
       whileInView={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-      viewport={{ once: true, amount: viewportAmount }}
+      viewport={{ once, amount: viewportAmount, margin: viewportMargin }}
       transition={{ duration, delay, ease: [0.16, 1, 0.3, 1] }}
+      {...rest}
     >
       {children}
     </Component>

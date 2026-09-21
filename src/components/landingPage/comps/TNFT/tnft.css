@@ -50,6 +50,12 @@
   text-align: center;
 }
 
+.tn-title-gradient {
+  background: linear-gradient(90deg, var(--white) 0%, #c48cff 46%, #8f00e1 100%);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .trending-nfts .slick-prev,
 .trending-nfts .slick-next {
   width: 60px;

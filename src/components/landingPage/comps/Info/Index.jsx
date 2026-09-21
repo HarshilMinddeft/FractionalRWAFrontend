@@ -5,7 +5,7 @@ import ScrollReveal from '../../common/ScrollReveal';
 
 const Info = () => {
   return (
-    <ScrollReveal as="div" className="info-section" direction="up" viewportAmount={0.15}>
+    <ScrollReveal as="div" id="how-it-works" className="info-section" direction="up" viewportAmount={0.15}>
       <div className="is-glow" />
       <div className="is-grid-overlay" />
       <div className="is-heading-wrap">
@@ -20,8 +20,10 @@ const Info = () => {
             key={_infoItem.id}
             className="is-item-slot"
             direction="up"
-            delay={idx * 0.1}
-            viewportAmount={0.4}
+            duration={0.7}
+            scale
+            viewportAmount={0.6}
+            viewportMargin="0px 0px -15% 0px"
           >
             <InfoItem item={_infoItem} step={idx + 1} isLast={idx === INFO_ITEMS.length - 1} />
           </ScrollReveal>
