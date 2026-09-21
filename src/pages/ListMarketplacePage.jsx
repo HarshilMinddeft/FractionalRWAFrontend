@@ -16,6 +16,8 @@ import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
 import { useWeb3 } from '../context/Web3Context';
+import { getContractErrorMessage } from '../utils/web3Errors';
+import { ROUTES } from '../config/routes';
 import {
   formatShares,
   formatStable,
@@ -46,6 +48,7 @@ const ListMarketplacePage = () => {
   const [tokensInputs, setTokenInputs] = useState({});
   const [priceInputs, setPriceInputs] = useState({});
   const [existingListings, setExistingListings] = useState({});
+  const [blockedByBuyBack, setBlockedByBuyBack] = useState({});
   const [fractionalizeBasePrices, setFractionalizeBasePrices] = useState({});
   const [userTokenBalances, setUserTokenBalances] = useState([]);
   const [busyId, setBusyId] = useState(null);
@@ -82,6 +85,11 @@ const ListMarketplacePage = () => {
             ...prev,
             [prop.propertyId]: listing.active ? formatStable(listing.pricePerToken) : null,
           }));
+
+          // listProperty reverts (BuyBackActive) while a prior buyback on this
+          // property is still open — the owner has to let holders sell back
+          // and then call withdrawBuyBackDeposit before re-listing.
+          setBlockedByBuyBack((prev) => ({ ...prev, [prop.propertyId]: listing.buyBack }));
 
           // The vault doesn't store the base price Fractionalize used, but
           // propertyPrice / totalShares recovers it exactly (that's how
@@ -207,7 +215,7 @@ const ListMarketplacePage = () => {
       fetchUserTokenBalance();
     } catch (error) {
       console.error('Error listing tokens:', error);
-      toast.error('Transaction Failed.');
+      toast.error(getContractErrorMessage(error, 'Failed to list tokens. Please try again.'));
     } finally {
       setBusyId(null);
     }
@@ -293,6 +301,7 @@ const ListMarketplacePage = () => {
             const availableBalance = balanceFor(prop.propertyId);
             const listingDone = fractionalEvents[prop.propertyId];
             const listedPrice = existingListings[prop.propertyId];
+            const blocked = blockedByBuyBack[prop.propertyId];
 
             // Default the dropdown to the price per share this property was
             // fractionalized at, snapped to the nearest offered tier — the
@@ -328,6 +337,21 @@ const ListMarketplacePage = () => {
                           {shortenAddress(listingDone.shareToken, 10, 6)}
                         </p>
                       </div>
+                    </div>
+                  ) : blocked ? (
+                    <div className="space-y-2 rounded-xl bg-amber-50 px-3.5 py-3 text-[12.5px] leading-relaxed text-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
+                      <p>
+                        A buyback from this property&apos;s last listing is still open. It has to be withdrawn before
+                        you can list again.
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        fullWidth
+                        onClick={() => (window.location.href = ROUTES.withdrawBuyBack)}
+                      >
+                        Go to Withdraw Buyback
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-3">

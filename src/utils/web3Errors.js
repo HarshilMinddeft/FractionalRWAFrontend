@@ -35,6 +35,10 @@ const CUSTOM_ERRORS = {
   TransferFailed: 'The token transfer failed.',
   MarketplaceNotSet: 'The vault is not linked to the marketplace yet. Please contact support.',
   ListingNotCancelled: 'Cancel the marketplace listing for this property before redeeming.',
+  SupplyAccountingBroken: 'Something is wrong with this property\'s share accounting. Please contact support.',
+  InvalidOwner: 'This listing owner is not valid.',
+  MinBuyBackPremiumNotSet: 'The buyback premium has not been configured yet. Please contact support.',
+  BuyBackOpen: 'These shares are eligible for a buyback — cancel the sell order first, then sell them back directly instead of listing on the order book.',
 };
 
 const KNOWN_ERRORS = [
