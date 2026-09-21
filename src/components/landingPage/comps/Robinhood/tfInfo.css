@@ -1,0 +1,56 @@
+.robinhood-section {
+  position: relative;
+  margin: 96px 0;
+  padding: 24px 0;
+  overflow: hidden;
+  border-radius: 32px;
+}
+
+.robinhood-glow {
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  width: 700px;
+  height: 700px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, var(--bg-blob) 0%, transparent 68%);
+  filter: blur(130px);
+  opacity: 0.6;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.robinhood-grid-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--white) 7%, transparent) 1px, transparent 1px);
+  background-size: 30px 30px;
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 20%, black 30%, transparent 100%);
+  pointer-events: none;
+}
+
+.robinhood-panel {
+  position: relative;
+  border-radius: 28px;
+  border: 1px solid var(--card-border);
+  background: color-mix(in srgb, var(--white) 3%, transparent);
+  padding: 32px;
+  overflow: hidden;
+}
+
+.robinhood-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: transparent;
+  border-radius: 12px;
+}
+
+@media (max-width: 640px) {
+  .robinhood-panel {
+    padding: 18px;
+    border-radius: 20px;
+  }
+}
+

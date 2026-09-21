@@ -1,15 +1,66 @@
 .footer {
-  margin: 42px 0px 54px;
-  font-size: 40px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 12px;
+  position: relative;
+  margin-top: 64px;
+  padding: 40px 0 32px;
+  overflow: hidden;
 }
 
-@media (max-width: 768px) {
+.footer-glow {
+  position: absolute;
+  bottom: -60%;
+  left: 50%;
+  width: 480px;
+  height: 480px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, var(--bg-blob) 0%, transparent 70%);
+  filter: blur(110px);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.footer-divider {
+  height: 1px;
+  width: 100%;
+  background: var(--text-gradiant-1);
+  opacity: 0.5;
+  margin-bottom: 32px;
+}
+
+.footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.footer-brand {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+}
+
+.footer-tagline {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.footer-meta {
+  font-size: 12px;
+  opacity: 0.45;
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
   .footer {
-    margin: 28px 0px 36px;
-    font-size: 24px;
-    letter-spacing: 6px;
+    margin-top: 44px;
+    padding: 28px 0 24px;
+  }
+
+  .footer-brand {
+    font-size: 18px;
+    letter-spacing: 4px;
   }
 }

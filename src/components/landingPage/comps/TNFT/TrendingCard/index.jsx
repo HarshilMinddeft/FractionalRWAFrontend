@@ -1,35 +1,24 @@
 import './trendingCard.css';
+import Tilt3D from '../../../common/Tilt3D';
 
 const TrendingCard = (props) => {
   const { nft } = props;
 
   return (
     <div className="trending-card absolute-center">
-      <div className="tc-inner-wrapper">
-        <div className="tc-content">
-          <img alt={nft.user_name} src={nft.banner} className="tc-banner" />
+      <Tilt3D className="w-full" maxTilt={6}>
+        <div className="tc-inner-wrapper">
+          <div className="tc-banner-wrap">
+            <img alt={nft.user_name} src={nft.banner} className="tc-banner" />
+            <span className="tc-price-badge">{nft.userhandel}</span>
+          </div>
           <div className="tc-user-info">
-            <div className="tc-ui-left">
-              {/* <img alt={nft.user_name} className='tc-user-logo' src={nft.user_photo} 
-                    /> */}
-              <div>
-                <div className="tc-ui-username">{nft.user_name}</div>
-                <div className="tc-ui-userhandel">Price {nft.userhandel}</div>
-              </div>
-            </div>
-            {/* <img alt='Eth'
-                    className='tc-solana-logo'
-                    src='https://cryptologos.cc/logos/polygon-matic-logo.png' /> */}
+            <span className="tc-ui-username">{nft.user_name}</span>
           </div>
         </div>
-      </div>
+      </Tilt3D>
     </div>
   );
 };
 
 export default TrendingCard;
-
-// banner: "https://i.seadn.io/gae/dcREcwXGV7rX0PXqbmZFi0lT6rxu3CVEWsZY3exH48qwlvF2xyNgsGo49ZZCmF4hwtARIgIf4Zh2sbqrnnyQvlwpNsDMCJLxjIzy?auto=format&dpr=1&w=1080",
-//         userhandel:"jackape",
-//         user_name:"jack ape club",
-//         user_photo:

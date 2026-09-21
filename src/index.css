@@ -154,6 +154,22 @@
   background: color-mix(in srgb, var(--tf-indigo-500) 25%, transparent);
 }
 
+/* Theme-switch ripple: disable the browser's default crossfade so only our
+   circular clip-path animation (see ThemeContext.jsx) plays. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
 /* ---------- App-level helpers ---------- */
 
 .text-gradient {

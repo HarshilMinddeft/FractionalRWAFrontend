@@ -7,6 +7,7 @@ import { TNRENDING_NFTS } from '../../data/tn';
 import Button from '../../common/Button';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../../config/routes';
+import ScrollReveal from '../../common/ScrollReveal';
 
 const settings = {
   slideToScroll: 1,
@@ -35,17 +36,24 @@ const TNFT = () => {
   const navigate = useNavigate();
   return (
     <div className="trending-nfts">
-      <h2 className="tn-title absolute-center">
-        <span className="heading-gradient">TRENDING PROPERTIES</span>
-      </h2>
-      <Slider {...settings}>
-        {TNRENDING_NFTS.map((_nft) => (
-          <TrendingCard key={_nft.id} nft={_nft} />
-        ))}
-      </Slider>
-      <div className="absolute-center mt-16 w-full">
+      <div className="tn-glow" />
+      <div className="tn-grid-overlay" />
+      <ScrollReveal as="div" className="tn-heading-wrap absolute-center" direction="up" scale>
+        <span className="tn-eyebrow">Marketplace</span>
+        <h2 className="tn-title">
+          <span className="heading-gradient">Trending Properties</span>
+        </h2>
+      </ScrollReveal>
+      <ScrollReveal direction="up" delay={0.1} viewportAmount={0.1}>
+        <Slider {...settings}>
+          {TNRENDING_NFTS.map((_nft) => (
+            <TrendingCard key={_nft.id} nft={_nft} />
+          ))}
+        </Slider>
+      </ScrollReveal>
+      <ScrollReveal as="div" className="absolute-center mt-16 w-full" direction="up" delay={0.15}>
         <Button btnType="PRIMARY" btnText="See More" btnonClick={() => navigate(ROUTES.marketplace)} />
-      </div>
+      </ScrollReveal>
     </div>
   );
 };

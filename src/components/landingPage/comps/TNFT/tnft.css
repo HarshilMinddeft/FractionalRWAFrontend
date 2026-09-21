@@ -1,40 +1,91 @@
 .trending-nfts {
-  padding: 50px 0px;
+  padding: 80px 0px;
   position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+}
+
+.tn-glow {
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  width: 700px;
+  height: 700px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, var(--bg-blob) 0%, transparent 68%);
+  filter: blur(130px);
+  opacity: 0.6;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.tn-grid-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--white) 7%, transparent) 1px, transparent 1px);
+  background-size: 30px 30px;
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 20%, black 30%, transparent 100%);
+  pointer-events: none;
+}
+
+.tn-heading-wrap {
+  flex-direction: column;
+  margin-bottom: 44px;
+}
+
+.tn-eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 12px;
 }
 
 .tn-title {
-  font-size: 46px;
+  font-size: clamp(30px, 4vw, 50px);
   font-weight: 700;
-  margin-bottom: 36px;
+  margin: 0;
+  text-align: center;
 }
 
-.tn-r-bg-blob {
-  height: 550px;
-  width: 550px;
-  background-color: var(--bg-blob);
-  filter: blur(150.24px);
-  position: absolute;
-  left: 70%;
-  transform: translate(-50%);
+.trending-nfts .slick-prev,
+.trending-nfts .slick-next {
+  width: 60px;
+  height: 60px;
+  z-index: 1;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--card-border);
+  background: color-mix(in srgb, var(--white) 6%, transparent);
+  backdrop-filter: blur(6px);
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 
-.tn-btn {
-  margin-top: 39px;
+.trending-nfts .slick-prev:hover,
+.trending-nfts .slick-next:hover {
+  background: color-mix(in srgb, var(--white) 12%, transparent);
+  transform: translateY(-50%) scale(1.06);
 }
 
-.seemore-btn {
-  font-size: 14px;
+.trending-nfts .slick-prev:before,
+.trending-nfts .slick-next:before {
+  font-size: 24px;
+  color: var(--white);
+  opacity: 0.85;
 }
 
 .trending-nfts .slick-prev {
-  left: 0px;
-  z-index: 1;
+  left: -14px;
 }
 
 .trending-nfts .slick-next {
-  right: 0px;
-  z-index: 1;
+  right: -14px;
 }
 
 @media (max-width: 1024px) {
@@ -46,20 +97,16 @@
 
 @media (max-width: 768px) {
   .trending-nfts {
-    padding: 32px 0px;
+    padding: 44px 0px;
   }
 
-  .tn-title {
-    font-size: 28px;
-    margin-bottom: 24px;
+  .tn-heading-wrap {
+    margin-bottom: 28px;
   }
 }
 
 @media (max-width: 480px) {
   .tn-title {
-    font-size: 24px;
-    line-height: 32px;
-    margin-bottom: 20px;
-    white-space: nowrap;
+    line-height: 1.15;
   }
 }

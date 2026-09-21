@@ -24,7 +24,28 @@ export const ThemeProvider = ({ children }) => {
   const value = useMemo(
     () => ({
       theme,
-      toggleTheme: () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark')),
+      toggleTheme: () => {
+        const next = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (!document.startViewTransition || reduceMotion) {
+          next();
+          return;
+        }
+
+        const transition = document.startViewTransition(next);
+
+        transition.ready.then(() => {
+          document.documentElement.animate(
+            { opacity: [0, 1], transform: ['scale(0.98)', 'scale(1)'] },
+            { duration: 450, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' },
+          );
+          document.documentElement.animate(
+            { opacity: [1, 0] },
+            { duration: 450, easing: 'ease-out', pseudoElement: '::view-transition-old(root)' },
+          );
+        });
+      },
     }),
     [theme],
   );

@@ -4,7 +4,7 @@ import TNFT from '../components/landingPage/comps/TNFT/Index';
 import Info from '../components/landingPage/comps/Info/Index';
 import Footer from '../components/landingPage/comps/Footer/Index';
 import TfInfo from '../components/landingPage/comps/TFU/tfInfo';
-import Erc3643 from '../components/landingPage/comps/Erc-3643/Index';
+import Robinhood from '../components/landingPage/comps/Robinhood/Index';
 
 const LandingPage = () => {
   return (
@@ -13,7 +13,7 @@ const LandingPage = () => {
       <TopFold />
       <TfInfo />
       <TNFT />
-      <Erc3643 />
+      <Robinhood />
       <Info />
       <Footer />
     </div>
@@ -21,3 +21,4 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
+

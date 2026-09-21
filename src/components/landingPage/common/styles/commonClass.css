@@ -14,8 +14,5 @@
 }
 
 .heading-gradient {
-  background: var(--text-gradiant-bg);
-  background: var(--text-gradiant-1);
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #8f00e1;
 }
