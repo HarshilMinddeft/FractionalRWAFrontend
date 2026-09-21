@@ -71,6 +71,10 @@ export const NAV_GROUPS = [
       {
         path: ROUTES.withdrawBuyBack,
         label: 'Withdraw Buyback',
+        // Only useful to a wallet that actually owns a listing with an open
+        // buyback — hidden from everyone else rather than linking to a page
+        // that would just show "No active buybacks".
+        requiresActiveBuyBack: true,
         icon: (
           <path
             strokeLinecap="round"

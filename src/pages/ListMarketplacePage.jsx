@@ -152,14 +152,13 @@ const ListMarketplacePage = () => {
     }
   };
 
-  const listToMarketplace = async (tokenId) => {
+  const listToMarketplace = async (tokenId, listingPrice) => {
     const inputValue = tokensInputs[tokenId];
     if (!inputValue || Number(inputValue) <= 0) {
       toast.error('Please enter the number of tokens to list.');
       return;
     }
 
-    const listingPrice = priceInputs[tokenId] ?? DEFAULT_LISTING_PRICE;
     if (!isValidPriceTier(listingPrice)) {
       toast.error(`Price per share must be a multiple of $${PRICE_STEP}.`);
       return;
@@ -397,7 +396,7 @@ const ListMarketplacePage = () => {
                         fullWidth
                         disabled={Number(availableBalance) <= 0}
                         loading={busyId === prop.propertyId}
-                        onClick={() => listToMarketplace(prop.propertyId)}
+                        onClick={() => listToMarketplace(prop.propertyId, selectedPrice)}
                       >
                         {listedPrice ? 'Add to listing' : `List at $${selectedPrice}/token`}
                       </Button>

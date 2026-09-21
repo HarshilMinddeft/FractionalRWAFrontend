@@ -963,25 +963,35 @@ const PropertyDetailPage = () => {
                   </div>
                 )}
 
-                <Input
-                  type="number"
-                  min="0"
-                  value={sellingTokens}
-                  onChange={(e) => setSellingTokens(e.target.value)}
-                  placeholder="Number of tokens"
-                  label="Tokens to sell"
-                  className="mb-2"
-                />
-                {quickSellValue !== null && (
-                  <p className="mb-4 rounded-lg bg-indigo-50/70 px-3 py-2 text-xs font-medium text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
-                    You will receive ≈ <strong>{formatUsd(quickSellValue)}</strong> stablecoin.
+                {shareBalance > 0 ? (
+                  <>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={sellingTokens}
+                      onChange={(e) => setSellingTokens(e.target.value)}
+                      placeholder="Number of tokens"
+                      label="Tokens to sell"
+                      className="mb-2"
+                    />
+                    {quickSellValue !== null && (
+                      <p className="mb-4 rounded-lg bg-indigo-50/70 px-3 py-2 text-xs font-medium text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
+                        You will receive ≈ <strong>{formatUsd(quickSellValue)}</strong> stablecoin.
+                      </p>
+                    )}
+                    <KycGate>
+                      <Button fullWidth onClick={sellBackTokensContract}>
+                        Sell tokens back
+                      </Button>
+                    </KycGate>
+                  </>
+                ) : (
+                  <p className="rounded-lg bg-slate-50 px-3.5 py-2.5 text-xs text-slate-500 dark:bg-slate-950/60 dark:text-slate-400">
+                    {currentSigner
+                      ? "You don't hold any tokens for this property, so there's nothing to sell back."
+                      : 'Connect your wallet to sell tokens back.'}
                   </p>
                 )}
-                <KycGate>
-                  <Button fullWidth onClick={sellBackTokensContract}>
-                    Sell tokens back
-                  </Button>
-                </KycGate>
               </div>
             </Card>
           ) : (

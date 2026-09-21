@@ -4,6 +4,7 @@ import envConfig from '../../config/env.config';
 import { cn } from '../../lib/utils';
 import { NAV_GROUPS } from '../../config/navigation';
 import useAuthorityRole from '../../hooks/useAuthorityRole';
+import useHasActiveBuyBack from '../../hooks/useHasActiveBuyBack';
 
 const Logo = () => (
   <div className="flex items-center gap-2.5">
@@ -62,6 +63,8 @@ const Sidebar = ({ open = false, onClose }) => {
   const { isAuthority } = useAuthorityRole(address);
   const admin = address?.toLowerCase() === envConfig.adminWalletAddress || isAuthority;
 
+  const { hasBuyBack } = useHasActiveBuyBack(address);
+
   const go = (path) => {
     navigate(path);
     onClose?.();
@@ -97,23 +100,28 @@ const Sidebar = ({ open = false, onClose }) => {
         </div>
 
         <nav className="tf-scroll flex-1 space-y-6 overflow-y-auto px-3 pt-4 pb-6">
-          {NAV_GROUPS.filter((group) => !group.adminOnly || admin).map((group) => (
-            <div key={group.id}>
-              <p className="mb-2 px-3 text-[10.5px] font-bold tracking-[0.12em] text-slate-400 uppercase dark:text-slate-500">
-                {group.label}
-              </p>
-              <ul className="space-y-1">
-                {group.items.map((item) => (
-                  <NavItem
-                    key={item.path}
-                    item={item}
-                    isActive={location.pathname === item.path}
-                    onClick={() => go(item.path)}
-                  />
-                ))}
-              </ul>
-            </div>
-          ))}
+          {NAV_GROUPS.filter((group) => !group.adminOnly || admin).map((group) => {
+            const items = group.items.filter((item) => !item.requiresActiveBuyBack || hasBuyBack);
+            if (items.length === 0) return null;
+
+            return (
+              <div key={group.id}>
+                <p className="mb-2 px-3 text-[10.5px] font-bold tracking-[0.12em] text-slate-400 uppercase dark:text-slate-500">
+                  {group.label}
+                </p>
+                <ul className="space-y-1">
+                  {items.map((item) => (
+                    <NavItem
+                      key={item.path}
+                      item={item}
+                      isActive={location.pathname === item.path}
+                      onClick={() => go(item.path)}
+                    />
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </nav>
 
         <div className="space-y-3 border-t border-slate-100 px-3 py-4 dark:border-slate-800">
