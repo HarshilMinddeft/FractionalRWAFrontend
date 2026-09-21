@@ -12,11 +12,6 @@
     },
     {
       "inputs": [],
-      "name": "NotAuthority",
-      "type": "error"
-    },
-    {
-      "inputs": [],
       "name": "NotFractionalized",
       "type": "error"
     },
@@ -236,25 +231,6 @@
         }
       ],
       "name": "PropertyUnlocked",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "tokenId",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "legalTitleHash",
-          "type": "string"
-        }
-      ],
-      "name": "PropertyVerified",
       "type": "event"
     },
     {
@@ -758,11 +734,6 @@
           "internalType": "uint256",
           "name": "propertyPrice",
           "type": "uint256"
-        },
-        {
-          "internalType": "bool",
-          "name": "isVerified",
-          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -1038,24 +1009,6 @@
       "name": "upgradeToAndCall",
       "outputs": [],
       "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "tokenId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "string",
-          "name": "legalTitleHash",
-          "type": "string"
-        }
-      ],
-      "name": "verifyProperty",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     }
   ]

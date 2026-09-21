@@ -71,9 +71,16 @@ const CancelListingPage = () => {
       for (const prop of allProps) {
         try {
           const checkListing = await marketplaceContract.listings(prop.propertyId);
-          if (!checkListing.active) continue;
-
           const outstanding = await marketplaceContract.outstandingTokens(prop.propertyId);
+
+          // cancelListing is now also callable on a sold-out listing (active
+          // flips false in buyTokens once remainingTokens hits 0) as long as
+          // it hasn't opened a buyback yet — that's the owner's only path to
+          // start one for shares already fully sold. Once buyBack is on,
+          // active stays false and outstanding only shrinks as holders sell
+          // back, so this listing wouldn't otherwise reappear here.
+          const hasUnsettledBuyBack = !checkListing.buyBack && !outstanding.isZero();
+          if (!checkListing.active && !hasUnsettledBuyBack) continue;
 
           filteredProps.push(prop);
           setPropertyShares((prev) => ({
