@@ -8,7 +8,7 @@ export const NAV_GROUPS = [
     label: 'Explore',
     items: [
       {
-        path: ROUTES.marketplace,
+        path: ROUTES.appMarketplace,
         label: 'Marketplace',
         icon: (
           <path
@@ -86,23 +86,6 @@ export const NAV_GROUPS = [
     ],
   },
   {
-    id: 'compliance',
-    label: 'Compliance',
-    items: [
-      {
-        path: ROUTES.identityVerification,
-        label: 'Verify Identity',
-        icon: (
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"
-          />
-        ),
-      },
-    ],
-  },
-  {
     id: 'admin',
     label: 'Administration',
     adminOnly: true,
@@ -147,19 +130,19 @@ export const NAV_GROUPS = [
 /* Page meta for the top bar context line */
 export const PAGE_META = {
   [ROUTES.marketplace]: { title: 'Marketplace', section: 'Explore' },
+  [ROUTES.appMarketplace]: { title: 'Marketplace', section: 'Explore' },
   [ROUTES.fractionalizeProperty]: { title: 'Fractionalize Property', section: 'Your assets' },
   [ROUTES.listProperty]: { title: 'List to Marketplace', section: 'Your assets' },
   [ROUTES.redeemProperty]: { title: 'Redeem Property', section: 'Your assets' },
   [ROUTES.cancelListing]: { title: 'Cancel Listing', section: 'Your assets' },
   [ROUTES.withdrawBuyBack]: { title: 'Withdraw Buyback', section: 'Your assets' },
-  [ROUTES.identityVerification]: { title: 'Verify Identity', section: 'Compliance' },
   [ROUTES.tokenizeProperty]: { title: 'Tokenize Property', section: 'Administration' },
   [ROUTES.updatePrice]: { title: 'Change Property Price', section: 'Administration' },
   [ROUTES.updateBuyBackBPS]: { title: 'Update Buyback BPS', section: 'Administration' },
 };
 
 export const getPageMeta = (pathname) => {
-  if (pathname.startsWith('/properties/')) {
+  if (pathname.startsWith('/properties/') || pathname.startsWith('/app/properties/')) {
     return { title: 'Property details', section: 'Marketplace' };
   }
   return PAGE_META[pathname] || { title: 'Dashboard', section: 'TrueFraction' };

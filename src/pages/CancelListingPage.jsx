@@ -409,7 +409,7 @@ const CancelListingPage = () => {
         <EmptyState
           title="No active listings"
           action={
-            <Button variant="soft" size="sm" onClick={() => (window.location.href = '/marketplace')}>
+            <Button variant="soft" size="sm" onClick={() => (window.location.href = ROUTES.appMarketplace)}>
               Back to the marketplace
             </Button>
           }

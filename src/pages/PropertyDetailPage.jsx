@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
 import { AnimatePresence, motion } from 'motion/react';
+import PublicLayout from '../components/layout/PublicLayout';
 import AppLayout from '../components/layout/AppLayout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -263,7 +264,8 @@ const StatusBanner = ({ buyBack, buyBackPrice }) =>
 /* Page                                                                 */
 /* ------------------------------------------------------------------ */
 
-const PropertyDetailPage = () => {
+const PropertyDetailPage = ({ isPublic = false }) => {
+  const Layout = isPublic ? PublicLayout : AppLayout;
   const { id } = useParams();
   const navigate = useNavigate();
   const { address: currentSigner } = useWeb3();
@@ -718,9 +720,9 @@ const PropertyDetailPage = () => {
 
   if (!property) {
     return (
-      <AppLayout>
+      <Layout>
         <Spinner words={['details', 'images', 'pricing', 'listings']} />
-      </AppLayout>
+      </Layout>
     );
   }
 
@@ -761,7 +763,7 @@ const PropertyDetailPage = () => {
   const quickAmounts = [1, 10, 100, 500];
 
   return (
-    <AppLayout>
+    <Layout>
       {/* Header */}
       <div className="mb-6 flex items-start gap-3 sm:gap-4">
         <BackButton onClick={() => navigate(-1)} />
@@ -1235,7 +1237,7 @@ const PropertyDetailPage = () => {
           )}
         </div>
       </Dialog>
-    </AppLayout>
+    </Layout>
   );
 };
 

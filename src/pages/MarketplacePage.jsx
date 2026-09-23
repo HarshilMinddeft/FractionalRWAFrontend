@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+import PublicLayout from '../components/layout/PublicLayout';
 import AppLayout from '../components/layout/AppLayout';
 import PropertyCard from '../components/property/PropertyCard';
 import PageHeader from '../components/ui/PageHeader';
@@ -10,7 +11,7 @@ import EmptyState from '../components/ui/EmptyState';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
-import { getPropertyDetailsPath } from '../config/routes';
+import { getPropertyDetailsPath, getAppPropertyDetailsPath } from '../config/routes';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import usePropertiesFilteredBy from '../hooks/usePropertiesFilteredBy';
@@ -55,7 +56,10 @@ const GridSkeleton = () => (
   </div>
 );
 
-const MarketplacePage = () => {
+const MarketplacePage = ({ isPublic = false }) => {
+  const Layout = isPublic ? PublicLayout : AppLayout;
+  const detailPath = isPublic ? getPropertyDetailsPath : getAppPropertyDetailsPath;
+
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('newest');
@@ -121,7 +125,7 @@ const MarketplacePage = () => {
   }, [properties]);
 
   return (
-    <AppLayout>
+    <Layout>
       <PageHeader
         eyebrow="Explore"
         title="Marketplace"
@@ -206,7 +210,7 @@ const MarketplacePage = () => {
         >
           {sorted.map((prop) => (
             <motion.div key={prop.propertyId} variants={item} className="h-full">
-              <PropertyCard property={prop} onClick={() => navigate(getPropertyDetailsPath(prop.propertyId))}>
+              <PropertyCard property={prop} onClick={() => navigate(detailPath(prop.propertyId))}>
                 {buyBackOnly[prop.propertyId] && (
                   <Badge tone="warning" dot>
                     Buyback open — not for sale
@@ -244,7 +248,7 @@ const MarketplacePage = () => {
           When a property owner lists shares on the marketplace they will appear here. Check back soon.
         </EmptyState>
       )}
-    </AppLayout>
+    </Layout>
   );
 };
 

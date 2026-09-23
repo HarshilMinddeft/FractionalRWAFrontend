@@ -13,6 +13,7 @@ import Badge from '../components/ui/Badge';
 import web3Service from '../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../config/contracts.config';
+import { ROUTES } from '../config/routes';
 import { useWeb3 } from '../context/Web3Context';
 import { getContractErrorMessage } from '../utils/web3Errors';
 import { formatShares } from '../utils/units';
@@ -264,7 +265,7 @@ const RedeemTokensPage = () => {
         <EmptyState
           title="Nothing to redeem right now"
           action={
-            <Button variant="soft" size="sm" onClick={() => (window.location.href = '/marketplace')}>
+            <Button variant="soft" size="sm" onClick={() => (window.location.href = ROUTES.appMarketplace)}>
               Browse the marketplace
             </Button>
           }
