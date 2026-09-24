@@ -1,5 +1,5 @@
 import { toast } from 'react-toastify';
-import { cn } from '../../lib/utils';
+import { cn } from '../../../lib/utils';
 
 /**
  * FractionalPropertyCard — dark-themed property card for the fractional marketplace.

@@ -3,8 +3,8 @@ import { useWeb3 } from '../../context/Web3Context';
 import envConfig from '../../config/env.config';
 import { cn } from '../../lib/utils';
 import { NAV_GROUPS } from '../../config/navigation';
-import useAuthorityRole from '../../hooks/useAuthorityRole';
-import useHasActiveBuyBack from '../../hooks/useHasActiveBuyBack';
+import useAuthorityRole from '../../features/property/hooks/useAuthorityRole';
+import useHasActiveBuyBack from '../../features/property/hooks/useHasActiveBuyBack';
 
 const Logo = () => (
   <div className="flex items-center gap-2.5">

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import './truefraction.css';
+import './landing.css';
 import { initScene } from './scene.js';
 
 // This component intentionally has NO state and must never re-render:

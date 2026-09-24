@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { z } from 'zod';
-import { evenlyDividingTiers, PRICE_STEP } from '../utils/units';
+import { evenlyDividingTiers, PRICE_STEP } from '../../../utils/units';
 
 /**
  * Property Size / Price are collected as free text (e.g. "4151 Sqft",

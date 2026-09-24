@@ -7,7 +7,6 @@ export const ROUTES = {
   withdrawBuyBack: '/withdraw-buyback',
   updatePrice: '/update-price',
   cancelListing: '/cancel-listing',
-  identityVerification: '/identity-verification',
   updateBuyBackBPS: '/update-buyback-bps',
   // Public, no-sidebar marketplace for normal visitors who haven't
   // connected a wallet — this is what the landing page links to.

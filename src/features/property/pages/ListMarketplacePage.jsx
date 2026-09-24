@@ -2,22 +2,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
 import { motion } from 'motion/react';
-import AppLayout from '../components/layout/AppLayout';
-import PropertyCard from '../components/property/PropertyCard';
-import PropertyGridSkeleton from '../components/property/PropertyGridSkeleton';
-import PageHeader from '../components/ui/PageHeader';
-import StatCard from '../components/ui/StatCard';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
-import Select from '../components/ui/Select';
-import EmptyState from '../components/ui/EmptyState';
-import Badge from '../components/ui/Badge';
-import web3Service from '../services/web3Service';
+import AppLayout from '../../../components/layout/AppLayout';
+import PropertyCard from '../components/PropertyCard';
+import PropertyGridSkeleton from '../components/PropertyGridSkeleton';
+import PageHeader from '../../../components/ui/PageHeader';
+import StatCard from '../../../components/ui/StatCard';
+import Button from '../../../components/ui/Button';
+import Input from '../../../components/ui/Input';
+import Select from '../../../components/ui/Select';
+import EmptyState from '../../../components/ui/EmptyState';
+import Badge from '../../../components/ui/Badge';
+import web3Service from '../../../services/web3Service';
 import propertyApi from '../api/propertyApi';
-import contractsConfig from '../config/contracts.config';
-import { useWeb3 } from '../context/Web3Context';
-import { getContractErrorMessage } from '../utils/web3Errors';
-import { ROUTES } from '../config/routes';
+import contractsConfig from '../../../config/contracts.config';
+import { useWeb3 } from '../../../context/Web3Context';
+import { getContractErrorMessage } from '../../../utils/web3Errors';
+import { ROUTES } from '../../../config/routes';
 import {
   formatShares,
   formatStable,
@@ -26,8 +26,8 @@ import {
   parseStable,
   PRICE_STEP,
   PRICE_TIERS,
-} from '../utils/units';
-import { formatNumber, formatUsd, shortenAddress } from '../lib/utils';
+} from '../../../utils/units';
+import { formatNumber, formatUsd, shortenAddress } from '../../../lib/utils';
 
 const DEFAULT_LISTING_PRICE = 40;
 

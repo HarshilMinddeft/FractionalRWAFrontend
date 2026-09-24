@@ -1,22 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
-import AppLayout from '../components/layout/AppLayout';
-import PageHeader from '../components/ui/PageHeader';
-import Card from '../components/ui/Card';
-import Input from '../components/ui/Input';
-import Textarea from '../components/ui/Textarea';
-import Button from '../components/ui/Button';
-import Badge from '../components/ui/Badge';
-import web3Service from '../services/web3Service';
+import AppLayout from '../../../components/layout/AppLayout';
+import PageHeader from '../../../components/ui/PageHeader';
+import Card from '../../../components/ui/Card';
+import Input from '../../../components/ui/Input';
+import Textarea from '../../../components/ui/Textarea';
+import Button from '../../../components/ui/Button';
+import Badge from '../../../components/ui/Badge';
+import web3Service from '../../../services/web3Service';
 import propertyApi from '../api/propertyApi';
-import envConfig from '../config/env.config';
-import contractsConfig from '../config/contracts.config';
-import { useWeb3 } from '../context/Web3Context';
-import { useZodForm } from '../hooks/useZodForm';
+import envConfig from '../../../config/env.config';
+import contractsConfig from '../../../config/contracts.config';
+import { useWeb3 } from '../../../context/Web3Context';
+import { useZodForm } from '../../../hooks/useZodForm';
 import { tokenizePropertySchema, parseLeadingNumber } from '../schemas/propertySchema';
-import { evenlyDividingTiers, PRICE_STEP } from '../utils/units';
-import { formatUsd, shortenAddress } from '../lib/utils';
+import { evenlyDividingTiers, PRICE_STEP } from '../../../utils/units';
+import { formatUsd, shortenAddress } from '../../../lib/utils';
 
 /* ------------------------------------------------------------------ */
 /* Pieces                                                               */

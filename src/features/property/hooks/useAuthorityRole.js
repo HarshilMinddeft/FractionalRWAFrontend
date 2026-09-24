@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import web3Service from '../services/web3Service';
-import envConfig from '../config/env.config';
+import web3Service from '../../../services/web3Service';
+import envConfig from '../../../config/env.config';
 
 /**
  * Whether the connected wallet may change listing prices.

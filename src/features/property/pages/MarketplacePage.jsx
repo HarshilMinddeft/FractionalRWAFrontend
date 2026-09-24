@@ -1,21 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import PublicLayout from '../components/layout/PublicLayout';
-import AppLayout from '../components/layout/AppLayout';
-import PropertyCard from '../components/property/PropertyCard';
-import PageHeader from '../components/ui/PageHeader';
-import StatCard from '../components/ui/StatCard';
-import Skeleton from '../components/ui/Skeleton';
-import EmptyState from '../components/ui/EmptyState';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
-import Badge from '../components/ui/Badge';
-import { getPropertyDetailsPath, getAppPropertyDetailsPath } from '../config/routes';
-import web3Service from '../services/web3Service';
+import PublicLayout from '../../../components/layout/PublicLayout';
+import AppLayout from '../../../components/layout/AppLayout';
+import PropertyCard from '../components/PropertyCard';
+import PageHeader from '../../../components/ui/PageHeader';
+import StatCard from '../../../components/ui/StatCard';
+import Skeleton from '../../../components/ui/Skeleton';
+import EmptyState from '../../../components/ui/EmptyState';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import Badge from '../../../components/ui/Badge';
+import { getPropertyDetailsPath, getAppPropertyDetailsPath } from '../../../config/routes';
+import web3Service from '../../../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import usePropertiesFilteredBy from '../hooks/usePropertiesFilteredBy';
-import { cn, formatNumber } from '../lib/utils';
+import { cn, formatNumber } from '../../../lib/utils';
 
 // cancelListing sets active = false in the same call that may open a
 // buyback, so a listing with a live buyback (holders can still sell back)

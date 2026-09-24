@@ -1,23 +1,23 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { motion } from 'motion/react';
-import AppLayout from '../components/layout/AppLayout';
-import PropertyCard from '../components/property/PropertyCard';
-import PropertyGridSkeleton from '../components/property/PropertyGridSkeleton';
-import PageHeader from '../components/ui/PageHeader';
-import StatCard from '../components/ui/StatCard';
-import Button from '../components/ui/Button';
-import Select from '../components/ui/Select';
-import EmptyState from '../components/ui/EmptyState';
-import Badge from '../components/ui/Badge';
-import web3Service from '../services/web3Service';
+import AppLayout from '../../../components/layout/AppLayout';
+import PropertyCard from '../components/PropertyCard';
+import PropertyGridSkeleton from '../components/PropertyGridSkeleton';
+import PageHeader from '../../../components/ui/PageHeader';
+import StatCard from '../../../components/ui/StatCard';
+import Button from '../../../components/ui/Button';
+import Select from '../../../components/ui/Select';
+import EmptyState from '../../../components/ui/EmptyState';
+import Badge from '../../../components/ui/Badge';
+import web3Service from '../../../services/web3Service';
 import propertyApi from '../api/propertyApi';
-import contractsConfig from '../config/contracts.config';
+import contractsConfig from '../../../config/contracts.config';
 import usePropertiesFilteredBy from '../hooks/usePropertiesFilteredBy';
-import { useWeb3 } from '../context/Web3Context';
-import { getContractErrorMessage } from '../utils/web3Errors';
-import { evenlyDividingTiers, PRICE_STEP } from '../utils/units';
-import { formatNumber, formatUsd, shortenAddress } from '../lib/utils';
+import { useWeb3 } from '../../../context/Web3Context';
+import { getContractErrorMessage } from '../../../utils/web3Errors';
+import { evenlyDividingTiers, PRICE_STEP } from '../../../utils/units';
+import { formatNumber, formatUsd, shortenAddress } from '../../../lib/utils';
 
 /** Suggested price per share, in whole dollars, when the owner hasn't chosen one. */
 const DEFAULT_BASE_PRICE = 40;

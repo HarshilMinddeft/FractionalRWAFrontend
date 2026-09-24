@@ -3,30 +3,30 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
 import { AnimatePresence, motion } from 'motion/react';
-import PublicLayout from '../components/layout/PublicLayout';
-import AppLayout from '../components/layout/AppLayout';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
-import Spinner from '../components/ui/Spinner';
-import Progress from '../components/ui/Progress';
-import Badge from '../components/ui/Badge';
-import Dialog from '../components/ui/Dialog';
-import CopyButton from '../components/ui/CopyButton';
-import web3Service from '../services/web3Service';
+import PublicLayout from '../../../components/layout/PublicLayout';
+import AppLayout from '../../../components/layout/AppLayout';
+import Card from '../../../components/ui/Card';
+import Button from '../../../components/ui/Button';
+import Input from '../../../components/ui/Input';
+import Spinner from '../../../components/ui/Spinner';
+import Progress from '../../../components/ui/Progress';
+import Badge from '../../../components/ui/Badge';
+import Dialog from '../../../components/ui/Dialog';
+import CopyButton from '../../../components/ui/CopyButton';
+import web3Service from '../../../services/web3Service';
 import propertyApi from '../api/propertyApi';
-import contractsConfig from '../config/contracts.config';
-import { ROUTES } from '../config/routes';
-import { useWeb3 } from '../context/Web3Context';
-import { getContractErrorMessage } from '../utils/web3Errors';
+import contractsConfig from '../../../config/contracts.config';
+import { ROUTES } from '../../../config/routes';
+import { useWeb3 } from '../../../context/Web3Context';
+import { getContractErrorMessage } from '../../../utils/web3Errors';
 import {
   formatShares,
   formatStable,
   parseShares,
   parseStable,
   sharesTimesPrice,
-} from '../utils/units';
-import { cn, formatNumber, formatUsd, shortenAddress, toPercent } from '../lib/utils';
+} from '../../../utils/units';
+import { cn, formatNumber, formatUsd, shortenAddress, toPercent } from '../../../lib/utils';
 
 /**
  * Upper bound used only when the FeeManager can't be read; the marketplace

@@ -2,18 +2,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import FlipClockCountdown from '@leenguyen/react-flip-clock-countdown';
 import '@leenguyen/react-flip-clock-countdown/dist/index.css';
-import AppLayout from '../components/layout/AppLayout';
-import PropertyCard from '../components/property/PropertyCard';
-import PageHeader from '../components/ui/PageHeader';
-import Button from '../components/ui/Button';
-import Spinner from '../components/ui/Spinner';
-import EmptyState from '../components/ui/EmptyState';
-import web3Service from '../services/web3Service';
+import AppLayout from '../../../components/layout/AppLayout';
+import PropertyCard from '../components/PropertyCard';
+import PageHeader from '../../../components/ui/PageHeader';
+import Button from '../../../components/ui/Button';
+import Spinner from '../../../components/ui/Spinner';
+import EmptyState from '../../../components/ui/EmptyState';
+import web3Service from '../../../services/web3Service';
 import propertyApi from '../api/propertyApi';
-import { useWeb3 } from '../context/Web3Context';
-import { useTheme } from '../context/ThemeContext';
-import { getContractErrorMessage } from '../utils/web3Errors';
-import { formatShares, formatStable } from '../utils/units';
+import { useWeb3 } from '../../../context/Web3Context';
+import { useTheme } from '../../../context/ThemeContext';
+import { getContractErrorMessage } from '../../../utils/web3Errors';
+import { formatShares, formatStable } from '../../../utils/units';
 
 const StatRow = ({ label, value, emphasis = false }) => (
   <div className="flex items-baseline justify-between gap-3 text-sm">

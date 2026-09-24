@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import AppLayout from '../components/layout/AppLayout';
-import PropertyCard from '../components/property/PropertyCard';
-import PageHeader from '../components/ui/PageHeader';
-import Button from '../components/ui/Button';
-import Select from '../components/ui/Select';
-import Spinner from '../components/ui/Spinner';
-import EmptyState from '../components/ui/EmptyState';
-import web3Service from '../services/web3Service';
+import AppLayout from '../../../components/layout/AppLayout';
+import PropertyCard from '../components/PropertyCard';
+import PageHeader from '../../../components/ui/PageHeader';
+import Button from '../../../components/ui/Button';
+import Select from '../../../components/ui/Select';
+import Spinner from '../../../components/ui/Spinner';
+import EmptyState from '../../../components/ui/EmptyState';
+import web3Service from '../../../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import useAuthorityRole from '../hooks/useAuthorityRole';
-import { useWeb3 } from '../context/Web3Context';
-import { getContractErrorMessage } from '../utils/web3Errors';
-import { formatShares, formatStable, isValidPriceTier, parseStable, PRICE_STEP, PRICE_TIERS } from '../utils/units';
+import { useWeb3 } from '../../../context/Web3Context';
+import { getContractErrorMessage } from '../../../utils/web3Errors';
+import { formatShares, formatStable, isValidPriceTier, parseStable, PRICE_STEP, PRICE_TIERS } from '../../../utils/units';
 
 const PriceControls = ({ listing, onUpdate }) => {
   const [price, setPrice] = useState(listing.pricePerToken);

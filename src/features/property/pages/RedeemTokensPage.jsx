@@ -2,22 +2,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
 import { motion } from 'motion/react';
-import AppLayout from '../components/layout/AppLayout';
-import PropertyCard from '../components/property/PropertyCard';
-import PropertyGridSkeleton from '../components/property/PropertyGridSkeleton';
-import PageHeader from '../components/ui/PageHeader';
-import StatCard from '../components/ui/StatCard';
-import Button from '../components/ui/Button';
-import EmptyState from '../components/ui/EmptyState';
-import Badge from '../components/ui/Badge';
-import web3Service from '../services/web3Service';
+import AppLayout from '../../../components/layout/AppLayout';
+import PropertyCard from '../components/PropertyCard';
+import PropertyGridSkeleton from '../components/PropertyGridSkeleton';
+import PageHeader from '../../../components/ui/PageHeader';
+import StatCard from '../../../components/ui/StatCard';
+import Button from '../../../components/ui/Button';
+import EmptyState from '../../../components/ui/EmptyState';
+import Badge from '../../../components/ui/Badge';
+import web3Service from '../../../services/web3Service';
 import propertyApi from '../api/propertyApi';
-import contractsConfig from '../config/contracts.config';
-import { ROUTES } from '../config/routes';
-import { useWeb3 } from '../context/Web3Context';
-import { getContractErrorMessage } from '../utils/web3Errors';
-import { formatShares } from '../utils/units';
-import { expectedShares, formatNumber, formatUsd, shortenAddress } from '../lib/utils';
+import contractsConfig from '../../../config/contracts.config';
+import { ROUTES } from '../../../config/routes';
+import { useWeb3 } from '../../../context/Web3Context';
+import { getContractErrorMessage } from '../../../utils/web3Errors';
+import { formatShares } from '../../../utils/units';
+import { expectedShares, formatNumber, formatUsd, shortenAddress } from '../../../lib/utils';
 
 const stagger = {
   hidden: {},

@@ -1,16 +1,16 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
-import TrueFraction from './truefraction/TrueFraction';
-import TokenizePropertyPage from './pages/TokenizePropertyPage';
-import FractionalizePage from './pages/FractionalizePage';
-import RedeemTokensPage from './pages/RedeemTokensPage';
-import ListMarketplacePage from './pages/ListMarketplacePage';
-import MarketplacePage from './pages/MarketplacePage';
-import WithdrawBuyBackPage from './pages/WithdrawBuyBackPage';
-import UpdatePricePage from './pages/UpdatePricePage';
-import CancelListingPage from './pages/CancelListingPage';
-import PropertyDetailPage from './pages/PropertyDetailPage';
-import UpdateBuyBackBPS from './pages/UpdateBuyBackBPS';
-import { ROUTES, getPropertyDetailsPath } from './config/routes';
+import TrueFraction from '../features/landing/TrueFraction';
+import TokenizePropertyPage from '../features/property/pages/TokenizePropertyPage';
+import FractionalizePage from '../features/property/pages/FractionalizePage';
+import RedeemTokensPage from '../features/property/pages/RedeemTokensPage';
+import ListMarketplacePage from '../features/property/pages/ListMarketplacePage';
+import MarketplacePage from '../features/property/pages/MarketplacePage';
+import WithdrawBuyBackPage from '../features/property/pages/WithdrawBuyBackPage';
+import UpdatePricePage from '../features/property/pages/UpdatePricePage';
+import CancelListingPage from '../features/property/pages/CancelListingPage';
+import PropertyDetailPage from '../features/property/pages/PropertyDetailPage';
+import UpdateBuyBackBPS from '../features/property/pages/UpdateBuyBackBPS';
+import { ROUTES, getPropertyDetailsPath } from '../config/routes';
 import './App.css';
 
 const LegacyPropertyRedirect = () => {

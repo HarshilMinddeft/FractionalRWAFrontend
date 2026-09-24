@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import web3Service from '../services/web3Service';
+import web3Service from '../../../services/web3Service';
 import propertyApi from '../api/propertyApi';
 
 /**

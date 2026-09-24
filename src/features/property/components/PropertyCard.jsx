@@ -1,6 +1,6 @@
-import { cn, formatNumber } from '../../lib/utils';
-import Card from '../ui/Card';
-import Badge from '../ui/Badge';
+import { cn, formatNumber } from '../../../lib/utils';
+import Card from '../../../components/ui/Card';
+import Badge from '../../../components/ui/Badge';
 
 const CameraIcon = () => (
   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>

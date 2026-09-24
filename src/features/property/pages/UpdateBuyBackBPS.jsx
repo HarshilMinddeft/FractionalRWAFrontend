@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import AppLayout from '../components/layout/AppLayout';
-import PageHeader from '../components/ui/PageHeader';
-import Button from '../components/ui/Button';
-import Spinner from '../components/ui/Spinner';
-import EmptyState from '../components/ui/EmptyState';
-import web3Service from '../services/web3Service';
+import AppLayout from '../../../components/layout/AppLayout';
+import PageHeader from '../../../components/ui/PageHeader';
+import Button from '../../../components/ui/Button';
+import Spinner from '../../../components/ui/Spinner';
+import EmptyState from '../../../components/ui/EmptyState';
+import web3Service from '../../../services/web3Service';
 import useAuthorityRole from '../hooks/useAuthorityRole';
-import { useWeb3 } from '../context/Web3Context';
-import { getContractErrorMessage } from '../utils/web3Errors';
+import { useWeb3 } from '../../../context/Web3Context';
+import { getContractErrorMessage } from '../../../utils/web3Errors';
 
 const SetBuybackPremiumPage = () => {
   const { address } = useWeb3();
