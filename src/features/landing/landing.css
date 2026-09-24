@@ -1,3 +1,10 @@
+/* Locks page scroll the instant the loading screen paints, before scene.js's
+   effect has even run — a plain overflow:hidden on the wrapper can't reach
+   html/body (a descendant can't style an ancestor), but :has() can. This is
+   the first line of defense; scene.js locks the same way and additionally
+   intercepts scrollTo()/wheel/keys once it boots, for browsers where a user
+   could still scroll a hidden-overflow root via script. */
+html:has(.tf-landing.loading){overflow:hidden}
 .tf-landing{--bg:#050507;--ink:#f4f2f8;--mute:#a19cae;--line:rgba(255,255,255,.09);--p1:#e9d5ff;--p2:#c084fc;--p3:#a855f7;--p4:#9333ea;--blue:#1d8fe0;--cyan:#0bb4ff}
 .tf-landing *{box-sizing:border-box;margin:0;padding:0}
 .tf-landing{background:var(--bg)}

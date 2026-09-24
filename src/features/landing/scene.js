@@ -47,12 +47,14 @@ export function initScene() {
   // loader was up. The page's scrolling element is <html>, not <body> — an
   // overflow:hidden on body alone leaves html free to scroll, so scrollTo(),
   // PageDown/Space/arrow keys and touch-drag could all still move the page
-  // out from under the loader. Lock both, for the first second after mount:
-  // that's the window where a fast scroll/swipe right as the page arrives
-  // could otherwise yank it out from under the intro before anything has
-  // even had a chance to render. overflow:hidden alone still doesn't stop a
-  // script-driven scrollTo(), so back it with a scroll listener that snaps
-  // back to 0 while the lock is on — that catches every input (wheel, keys,
+  // out from under the loader. Lock both for as long as the loader is up —
+  // NOT a fixed timeout: the loader can easily run past any fixed window on
+  // a slow connection (it streams a ~3.8 MB model), so a flat "1s then
+  // unlock" left scroll free while the loading screen was still visible.
+  // The lock now only lifts in markReady(), i.e. exactly when body would
+  // have lost its .loading class. overflow:hidden alone still doesn't stop
+  // a script-driven scrollTo(), so back it with a scroll listener that
+  // snaps back to 0 while locked — that catches every input (wheel, keys,
   // touch, programmatic) uniformly instead of intercepting each one.
   const prevHtmlOverflow = document.documentElement.style.overflow;
   const prevBodyOverflow = document.body.style.overflow;
@@ -60,11 +62,12 @@ export function initScene() {
   document.body.style.overflow = 'hidden';
   let scrollLocked = true;
   addEventListener('scroll', () => { if (scrollLocked && scrollY !== 0) scrollTo(0, 0); }, { passive: true });
-  setTimeout(() => {
+  const unlockScroll = () => {
+    if (!scrollLocked) return;
     scrollLocked = false;
     document.documentElement.style.overflow = prevHtmlOverflow;
     document.body.style.overflow = prevBodyOverflow;
-  }, 1000);
+  };
 
   // The whole intro (loader, hero camera framing, word reveals) assumes it
   // starts at the top of the page — but browsers restore scroll position on
@@ -78,6 +81,7 @@ export function initScene() {
   const markReady = () => {
     root.classList.remove('loading');
     root.classList.add('ready');
+    unlockScroll();
   };
 
   // safety net if WebGL/module never boots
@@ -1189,8 +1193,7 @@ export function initScene() {
       }
     }
     root.classList.remove('loading', 'ready');
-    document.documentElement.style.overflow = prevHtmlOverflow;
-    document.body.style.overflow = prevBodyOverflow;
+    unlockScroll();
     history.scrollRestoration = prevScrollRestoration;
   };
 }
