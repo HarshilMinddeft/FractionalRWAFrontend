@@ -48,6 +48,16 @@ export function initScene() {
   // inline and release it on ready / unmount.
   const prevBodyOverflow = document.body.style.overflow;
   document.body.style.overflow = 'hidden';
+
+  // The whole intro (loader, hero camera framing, word reveals) assumes it
+  // starts at the top of the page — but browsers restore scroll position on
+  // reload by default, so reloading mid-scroll would show the translucent
+  // loader "playing" over whatever section you'd scrolled to, out of sync
+  // with the camera. Take manual control of scroll restoration for as long
+  // as this page is mounted and snap to the top before anything renders.
+  const prevScrollRestoration = history.scrollRestoration;
+  history.scrollRestoration = 'manual';
+  scrollTo(0, 0);
   const markReady = () => {
     root.classList.remove('loading');
     root.classList.add('ready');
@@ -224,7 +234,6 @@ export function initScene() {
   crown.add(spire, beacon); cy += 3.25;
   crown.userData.baseY = ty0; crown.position.y = ty0;
   tower.add(crown);
-  const H = 0.36; // explode spacing reference
   const podium = new THREE.Mesh(new THREE.CylinderGeometry(2.9, 3.1, 0.15, 96), M.steel); podium.position.y = 0.075; podium.name = 'podium'; podium.receiveShadow = true;
   const podiumRing = new THREE.Mesh(new THREE.TorusGeometry(3.25, 0.012, 8, 160), M.glow); podiumRing.rotation.x = Math.PI / 2; podiumRing.position.y = 0.02; podiumRing.name = 'podium_ring';
   podium.scale.set(0.6, 1, 0.6); podiumRing.scale.set(0.58, 0.58, 1);
@@ -400,15 +409,15 @@ export function initScene() {
     return g;
   }
   // Jumeirah Beach Hotel — breaking wave, 104 m
-  function wave() {
-    const g = new THREE.Group(); g.name = 'jumeirah_beach_hotel';
-    const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(3.2, 0); sh.lineTo(3.2, 0.25); sh.quadraticCurveTo(1.0, 0.5, 0.25, 1.95); sh.quadraticCurveTo(0.08, 2.05, 0, 1.85); sh.closePath();
-    const w = mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.55, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2, curveSegments: 40 }), M.blueGlass, 'wave_body');
-    w.position.z = -0.27; g.add(w);
-    const crest = new THREE.QuadraticBezierCurve3(new THREE.Vector3(3.2, 0.27, 0.3), new THREE.Vector3(1.0, 0.52, 0.3), new THREE.Vector3(0.25, 1.97, 0.3));
-    g.add(mesh(new THREE.TubeGeometry(crest, 48, 0.02, 8), M.steel, 'wave_edge'));
-    return g;
-  }
+  // function wave() {
+  //   const g = new THREE.Group(); g.name = 'jumeirah_beach_hotel';
+  //   const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(3.2, 0); sh.lineTo(3.2, 0.25); sh.quadraticCurveTo(1.0, 0.5, 0.25, 1.95); sh.quadraticCurveTo(0.08, 2.05, 0, 1.85); sh.closePath();
+  //   const w = mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.55, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2, curveSegments: 40 }), M.blueGlass, 'wave_body');
+  //   w.position.z = -0.27; g.add(w);
+  //   const crest = new THREE.QuadraticBezierCurve3(new THREE.Vector3(3.2, 0.27, 0.3), new THREE.Vector3(1.0, 0.52, 0.3), new THREE.Vector3(0.25, 1.97, 0.3));
+  //   g.add(mesh(new THREE.TubeGeometry(crest, 48, 0.02, 8), M.steel, 'wave_edge'));
+  //   return g;
+  // }
   // Emirates Towers — twin equilateral-triangle towers (355 m office, 309 m hotel) with sloped triangular crowns and corner fins
   function triCap(r, hc) {
     const C = [0, 1, 2].map(i => { const t = i / 3 * Math.PI * 2; return new THREE.Vector3(r * Math.sin(t), 0, r * Math.cos(t)); });
@@ -869,7 +878,6 @@ export function initScene() {
   const place2 = g => { const ry = -Math.atan2(SD[1], SD[0]); g.rotation.y = ry; g.position.set(SD[0] * COAST, 0, SD[1] * COAST); return g; };
   city.add(place2(seaG));
   const palmM = place2(mergeGroup(palmG)); palmM.traverse(o => { if (o.isMesh) o.castShadow = false; }); city.add(palmM);
-  const PALM_C = [SD[0] * (COAST + PJC[0]), SD[1] * (COAST + PJC[0])];
   city.traverse(o => { if (o.isMesh) o.castShadow = false; }); // only the Burj casts shadows
   scene.add(city);
   
@@ -989,7 +997,7 @@ export function initScene() {
         L.w = reduceMotion ? 0 : (Math.PI * 2 / 7) * Math.min(1, time / 1.6) ** 2; // eases up to 360° / 7 s
         tower.rotation.y += L.w * dt;
       } else {
-        const t = Math.min(1, (time - L.t0) / L.dur), T = L.dur, h = t * t * (3 - 2 * t);
+        const t = Math.min(1, (time - L.t0) / L.dur), T = L.dur;
         // cubic Hermite: starts at current angle & angular velocity, ends at rest on a full turn
         tower.rotation.y = (2 * t ** 3 - 3 * t ** 2 + 1) * L.R0 + (t ** 3 - 2 * t ** 2 + t) * T * L.v0 + (-2 * t ** 3 + 3 * t ** 2) * L.R1;
         if (t >= 1) { L.mode = 'done'; scene.fog.density = 0.026; city.scale.set(1, 1, 1); pMat.size = 0.12; document.getElementById('loader')?.remove(); }
@@ -1132,7 +1140,7 @@ export function initScene() {
     tick(step);
     loadBurj().catch(e => { console.warn('Burj model fallback:', e.message); LP.dl = LP.dec = 1; modelReady = true; })
       .then(async () => {
-        try { await renderer.compileAsync(scene, camera); } catch (e) { renderer.compile(scene, camera); }
+        try { await renderer.compileAsync(scene, camera); } catch { renderer.compile(scene, camera); }
         LP.prep = 1;
         await new Promise(res => tick(() => tick(res)));  // two rendered frames with everything uploaded
         LP.fin = 1;
@@ -1166,5 +1174,6 @@ export function initScene() {
     }
     root.classList.remove('loading', 'ready');
     document.body.style.overflow = prevBodyOverflow;
+    history.scrollRestoration = prevScrollRestoration;
   };
 }
