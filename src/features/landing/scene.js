@@ -38,17 +38,30 @@ export function initScene() {
   // IIFE at the same point the original inline script created it.
   let io;
 
+  // The page's own CSS (landing.css) is scoped under this wrapper instead of
+  // html/body, so this element — not document.body — is what carries the
+  // loading/ready classes the CSS keys off of (body.loading -> .tf-landing.loading).
+  const root = document.querySelector('.tf-landing');
+
+  // The original body.loading{overflow:hidden} locked page scroll while the
+  // loader was up; the page scrolls on <body>, not on the wrapper, so lock it
+  // inline and release it on ready / unmount.
+  const prevBodyOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  const markReady = () => {
+    root.classList.remove('loading');
+    root.classList.add('ready');
+    document.body.style.overflow = prevBodyOverflow;
+  };
+
   // safety net if WebGL/module never boots
   setTimeout(() => {
-    if (!document.body.classList.contains('ready')) {
-      document.body.classList.remove('loading');
-      document.body.classList.add('ready');
-    }
+    if (!root.classList.contains('ready')) markReady();
   }, 25000);
 
   (async () => {
     if (!alive) return;
-  
+
   const canvas = document.getElementById('gl');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -1126,7 +1139,7 @@ export function initScene() {
       if (sg !== stage) { stage = sg; stEl.textContent = labels[sg]; }
       if (shown >= 100 && !held) {
         held = true; pctEl.textContent = '100'; stEl.textContent = 'Welcome to Dubai';
-        setTimeout(() => { startTransition(); document.body.classList.remove('loading'); document.body.classList.add('ready'); window.__glReady = true; onScroll(); setTimeout(loadAtlantis, 300); }, 450);
+        setTimeout(() => { startTransition(); markReady(); window.__glReady = true; onScroll(); setTimeout(loadAtlantis, 300); }, 450);
         return;
       }
       tick(step);
@@ -1166,6 +1179,7 @@ export function initScene() {
         // renderer may already be gone
       }
     }
-    document.body.classList.remove('loading', 'ready');
+    root.classList.remove('loading', 'ready');
+    document.body.style.overflow = prevBodyOverflow;
   };
 }

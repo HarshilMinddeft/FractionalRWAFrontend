@@ -1,20 +1,29 @@
 import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import './landing.css';
 import { initScene } from './scene.js';
+import { ROUTES } from '../../config/routes';
+import envConfig from '../../config/env.config';
 
 // This component intentionally has NO state and must never re-render:
 // scene.js drives this DOM directly (splits words into spans, toggles
 // classes, sets inline transforms) exactly like the original vanilla
 // script did. Keep every id / class / data-* attribute below untouched —
 // the scene script finds elements by these.
+//
+// landing.css is scoped entirely under the "tf-landing" wrapper below
+// instead of styling html/body directly — the original reference page
+// owned the whole document, but here this page shares the app shell with
+// every other route, so its background/reset/loading-state rules must not
+// leak onto them (scene.js keys off this wrapper's loading/ready classes
+// the same way the original keyed off body.loading/body.ready).
 const TrueFraction = () => {
   useEffect(() => {
-    document.body.classList.add('loading');
     return initScene();
   }, []);
 
   return (
-    <>
+    <div className="tf-landing loading">
       <canvas id="gl"></canvas>
       <div className="vignette"></div>
       <div className="cursor"></div>
@@ -104,10 +113,10 @@ const TrueFraction = () => {
             hold or trade.
           </p>
           <div className="ctas fade">
-            <a href="#why" className="btn primary">
+            <Link to={ROUTES.marketplace} className="btn primary">
               Explore properties <span className="arr">→</span>
-            </a>
-            <a href="#steps" className="btn">
+            </Link>
+            <a href={envConfig.tokenizeFormUrl} target="_blank" rel="noopener noreferrer" className="btn">
               Tokenize yours
             </a>
           </div>
@@ -450,7 +459,7 @@ const TrueFraction = () => {
           </div>
         </div>
       </footer>
-    </>
+    </div>
   );
 };
 
