@@ -1,24 +1,7 @@
-@import url('./components/landingPage/common/styles/commonClass.css');
-@import url('./components/landingPage/common/styles/variables.css');
-
 #root {
   max-width: none;
   margin: 0 auto;
   width: 100%;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
 /* @keyframes logo-spin {
