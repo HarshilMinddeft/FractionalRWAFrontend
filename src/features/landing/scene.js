@@ -44,10 +44,27 @@ export function initScene() {
   const root = document.querySelector('.tf-landing');
 
   // The original body.loading{overflow:hidden} locked page scroll while the
-  // loader was up; the page scrolls on <body>, not on the wrapper, so lock it
-  // inline and release it on ready / unmount.
+  // loader was up. The page's scrolling element is <html>, not <body> — an
+  // overflow:hidden on body alone leaves html free to scroll, so scrollTo(),
+  // PageDown/Space/arrow keys and touch-drag could all still move the page
+  // out from under the loader. Lock both, for the first second after mount:
+  // that's the window where a fast scroll/swipe right as the page arrives
+  // could otherwise yank it out from under the intro before anything has
+  // even had a chance to render. overflow:hidden alone still doesn't stop a
+  // script-driven scrollTo(), so back it with a scroll listener that snaps
+  // back to 0 while the lock is on — that catches every input (wheel, keys,
+  // touch, programmatic) uniformly instead of intercepting each one.
+  const prevHtmlOverflow = document.documentElement.style.overflow;
   const prevBodyOverflow = document.body.style.overflow;
+  document.documentElement.style.overflow = 'hidden';
   document.body.style.overflow = 'hidden';
+  let scrollLocked = true;
+  addEventListener('scroll', () => { if (scrollLocked && scrollY !== 0) scrollTo(0, 0); }, { passive: true });
+  setTimeout(() => {
+    scrollLocked = false;
+    document.documentElement.style.overflow = prevHtmlOverflow;
+    document.body.style.overflow = prevBodyOverflow;
+  }, 1000);
 
   // The whole intro (loader, hero camera framing, word reveals) assumes it
   // starts at the top of the page — but browsers restore scroll position on
@@ -61,7 +78,6 @@ export function initScene() {
   const markReady = () => {
     root.classList.remove('loading');
     root.classList.add('ready');
-    document.body.style.overflow = prevBodyOverflow;
   };
 
   // safety net if WebGL/module never boots
@@ -1146,7 +1162,7 @@ export function initScene() {
         LP.fin = 1;
       });
   })();
-  
+
   // GLB download (real-world scale: ~828 m to spire tip)
   document.getElementById('dl').addEventListener('click', () => {
     const c = tower.clone(true);
@@ -1173,6 +1189,7 @@ export function initScene() {
       }
     }
     root.classList.remove('loading', 'ready');
+    document.documentElement.style.overflow = prevHtmlOverflow;
     document.body.style.overflow = prevBodyOverflow;
     history.scrollRestoration = prevScrollRestoration;
   };
