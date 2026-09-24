@@ -437,12 +437,12 @@ const TrueFraction = () => {
             List your property for tokenization, or start investing in fractions of Dubai&apos;s finest addresses.
           </p>
           <div className="ctas reveal" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <a href="#" className="btn primary">
+            <a href={envConfig.tokenizeFormUrl} target="_blank" rel="noopener noreferrer" className="btn primary">
               List your property <span className="arr">→</span>
             </a>
-            <a href="#" className="btn">
+            <Link to={ROUTES.marketplace} className="btn">
               Browse fractions
-            </a>
+            </Link>
           </div>
         </section>
       </main>
