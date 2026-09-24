@@ -146,8 +146,8 @@
 .tf-landing .cta h2{font-family:Sora;font-weight:500;font-size:clamp(30px,min(6vw,9vh),96px);letter-spacing:-.045em;line-height:.95}
 .tf-landing .cta p{color:#c9c4d4;max-width:460px;line-height:1.6;font-size:17px}
 .tf-landing footer{position:relative;z-index:2;padding:28px clamp(20px,5vw,72px) 24px;border-top:1px solid var(--line);background:linear-gradient(transparent,rgba(5,5,7,.9) 40%)}
-.tf-landing footer .big{font-family:Sora;font-weight:600;font-size:clamp(44px,min(8vw,14vh),130px);letter-spacing:-.05em;line-height:.9;margin-bottom:24px;opacity:.95}
-.tf-landing footer .row{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+.tf-landing footer .big{font-family:Sora;font-weight:600;font-size:clamp(44px,min(8vw,14vh),130px);letter-spacing:-.05em;line-height:.9;margin-bottom:0;opacity:.95}
+.tf-landing footer .row{display:flex;justify-content:flex-end;gap:24px;flex-wrap:wrap;align-items:center}
 .tf-landing footer .row .links{gap:24px}
 .tf-landing #dl{background:none;border:0;cursor:pointer;color:var(--mute);font:inherit}
 .tf-landing #dl:hover{color:var(--p2)}
