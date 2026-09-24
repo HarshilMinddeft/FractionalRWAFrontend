@@ -869,21 +869,6 @@ export function initScene() {
   const place2 = g => { const ry = -Math.atan2(SD[1], SD[0]); g.rotation.y = ry; g.position.set(SD[0] * COAST, 0, SD[1] * COAST); return g; };
   city.add(place2(seaG));
   const palmM = place2(mergeGroup(palmG)); palmM.traverse(o => { if (o.isMesh) o.castShadow = false; }); city.add(palmM);
-  async function loadAtlantis() {
-    try {
-      const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
-      const gltf = await new GLTFLoader().loadAsync('/models/atlantis.glb'), m = gltf.scene;
-      m.updateMatrixWorld(true); const box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
-      const sc = 2.4 / size.y; // slightly heroic scale for the closing shot
-      const inner = new THREE.Group(); inner.add(m); m.position.set(-c.x, -box.min.y, -c.z); inner.scale.setScalar(sc);
-      if (size.x > size.z) inner.rotation.y = Math.PI / 2; // long wings run along the crescent
-      m.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = true; if (o.material) { o.material.envMapIntensity = 1.6; if (o.material.emissive) { o.material.emissive.set(0x3a2a22); o.material.emissiveIntensity = 0.6; } } } });
-      const glow = new THREE.PointLight(0xffc9a0, 40, 12, 1.4); glow.position.set(-2.5, 3, 0); inner.parent || 0;
-      const g = new THREE.Group(); g.name = 'atlantis_the_palm'; g.add(inner); g.add(glow);
-      const d = COAST + PJC[0] + PJR; g.position.set(SD[0] * d, 0.06, SD[1] * d); g.rotation.y = -Math.atan2(SD[1], SD[0]);
-      city.add(g);
-    } catch (e) { console.warn('Atlantis model failed:', e.message); }
-  }
   const PALM_C = [SD[0] * (COAST + PJC[0]), SD[1] * (COAST + PJC[0])];
   city.traverse(o => { if (o.isMesh) o.castShadow = false; }); // only the Burj casts shadows
   scene.add(city);
@@ -1139,7 +1124,7 @@ export function initScene() {
       if (sg !== stage) { stage = sg; stEl.textContent = labels[sg]; }
       if (shown >= 100 && !held) {
         held = true; pctEl.textContent = '100'; stEl.textContent = 'Welcome to Dubai';
-        setTimeout(() => { startTransition(); markReady(); window.__glReady = true; onScroll(); setTimeout(loadAtlantis, 300); }, 450);
+        setTimeout(() => { startTransition(); markReady(); window.__glReady = true; onScroll(); }, 450);
         return;
       }
       tick(step);
