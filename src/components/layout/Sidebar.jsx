@@ -5,17 +5,7 @@ import { cn } from '../../lib/utils';
 import { NAV_GROUPS } from '../../config/navigation';
 import useAuthorityRole from '../../features/property/hooks/useAuthorityRole';
 import useHasActiveBuyBack from '../../features/property/hooks/useHasActiveBuyBack';
-
-const Logo = () => (
-  <div className="flex items-center gap-2.5">
-    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-      <img src="/logoD.webp" className="h-7 w-7 object-contain" alt="TrueFraction logo" />
-    </span>
-    <span className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-white">
-      True<span className="text-gradient">Fraction</span>
-    </span>
-  </div>
-);
+import Logo from '../ui/Logo';
 
 const NavItem = ({ item, isActive, onClick }) => (
   <li>

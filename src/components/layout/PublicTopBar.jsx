@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import ThemeToggle from '../ui/ThemeToggle';
+import Logo from '../ui/Logo';
 import { useWeb3 } from '../../context/Web3Context';
 import { shortenAddress } from '../../lib/utils';
 import { ROUTES } from '../../config/routes';
@@ -12,17 +13,6 @@ const WalletIcon = () => (
       d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3"
     />
   </svg>
-);
-
-const Logo = () => (
-  <div className="flex items-center gap-2.5">
-    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-      <img src="/logoD.webp" className="h-7 w-7 object-contain" alt="TrueFraction logo" />
-    </span>
-    <span className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-white">
-      True<span className="text-gradient">Fraction</span>
-    </span>
-  </div>
 );
 
 /**
