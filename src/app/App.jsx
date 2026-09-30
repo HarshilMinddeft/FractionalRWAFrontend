@@ -10,6 +10,8 @@ import UpdatePricePage from '../features/property/pages/UpdatePricePage';
 import CancelListingPage from '../features/property/pages/CancelListingPage';
 import PropertyDetailPage from '../features/property/pages/PropertyDetailPage';
 import UpdateBuyBackBPS from '../features/property/pages/UpdateBuyBackBPS';
+import InvestorDashboardPage from '../features/rent/pages/InvestorDashboardPage';
+import RentDistributionPage from '../features/rent/pages/RentDistributionPage';
 import { ROUTES, getPropertyDetailsPath } from '../config/routes';
 import './App.css';
 
@@ -41,6 +43,8 @@ function App() {
       <Route path={ROUTES.appPropertyDetails} element={<PropertyDetailPage />} />
 
       <Route path={ROUTES.updateBuyBackBPS} element={<UpdateBuyBackBPS />} />
+      <Route path={ROUTES.investorDashboard} element={<InvestorDashboardPage />} />
+      <Route path={ROUTES.rentDistribution} element={<RentDistributionPage />} />
 
       <Route path="/property/:id" element={<LegacyPropertyRedirect />} />
     </Routes>

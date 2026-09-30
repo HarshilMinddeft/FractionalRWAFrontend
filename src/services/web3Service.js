@@ -153,6 +153,11 @@ export const web3Service = {
     return new ethers.Contract(contractsConfig.orderBook.address, contractsConfig.orderBook.abi, signer);
   },
 
+  getRentDistributorContract: async () => {
+    const signer = await web3Service.getSigner();
+    return new ethers.Contract(contractsConfig.rentDistributor.address, contractsConfig.rentDistributor.abi, signer);
+  },
+
   /**
    * Share token (ERC-3643) for a listing, bound to the connected signer.
    * Each property has its own token address, so this can't be a fixed
