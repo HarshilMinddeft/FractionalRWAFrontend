@@ -159,8 +159,7 @@ html:has(.tf-landing.loading){overflow:hidden}
 .tf-landing #dl{background:none;border:0;cursor:pointer;color:var(--mute);font:inherit}
 .tf-landing #dl:hover{color:var(--p2)}
 .tf-landing .cursor{position:fixed;left:0;top:0;width:34px;height:34px;margin:-17px 0 0 -17px;border:1px solid rgba(255,255,255,.5);border-radius:50%;pointer-events:none;z-index:1100;transition:width .3s,height .3s,margin .3s,background .3s,border-color .3s;mix-blend-mode:difference}
-.tf-landing .cursor.big{width:64px;height:64px;margin:-32px 0 0 -32px;background:#fff;border-color:#fff}
-@media (pointer:coarse){.tf-landing .cursor{display:none}
+.tf-landing .cursor.big{width:64px;height:64px;margin:-32px 0 0 -32px;background:#fff;border-color:#fff}@media (pointer:coarse){.tf-landing .cursor{display:none}
 }
 .tf-landing .platform{height:380vh;padding:0}
 .tf-landing .pl-sticky{position:sticky;top:0;height:100vh;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);align-items:center;gap:4vw;padding:96px clamp(20px,5vw,72px) 90px;overflow:hidden}

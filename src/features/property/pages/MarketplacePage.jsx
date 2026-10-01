@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import PublicLayout from '../../../components/layout/PublicLayout';
 import AppLayout from '../../../components/layout/AppLayout';
 import MarketplaceCard from '../components/MarketplaceCard';
+import InvestorDashboard from '../../rent/components/InvestorDashboard';
 import { formatShares, formatStable } from '../../../utils/units';
 import PageHeader from '../../../components/ui/PageHeader';
 import StatCard from '../../../components/ui/StatCard';
@@ -21,7 +22,7 @@ import { cn, formatNumber } from '../../../lib/utils';
 // buyback, so a listing with a live buyback (holders can still sell back)
 // always has active == false too. Keep it visible here — it's still the
 // only way holders reach PropertyDetailPage to call sellTokensBack — rather
-// than filtering strictly on `active`, which would make it unreachable.  
+// than filtering strictly on `active`, which would make it unreachable.
 const isActivelyListed = async (property, marketplaceContract) => {
   const listing = await marketplaceContract.listings(property.propertyId);
   return listing.active || listing.buyBack;
@@ -40,7 +41,10 @@ const item = {
 const GridSkeleton = () => (
   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
     {Array.from({ length: 6 }).map((_, i) => (
-      <div key={i} className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div
+        key={i}
+        className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+      >
         <Skeleton className="aspect-[16/10] rounded-none" />
         <div className="space-y-3 p-5">
           <Skeleton className="h-4 w-2/3" />
@@ -61,6 +65,11 @@ const MarketplacePage = ({ isPublic = false }) => {
   const detailPath = isPublic ? getPropertyDetailsPath : getAppPropertyDetailsPath;
 
   const navigate = useNavigate();
+  // Tab lives in the URL (?tab=dashboard) so it survives reloads and can be linked to
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === 'dashboard' ? 'dashboard' : 'properties';
+  const setTab = (next) => setSearchParams(next === 'dashboard' ? { tab: 'dashboard' } : {}, { replace: true });
+
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('newest');
 
@@ -113,8 +122,12 @@ const MarketplacePage = ({ isPublic = false }) => {
     const q = query.trim().toLowerCase();
     return properties.filter(
       (p) =>
-        String(p.propertyName || '').toLowerCase().includes(q) ||
-        String(p.locationDetailes || '').toLowerCase().includes(q) ||
+        String(p.propertyName || '')
+          .toLowerCase()
+          .includes(q) ||
+        String(p.locationDetailes || '')
+          .toLowerCase()
+          .includes(q) ||
         String(p.propertyId).includes(q),
     );
   }, [properties, query]);
@@ -137,8 +150,12 @@ const MarketplacePage = ({ isPublic = false }) => {
     <Layout>
       <PageHeader
         eyebrow="Explore"
-        title="Marketplace"
-        description="Browse tokenized real-world assets that are actively listed. Every property is fractionalized, on-chain and verified before it reaches the floor."
+        title={tab === 'dashboard' ? 'My Portfolio' : 'Marketplace'}
+        description={
+          tab === 'dashboard'
+            ? 'Track the property shares you hold, the rent they earn and every trade you make.'
+            : 'Browse tokenized real-world assets that are actively listed. Every property is fractionalized, on-chain and verified before it reaches the floor.'
+        }
         icon={
           <path
             strokeLinecap="round"
@@ -148,116 +165,184 @@ const MarketplacePage = ({ isPublic = false }) => {
         }
       />
 
-      {/* Market stats */}
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Live listings"
-          value={loading ? '…' : formatNumber(properties.length, 0)}
-          tone="brand"
-          icon={<BuildingIcon />}
-        />
-        <StatCard
-          label="Assets on-chain"
-          value={loading ? '…' : `$${formatNumber(totals.totalValue, 0)}`}
-          sub="combined asset value"
-          tone="success"
-          icon={<DollarIcon />}
-        />
-        <StatCard
-          label="Total floor area"
-          value={loading ? '…' : `${formatNumber(totals.totalSize, 0)} sqft`}
-          sub="across active listings"
-          tone="neutral"
-          icon={<AreaIcon />}
-        />
-        <StatCard
-          label="Avg asset value"
-          value={loading || !properties.length ? '—' : `$${formatNumber(totals.totalValue / properties.length, 0)}`}
-          sub="per listing"
-          tone="warning"
-          icon={<TrendIcon />}
-        />
+      <div className="flex justify-center">
+        <MarketTabs tab={tab} onChange={setTab} propertyCount={loading ? null : properties.length} />
       </div>
 
-      {/* Toolbar */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:max-w-sm">
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, location or ID…"
-            aria-label="Search properties"
-            leadingIcon={
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-                />
-              </svg>
-            }
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="hidden text-xs font-medium text-slate-400 sm:block dark:text-slate-500">
-            {loading ? 'Syncing…' : `${sorted.length} of ${properties.length} properties`}
-          </span>
-          <SortPills sort={sort} onChange={setSort} />
-        </div>
-      </div>
-
-      {loading ? (
-        <GridSkeleton />
-      ) : sorted.length > 0 ? (
-        <motion.div
-          key={`${sort}-${filtered.length}`}
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3"
-        >
-          {sorted.map((prop) => (
-            <motion.div key={prop.propertyId} variants={item} className="h-full">
-              <MarketplaceCard
-                property={prop}
-                listing={listings[prop.propertyId] ?? null}
-                onClick={() => navigate(detailPath(prop.propertyId))}
-              />
-            </motion.div>
-          ))}
-        </motion.div>
-      ) : query ? (
-        <EmptyState
-          title="No matching properties"
-          icon={<SearchIcon />}
-          action={
-            <Button variant="secondary" size="sm" onClick={() => setQuery('')}>
-              Clear search
-            </Button>
-          }
-        >
-          Nothing matched “{query}”. Try a different name, location or property ID.
-        </EmptyState>
+      {tab === 'dashboard' ? (
+        <InvestorDashboard detailPath={detailPath} onBrowse={() => setTab('properties')} />
       ) : (
-        <EmptyState
-          title="No properties are currently listed"
-          action={
-            <Button
-              variant="soft"
-              size="sm"
-              onClick={() => navigate('/fractionalize-property')}
+        <>
+          {/* Market stats */}
+          <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <StatCard
+              label="Live listings"
+              value={loading ? '…' : formatNumber(properties.length, 0)}
+              tone="brand"
+              icon={<BuildingIcon />}
+            />
+            <StatCard
+              label="Assets on-chain"
+              value={loading ? '…' : `$${formatNumber(totals.totalValue, 0)}`}
+              sub="combined asset value"
+              tone="success"
+              icon={<DollarIcon />}
+            />
+            <StatCard
+              label="Total floor area"
+              value={loading ? '…' : `${formatNumber(totals.totalSize, 0)} sqft`}
+              sub="across active listings"
+              tone="neutral"
+              icon={<AreaIcon />}
+            />
+            <StatCard
+              label="Avg asset value"
+              value={loading || !properties.length ? '—' : `$${formatNumber(totals.totalValue / properties.length, 0)}`}
+              sub="per listing"
+              tone="warning"
+              icon={<TrendIcon />}
+            />
+          </div>
+
+          {/* Toolbar */}
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-sm">
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by name, location or ID…"
+                aria-label="Search properties"
+                leadingIcon={
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                    />
+                  </svg>
+                }
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="hidden text-xs font-medium text-slate-400 sm:block dark:text-slate-500">
+                {loading ? 'Syncing…' : `${sorted.length} of ${properties.length} properties`}
+              </span>
+              <SortPills sort={sort} onChange={setSort} />
+            </div>
+          </div>
+
+          {loading ? (
+            <GridSkeleton />
+          ) : sorted.length > 0 ? (
+            <motion.div
+              key={`${sort}-${filtered.length}`}
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3"
             >
-              Go to your assets
-            </Button>
-          }
-        >
-          When a property owner lists shares on the marketplace they will appear here. Check back soon.
-        </EmptyState>
+              {sorted.map((prop) => (
+                <motion.div key={prop.propertyId} variants={item} className="h-full">
+                  <MarketplaceCard
+                    property={prop}
+                    listing={listings[prop.propertyId] ?? null}
+                    onClick={() => navigate(detailPath(prop.propertyId))}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : query ? (
+            <EmptyState
+              title="No matching properties"
+              icon={<SearchIcon />}
+              action={
+                <Button variant="secondary" size="sm" onClick={() => setQuery('')}>
+                  Clear search
+                </Button>
+              }
+            >
+              Nothing matched “{query}”. Try a different name, location or property ID.
+            </EmptyState>
+          ) : (
+            <EmptyState
+              title="No properties are currently listed"
+              action={
+                <Button variant="soft" size="sm" onClick={() => navigate('/fractionalize-property')}>
+                  Go to your assets
+                </Button>
+              }
+            >
+              When a property owner lists shares on the marketplace they will appear here. Check back soon.
+            </EmptyState>
+          )}
+        </>
       )}
     </Layout>
   );
 };
+
+const TABS = [
+  {
+    value: 'properties',
+    label: 'Explore',
+    icon: 'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21',
+  },
+  {
+    value: 'dashboard',
+    label: 'My Portfolio',
+    icon: 'M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z',
+  },
+];
+
+const MarketTabs = ({ tab, onChange, propertyCount }) => (
+  <div
+    role="tablist"
+    aria-label="Marketplace view"
+    className="mb-6 inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+  >
+    {TABS.map((t) => {
+      const active = tab === t.value;
+      return (
+        <button
+          key={t.value}
+          type="button"
+          role="tab"
+          aria-selected={active}
+          onClick={() => onChange(t.value)}
+          className={cn(
+            'relative flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
+            active ? 'text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200',
+          )}
+        >
+          {active && (
+            <motion.span
+              layoutId="market-tab"
+              className="absolute inset-0 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 shadow-md shadow-indigo-600/25"
+              transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+            />
+          )}
+          <svg className="relative h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d={t.icon} />
+          </svg>
+          <span className="relative">{t.label}</span>
+          {t.value === 'properties' && propertyCount !== null && (
+            <span
+              className={cn(
+                'relative rounded-full px-1.5 py-px text-[11px] font-bold tabular-nums',
+                active
+                  ? 'bg-white text-indigo-700'
+                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+              )}
+            >
+              {propertyCount}
+            </span>
+          )}
+        </button>
+      );
+    })}
+  </div>
+);
 
 const SortPills = ({ sort, onChange }) => {
   const options = [
@@ -318,7 +403,11 @@ const AreaIcon = () => (
 
 const TrendIcon = () => (
   <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941"
+    />
   </svg>
 );
 

@@ -1,17 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AppLayout from '../../../components/layout/AppLayout';
-import PageHeader from '../../../components/ui/PageHeader';
 import StatCard from '../../../components/ui/StatCard';
 import EmptyState from '../../../components/ui/EmptyState';
 import Badge from '../../../components/ui/Badge';
 import Button from '../../../components/ui/Button';
 import { useWeb3 } from '../../../context/Web3Context';
-import { getAppPropertyDetailsPath } from '../../../config/routes';
 import rentApi, { apiErrorMessage } from '../api/rentApi';
-import DataTable from '../components/DataTable';
+import DataTable from './DataTable';
 import { FIELD_INFO, averageHeld, explainRow } from '../utils/explain';
-import ChainLink from '../components/ChainLink';
+import ChainLink from './ChainLink';
 import {
   ACTIVITY_LABELS,
   ALLOCATION_LABELS,
@@ -32,11 +29,19 @@ const Icon = ({ d }) => (
 const ICONS = {
   rent: 'M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z',
   pending: 'M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
-  property: 'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z',
+  property:
+    'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z',
   shares: 'M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z',
 };
 
-const InvestorDashboardPage = () => {
+/**
+ * The connected wallet's portfolio, rent history and trading activity. Shown as
+ * the "My Portfolio" tab on the marketplace.
+ *
+ * @param {(tokenId: string) => string} detailPath link for a held property
+ * @param {() => void} onBrowse switches back to the properties tab
+ */
+const InvestorDashboard = ({ detailPath, onBrowse }) => {
   const { address } = useWeb3();
   const navigate = useNavigate();
 
@@ -111,7 +116,7 @@ const InvestorDashboardPage = () => {
       render: (h) => (
         <button
           type="button"
-          onClick={() => navigate(getAppPropertyDetailsPath(h.tokenId))}
+          onClick={() => navigate(detailPath(h.tokenId))}
           className="flex cursor-pointer items-center gap-3 text-left"
         >
           {h.thumbnail ? (
@@ -128,13 +133,26 @@ const InvestorDashboardPage = () => {
       ),
     },
     { key: 'balance', header: 'Shares', align: 'right', render: (h) => formatShares(h.balance) },
-    { key: 'ownership', header: 'Ownership', align: 'right', render: (h) => `${Number(h.ownershipPercent).toFixed(2)}%` },
-    { key: 'since', header: 'Holding since', render: (h) => (BigInt(h.balance) > 0n ? formatDate(h.firstAcquiredAt) : 'Sold') },
+    {
+      key: 'ownership',
+      header: 'Ownership',
+      align: 'right',
+      render: (h) => `${Number(h.ownershipPercent).toFixed(2)}%`,
+    },
+    {
+      key: 'since',
+      header: 'Holding since',
+      render: (h) => (BigInt(h.balance) > 0n ? formatDate(h.firstAcquiredAt) : 'Sold'),
+    },
     {
       key: 'rent',
       header: 'Rent received',
       align: 'right',
-      render: (h) => <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMoney(h.rentReceived, decimals)}</span>,
+      render: (h) => (
+        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+          {formatMoney(h.rentReceived, decimals)}
+        </span>
+      ),
     },
   ];
 
@@ -156,7 +174,14 @@ const InvestorDashboardPage = () => {
   const payoutColumns = [
     { key: 'month', header: 'Month', render: (p) => <span className="font-medium">{formatMonth(p.month)}</span> },
     { key: 'property', header: 'Property', render: (p) => p.propertyName || `Property #${p.tokenId}` },
-    { key: 'days', header: 'Days held', align: 'right', info: FIELD_INFO.daysHeld, explain: explain('daysHeld'), render: (p) => p.daysHeld },
+    {
+      key: 'days',
+      header: 'Days held',
+      align: 'right',
+      info: FIELD_INFO.daysHeld,
+      explain: explain('daysHeld'),
+      render: (p) => p.daysHeld,
+    },
     {
       key: 'avg',
       header: 'Avg. shares',
@@ -173,22 +198,42 @@ const InvestorDashboardPage = () => {
       explain: explain('share'),
       render: (p) => `${Number(p.sharePercent).toFixed(3)}%`,
     },
-    { key: 'gross', header: 'Gross', align: 'right', info: FIELD_INFO.gross, explain: explain('gross'), render: (p) => formatMoney(p.grossAmount, decimals) },
-    { key: 'fee', header: 'Fee', align: 'right', info: FIELD_INFO.fee, explain: explain('fee'), render: (p) => formatMoney(p.feeAmount, decimals) },
+    {
+      key: 'gross',
+      header: 'Gross',
+      align: 'right',
+      info: FIELD_INFO.gross,
+      explain: explain('gross'),
+      render: (p) => formatMoney(p.grossAmount, decimals),
+    },
+    {
+      key: 'fee',
+      header: 'Fee',
+      align: 'right',
+      info: FIELD_INFO.fee,
+      explain: explain('fee'),
+      render: (p) => formatMoney(p.feeAmount, decimals),
+    },
     {
       key: 'net',
       header: 'You receive',
       align: 'right',
       info: FIELD_INFO.net,
       explain: explain('net'),
-      render: (p) => <span className="font-semibold text-slate-900 dark:text-white">{formatMoney(p.netAmount, decimals)}</span>,
+      render: (p) => (
+        <span className="font-semibold text-slate-900 dark:text-white">{formatMoney(p.netAmount, decimals)}</span>
+      ),
     },
     {
       key: 'status',
       header: 'Status',
       render: (p) => {
         const s = ALLOCATION_LABELS[p.status] ?? { label: p.status, tone: 'neutral' };
-        return <Badge tone={s.tone} dot>{s.label}</Badge>;
+        return (
+          <Badge tone={s.tone} dot>
+            {s.label}
+          </Badge>
+        );
       },
     },
     { key: 'tx', header: 'Transaction', render: (p) => <ChainLink hash={p.txHash} /> },
@@ -208,7 +253,12 @@ const InvestorDashboardPage = () => {
     },
     { key: 'property', header: 'Property', render: (a) => a.propertyName || `Property #${a.tokenId}` },
     { key: 'amount', header: 'Shares', align: 'right', render: (a) => (a.amount ? formatShares(a.amount) : '—') },
-    { key: 'value', header: 'Value', align: 'right', render: (a) => (a.totalValue ? formatMoney(a.totalValue, decimals) : '—') },
+    {
+      key: 'value',
+      header: 'Value',
+      align: 'right',
+      render: (a) => (a.totalValue ? formatMoney(a.totalValue, decimals) : '—'),
+    },
     { key: 'tx', header: 'Transaction', render: (a) => <ChainLink hash={a.txHash} /> },
   ];
 
@@ -271,8 +321,8 @@ const InvestorDashboardPage = () => {
           loading={summaryLoading}
           empty="You don't hold any property shares yet."
           action={
-            <Button size="sm" variant="soft" onClick={() => navigate('/app/marketplace')}>
-              Browse marketplace
+            <Button size="sm" variant="soft" onClick={onBrowse}>
+              Browse properties
             </Button>
           }
         />
@@ -308,35 +358,29 @@ const InvestorDashboardPage = () => {
   };
 
   return (
-    <AppLayout>
-      <PageHeader
-        eyebrow="Your assets"
-        title="Investor Dashboard"
-        description={
-          summary
-            ? `Your fractional property portfolio, rental income and trading history. Amounts in ${summary.stablecoin.symbol}.`
-            : 'Your fractional property portfolio, rental income and trading history.'
-        }
-        icon={<path strokeLinecap="round" strokeLinejoin="round" d={ICONS.shares} />}
-        action={
-          address && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                loadSummary();
-                loadPayouts(payouts.page);
-                loadActivity(activity.page);
-              }}
-            >
-              Refresh
-            </Button>
-          )
-        }
-      />
+    <>
+      {address && (
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Your portfolio, rental income and trading history
+            {summary ? ` · amounts in ${summary.stablecoin.symbol}` : ''}.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              loadSummary();
+              loadPayouts(payouts.page);
+              loadActivity(activity.page);
+            }}
+          >
+            Refresh
+          </Button>
+        </div>
+      )}
       {content()}
-    </AppLayout>
+    </>
   );
 };
 
-export default InvestorDashboardPage;
+export default InvestorDashboard;

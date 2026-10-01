@@ -25,17 +25,6 @@ export const NAV_GROUPS = [
     label: 'Your assets',
     items: [
       {
-        path: ROUTES.investorDashboard,
-        label: 'Investor Dashboard',
-        icon: (
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6ZM13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z"
-          />
-        ),
-      },
-      {
         path: ROUTES.fractionalizeProperty,
         label: 'Fractionalize',
         icon: (
@@ -161,7 +150,6 @@ export const PAGE_META = {
   [ROUTES.tokenizeProperty]: { title: 'Tokenize Property', section: 'Administration' },
   [ROUTES.updatePrice]: { title: 'Change Property Price', section: 'Administration' },
   [ROUTES.updateBuyBackBPS]: { title: 'Update Buyback BPS', section: 'Administration' },
-  [ROUTES.investorDashboard]: { title: 'Investor Dashboard', section: 'Your assets' },
   [ROUTES.rentDistribution]: { title: 'Rent Distribution', section: 'Administration' },
 };
 

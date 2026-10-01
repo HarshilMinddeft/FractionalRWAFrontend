@@ -983,7 +983,8 @@ export function initScene() {
     const ty = towerH * 0.5 + 0.15 - visH * 0.12, a = KF.hero.a + 0.25;
     lT.set(0, ty, 0); lPos.set(Math.cos(a) * d, ty + 0.9, Math.sin(a) * d);
   }
-  const easeIO = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const CAM_EASE = 0.15; // fraction of the gap left after 1 s
+  const easeIO = t =>t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   function startTransition() {
     L.mode = 'transition'; L.t0 = time; L.R0 = tower.rotation.y; L.v0 = L.w;
     const T = L.dur; L.R1 = Math.ceil((L.R0 + L.v0 * T * 0.5) / (Math.PI * 2)) * Math.PI * 2;
@@ -992,8 +993,9 @@ export function initScene() {
     const now = performance.now(), dt = Math.min((now - last) / 1000, 0.05); last = now; time += dt;
     const max = Math.max(1, document.documentElement.scrollHeight - innerHeight);
     sample(scrollY / max);
-    const narrow = innerWidth < 860, k = 1 - Math.pow(0.02, dt);
-    for (const key in cur) cur[key] += (tgt[key] - cur[key]) * k;
+    // camera eases toward the scroll target; higher base = slower, softer glide (0.02 was snappy)
+    const narrow = innerWidth < 860, k = 1 - Math.pow(0.02, dt), camK = 1 - Math.pow(CAM_EASE, dt);
+    for (const key in cur) cur[key] += (tgt[key] - cur[key]) * camK;
     explode += (explodeT - explode) * (1 - Math.pow(0.05, dt));
     mouse.sx += (mouse.x - mouse.sx) * k; mouse.sy += (mouse.y - mouse.sy) * k;
   
