@@ -93,6 +93,16 @@ const RentDistributionPage = () => {
     loadAll();
   }, [loadAll]);
 
+  const loadHolders = useCallback(
+    (tokenId) => guard(() => rentApi.getHolders(token, tokenId), 'Could not load holders.'),
+    [token, guard],
+  );
+
+  const loadPropertyDistributions = useCallback(
+    (tokenId) => guard(() => rentApi.listDistributions(token, { tokenId, limit: 100 }), 'Could not load past distributions.'),
+    [token, guard],
+  );
+
   const signIn = async () => {
     try {
       await session.signIn();
@@ -293,6 +303,9 @@ const RentDistributionPage = () => {
             symbol={symbol}
             onCreate={create}
             creating={creating}
+            loadHolders={loadHolders}
+            loadDistributions={loadPropertyDistributions}
+            adminAddress={address}
           />
         )}
 

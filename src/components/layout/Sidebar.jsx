@@ -13,17 +13,21 @@ const NavItem = ({ item, isActive, onClick }) => (
       type="button"
       onClick={onClick}
       className={cn(
-        'group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left transition-all duration-150',
+        'group relative flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left transition-all duration-200',
         isActive
-          ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-600/25'
-          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:text-white',
+          ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-200 dark:ring-indigo-400/20'
+          : 'text-slate-600 hover:translate-x-0.5 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:text-white',
       )}
     >
+      {/* Glowing edge on the active item. */}
+      {isActive && (
+        <span className="absolute top-2 bottom-2 -left-3 w-[3px] rounded-r-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.6)] dark:bg-indigo-400" />
+      )}
       <span
         className={cn(
           'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
           isActive
-            ? 'bg-white/15 text-white'
+            ? 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-600/30'
             : 'text-slate-400 group-hover:text-indigo-600 dark:text-slate-500 dark:group-hover:text-indigo-400',
         )}
       >
@@ -33,7 +37,10 @@ const NavItem = ({ item, isActive, onClick }) => (
       </span>
       <span className="min-w-0 flex-1 text-[13.5px] font-medium">{item.label}</span>
       {isActive && (
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.9)]" />
+        <span className="relative flex h-1.5 w-1.5 shrink-0">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-500 opacity-60 dark:bg-indigo-400" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
+        </span>
       )}
     </button>
   </li>
@@ -96,7 +103,7 @@ const Sidebar = ({ open = false, onClose }) => {
 
             return (
               <div key={group.id}>
-                <p className="mb-2 px-3 text-[10.5px] font-bold tracking-[0.12em] text-slate-400 uppercase dark:text-slate-500">
+                <p className="mb-2 px-3 font-mono text-[10.5px] font-medium tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
                   {group.label}
                 </p>
                 <ul className="space-y-1">

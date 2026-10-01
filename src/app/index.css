@@ -41,6 +41,33 @@
   --animate-shimmer: tf-shimmer 1.6s linear infinite;
   --animate-fade-in: tf-fade-in 0.4s ease-out both;
   --animate-scale-in: tf-scale-in 0.25s ease-out both;
+  /* `backwards`, not `both`: once finished the animation must leave no
+     transform behind, or it becomes the containing block for every
+     position:fixed descendant (dialogs, overlays). */
+  --animate-page-in: tf-page-in 0.5s cubic-bezier(0.2, 0.75, 0.2, 1) backwards;
+  --animate-float: tf-float 4s ease-in-out infinite;
+  --animate-spin-slow: spin 14s linear infinite;
+}
+
+@keyframes tf-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tf-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }
 
 @keyframes tf-shimmer {
@@ -200,12 +227,12 @@
   background-size: 22px 22px;
 }
 
-/* Skeleton shimmer surface */
+/* Skeleton shimmer surface — a faint brand-tinted sheen. */
 .shimmer-bg {
   background: linear-gradient(
     110deg,
     var(--tf-slate-100) 8%,
-    var(--tf-slate-200) 18%,
+    color-mix(in srgb, var(--tf-indigo-200) 45%, var(--tf-slate-100)) 18%,
     var(--tf-slate-100) 33%
   );
   background-size: 200% 100%;
@@ -213,7 +240,7 @@
 }
 
 [data-theme='dark'] .shimmer-bg {
-  background: linear-gradient(110deg, #1e293b 8%, #273449 18%, #1e293b 33%);
+  background: linear-gradient(110deg, #1e293b 8%, color-mix(in srgb, var(--tf-indigo-400) 16%, #1e293b) 18%, #1e293b 33%);
   background-size: 200% 100%;
   animation: tf-shimmer 1.6s linear infinite;
 }
@@ -244,4 +271,171 @@ input[type='number']::-webkit-inner-spin-button {
 input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* ---------- Motion & effects ---------- */
+
+/*
+ * Sheen on primary actions: a band of light sweeps across on hover, like
+ * light off polished metal. Sits under the label (z-index -1 inside the
+ * button's own stacking context).
+ */
+@utility btn-sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+    transform: translateX(-120%);
+    transition: transform 0.7s cubic-bezier(0.2, 0.75, 0.2, 1);
+  }
+  &:hover::after {
+    transform: translateX(120%);
+  }
+}
+
+/*
+ * Ambient backdrop for the app shell: two soft brand glows drifting slowly
+ * over a faint grid. Only shows on the page background — every surface on
+ * top of it stays solid. z-index -1 inside the shell's `isolate` root keeps
+ * it above the page colour and below all content without giving the content
+ * its own stacking context (which would trap dialogs under the sidebar).
+ */
+.app-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.app-ambient::before,
+.app-ambient::after {
+  content: '';
+  position: absolute;
+  width: 55vmax;
+  height: 55vmax;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.45;
+}
+.app-ambient::before {
+  top: -24vmax;
+  right: -14vmax;
+  background: radial-gradient(circle, color-mix(in srgb, var(--tf-indigo-500) 30%, transparent), transparent 65%);
+  animation: tf-drift-a 26s ease-in-out infinite alternate;
+}
+.app-ambient::after {
+  bottom: -28vmax;
+  left: -18vmax;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.2), transparent 65%);
+  animation: tf-drift-b 32s ease-in-out infinite alternate;
+}
+[data-theme='light'] .app-ambient::before,
+[data-theme='light'] .app-ambient::after {
+  opacity: 0.3;
+}
+.app-ambient-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--tf-indigo-500) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--tf-indigo-500) 9%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, #000 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, #000 20%, transparent 75%);
+}
+
+@keyframes tf-drift-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-8vmax, 6vmax, 0) scale(1.12);
+  }
+}
+
+@keyframes tf-drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  to {
+    transform: translate3d(9vmax, -5vmax, 0) scale(0.95);
+  }
+}
+
+/*
+ * A thin beam that sweeps once along the bottom edge of the top bar each time
+ * the route changes (the element is re-keyed on pathname, restarting it).
+ */
+.header-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.header-beam::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--tf-indigo-500), #ffffff, #8b5cf6, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tf-indigo-500) 60%, transparent);
+  animation: tf-beam 1.4s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+@keyframes tf-beam {
+  from {
+    transform: translateX(-100%);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(260%);
+    opacity: 0;
+  }
+}
+
+/* Brand hairline + soft glow on hoverable cards. */
+.card-glow:hover {
+  border-color: color-mix(in srgb, var(--tf-indigo-400) 55%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--tf-indigo-400) 20%, transparent),
+    0 18px 40px -22px color-mix(in srgb, var(--tf-indigo-500) 45%, transparent);
+}
+
+/* Every decorative motion switches off for visitors who ask for reduced
+   motion. (The landing page manages its own animations.) */
+@media (prefers-reduced-motion: reduce) {
+  .app-ambient::before,
+  .app-ambient::after,
+  .header-beam::before,
+  .shimmer-bg,
+  .animate-page-in,
+  .animate-float,
+  .animate-spin-slow {
+    animation: none !important;
+  }
+  .btn-sheen::after {
+    display: none;
+  }
+}
+
+/* Gallery slideshow: fills the active photo's progress segment. */
+@keyframes tf-seg {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
 }

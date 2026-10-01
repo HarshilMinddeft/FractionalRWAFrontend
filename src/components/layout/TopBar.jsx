@@ -203,7 +203,8 @@ const TopBar = ({ onMenuOpen }) => {
   const meta = getPageMeta(location.pathname);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-950/70">
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+      <span key={location.pathname} className="header-beam" aria-hidden="true" />
       <div className="mx-auto flex h-16 w-full max-w-[1180px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <button
           type="button"

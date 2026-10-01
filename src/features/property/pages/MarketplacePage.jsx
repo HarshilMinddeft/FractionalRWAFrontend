@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import PublicLayout from '../../../components/layout/PublicLayout';
 import AppLayout from '../../../components/layout/AppLayout';
-import PropertyCard from '../components/PropertyCard';
+import MarketplaceCard from '../components/MarketplaceCard';
+import { formatShares, formatStable } from '../../../utils/units';
 import PageHeader from '../../../components/ui/PageHeader';
 import StatCard from '../../../components/ui/StatCard';
 import Skeleton from '../../../components/ui/Skeleton';
 import EmptyState from '../../../components/ui/EmptyState';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
 import { getPropertyDetailsPath, getAppPropertyDetailsPath } from '../../../config/routes';
 import web3Service from '../../../services/web3Service';
 import propertyApi from '../api/propertyApi';
@@ -70,11 +70,11 @@ const MarketplacePage = ({ isPublic = false }) => {
     web3Service.getReadOnlyMarketplaceContract,
   );
 
-  // A property can show up here either as a normal buyable listing or as a
+  // On-chain listing per property: price, supply sold, and buyback state. A
+  // property can show up here either as a normal buyable listing or as a
   // cancelled listing with a still-open buyback (isActivelyListed keeps
-  // both) — flag the latter so the card doesn't read as "buy now" for
-  // something that's actually delisted and only sellable back.
-  const [buyBackOnly, setBuyBackOnly] = useState({});
+  // both) — the card uses this to show the latter as "sell back", not "buy".
+  const [listings, setListings] = useState({});
 
   useEffect(() => {
     if (properties.length === 0) return;
@@ -82,16 +82,25 @@ const MarketplacePage = ({ isPublic = false }) => {
 
     (async () => {
       const marketplace = web3Service.getReadOnlyMarketplaceContract();
-      const flags = {};
-      for (const prop of properties) {
-        try {
-          const listing = await marketplace.listings(prop.propertyId);
-          flags[prop.propertyId] = !listing.active && listing.buyBack;
-        } catch (err) {
-          console.error(`Error checking buyback status for property ${prop.propertyId}:`, err);
-        }
-      }
-      if (!cancelled) setBuyBackOnly(flags);
+      const next = {};
+      await Promise.all(
+        properties.map(async (prop) => {
+          try {
+            const listing = await marketplace.listings(prop.propertyId);
+            next[prop.propertyId] = {
+              pricePerToken: Number(formatStable(listing.pricePerToken)),
+              buyBackPrice: Number(formatStable(listing.buyBackPrice)),
+              total: Number(formatShares(listing.totalTokens)),
+              remaining: Number(formatShares(listing.remainingTokens)),
+              active: listing.active,
+              buyBack: listing.buyBack,
+            };
+          } catch (err) {
+            console.error(`Error reading listing for property ${prop.propertyId}:`, err);
+          }
+        }),
+      );
+      if (!cancelled) setListings(next);
     })();
 
     return () => {
@@ -210,13 +219,11 @@ const MarketplacePage = ({ isPublic = false }) => {
         >
           {sorted.map((prop) => (
             <motion.div key={prop.propertyId} variants={item} className="h-full">
-              <PropertyCard property={prop} onClick={() => navigate(detailPath(prop.propertyId))}>
-                {buyBackOnly[prop.propertyId] && (
-                  <Badge tone="warning" dot>
-                    Buyback open — not for sale
-                  </Badge>
-                )}
-              </PropertyCard>
+              <MarketplaceCard
+                property={prop}
+                listing={listings[prop.propertyId] ?? null}
+                onClick={() => navigate(detailPath(prop.propertyId))}
+              />
             </motion.div>
           ))}
         </motion.div>

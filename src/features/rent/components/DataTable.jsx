@@ -1,11 +1,16 @@
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Skeleton from '../../../components/ui/Skeleton';
+import Tooltip, { InfoTip } from '../../../components/ui/Tooltip';
 import { cn } from '../../../lib/utils';
 
 /**
  * DataTable — card-wrapped table with optional header and pagination.
- * @param {Array<{key: string, header: string, align?: 'left'|'right', render?: (row) => React.ReactNode, className?: string}>} columns
+ *
+ * A column may carry `info` (shown behind a "?" after its header — how the
+ * field is calculated) and `explain(row)` (the worked calculation for that
+ * row, shown when hovering the value).
+ * @param {Array<{key: string, header: string, align?: 'left'|'right', render?: (row) => React.ReactNode, className?: string, info?: React.ReactNode, explain?: (row) => React.ReactNode}>} columns
  * @param {Array<object>} rows
  * @param {(row) => string} rowKey
  * @param {{page: number, limit: number, total?: number, hasMore?: boolean, onPage: (page) => void}} [pagination]
@@ -39,7 +44,10 @@ const DataTable = ({ title, subtitle, action, columns, rows, rowKey, loading = f
                     col.align === 'right' && 'text-right',
                   )}
                 >
-                  {col.header}
+                  <span className={cn('inline-flex items-center', col.align === 'right' && 'justify-end')}>
+                    {col.header}
+                    {col.info && <InfoTip content={col.info} />}
+                  </span>
                 </th>
               ))}
             </tr>
@@ -66,7 +74,17 @@ const DataTable = ({ title, subtitle, action, columns, rows, rowKey, loading = f
                           col.className,
                         )}
                       >
-                        {col.render ? col.render(row) : row[col.key]}
+                        {col.explain ? (
+                          <Tooltip content={col.explain(row)}>
+                            <span className="border-b border-dotted border-slate-300 dark:border-slate-600">
+                              {col.render ? col.render(row) : row[col.key]}
+                            </span>
+                          </Tooltip>
+                        ) : col.render ? (
+                          col.render(row)
+                        ) : (
+                          row[col.key]
+                        )}
                       </td>
                     ))}
                   </tr>

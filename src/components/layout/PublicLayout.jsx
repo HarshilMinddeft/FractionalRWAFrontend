@@ -23,12 +23,21 @@ const PublicLayout = ({ children, maxWidth = '1180px' }) => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-page text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+    <div className="isolate min-h-screen bg-page text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+      <div className="app-ambient" aria-hidden="true">
+        <div className="app-ambient-grid" />
+      </div>
+
       <div className="flex min-h-screen flex-col">
         <PublicTopBar />
 
         <main className="flex-1">
-          <div className="mx-auto w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8" style={{ maxWidth }}>
+          {/* Keyed on the route so each page fades up as it arrives. */}
+          <div
+            key={location.pathname}
+            className="animate-page-in mx-auto w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
+            style={{ maxWidth }}
+          >
             {children}
           </div>
         </main>

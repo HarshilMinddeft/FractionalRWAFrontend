@@ -2,7 +2,9 @@ import Card from '../../../components/ui/Card';
 import Badge from '../../../components/ui/Badge';
 import Button from '../../../components/ui/Button';
 import { cn, shortenAddress } from '../../../lib/utils';
+import { InfoTip } from '../../../components/ui/Tooltip';
 import DataTable from './DataTable';
+import { FIELD_INFO, SUMMARY_INFO, averageHeld, explainRow } from '../utils/explain';
 import ChainLink from './ChainLink';
 import {
   ALLOCATION_LABELS,
@@ -14,9 +16,12 @@ import {
   formatShares,
 } from '../utils/format';
 
-const SummaryItem = ({ label, value, hint, emphasis = false }) => (
+const SummaryItem = ({ label, value, hint, info, emphasis = false }) => (
   <div className="rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/50">
-    <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">{label}</p>
+    <p className="flex items-center text-[11px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
+      {label}
+      {info && <InfoTip content={info} />}
+    </p>
     <p className={cn('mt-1 text-lg font-bold tabular-nums', emphasis ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-white')}>
       {value}
     </p>
@@ -60,6 +65,17 @@ const DistributionDetail = ({ detail, overview, address, busy, onApprove, onSign
   const open = d.status === 'DRAFT' || d.status === 'IN_PROGRESS';
   const anySent = batches.some((b) => b.status === 'SUBMITTED' || b.status === 'PAID');
 
+  const ctx = {
+    rent: d.rent,
+    totalShares: d.totalShares,
+    feeBps: d.feeBps,
+    periodStart: d.periodStart,
+    periodEnd: d.periodEnd,
+    monthEnd: d.monthEnd,
+    decimals: dec,
+  };
+  const explain = (field) => (a) => explainRow(a, ctx)[field];
+
   const allocationColumns = [
     {
       key: 'holder',
@@ -71,13 +87,41 @@ const DistributionDetail = ({ detail, overview, address, busy, onApprove, onSign
         </span>
       ),
     },
-    { key: 'opening', header: 'Start → end', align: 'right', render: (a) => `${formatShares(a.openingBalance)} → ${formatShares(a.closingBalance)}` },
-    { key: 'days', header: 'Days held', align: 'right', render: (a) => a.daysHeld },
-    { key: 'avg', header: 'Avg. shares', align: 'right', render: (a) => Number(a.averageBalance).toLocaleString('en-US', { maximumFractionDigits: 2 }) },
-    { key: 'share', header: 'Share', align: 'right', render: (a) => `${Number(a.sharePercent).toFixed(3)}%` },
-    { key: 'gross', header: 'Gross', align: 'right', render: (a) => money(a.grossAmount) },
-    { key: 'fee', header: 'Fee', align: 'right', render: (a) => money(a.feeAmount) },
-    { key: 'net', header: 'Pays', align: 'right', render: (a) => <span className="font-semibold text-slate-900 dark:text-white">{money(a.netAmount)}</span> },
+    {
+      key: 'opening',
+      header: 'Start → end',
+      align: 'right',
+      info: FIELD_INFO.balances,
+      render: (a) => `${formatShares(a.openingBalance)} → ${formatShares(a.closingBalance)}`,
+    },
+    { key: 'days', header: 'Days held', align: 'right', info: FIELD_INFO.daysHeld, explain: explain('daysHeld'), render: (a) => a.daysHeld },
+    {
+      key: 'avgHeld',
+      header: 'Avg. while held',
+      align: 'right',
+      info: FIELD_INFO.averageHeld,
+      explain: explain('averageHeld'),
+      render: (a) => averageHeld(a).toLocaleString('en-US', { maximumFractionDigits: 2 }),
+    },
+    {
+      key: 'avg',
+      header: 'Avg. over period',
+      align: 'right',
+      info: FIELD_INFO.averagePeriod,
+      explain: explain('averagePeriod'),
+      render: (a) => Number(a.averageBalance).toLocaleString('en-US', { maximumFractionDigits: 2 }),
+    },
+    { key: 'share', header: 'Share', align: 'right', info: FIELD_INFO.share, explain: explain('share'), render: (a) => `${Number(a.sharePercent).toFixed(3)}%` },
+    { key: 'gross', header: 'Gross', align: 'right', info: FIELD_INFO.gross, explain: explain('gross'), render: (a) => money(a.grossAmount) },
+    { key: 'fee', header: 'Fee', align: 'right', info: FIELD_INFO.fee, explain: explain('fee'), render: (a) => money(a.feeAmount) },
+    {
+      key: 'net',
+      header: 'Pays',
+      align: 'right',
+      info: FIELD_INFO.net,
+      explain: explain('net'),
+      render: (a) => <span className="font-semibold text-slate-900 dark:text-white">{money(a.netAmount)}</span>,
+    },
     {
       key: 'status',
       header: 'Status',
@@ -86,7 +130,7 @@ const DistributionDetail = ({ detail, overview, address, busy, onApprove, onSign
         return <Badge tone={s.tone} dot>{s.label}</Badge>;
       },
     },
-    { key: 'batch', header: 'Batch', align: 'right', render: (a) => (a.batchIndex === null ? '—' : a.batchIndex + 1) },
+    { key: 'batch', header: 'Batch', align: 'right', info: FIELD_INFO.batch, render: (a) => (a.batchIndex === null ? '—' : a.batchIndex + 1) },
   ];
 
   return (
@@ -126,12 +170,12 @@ const DistributionDetail = ({ detail, overview, address, busy, onApprove, onSign
 
         <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <SummaryItem label="Rent entered" value={money(d.rent)} />
-          <SummaryItem label="You send" value={money(d.grossPaid)} hint="Holders + platform fee" emphasis />
-          <SummaryItem label="Holders receive" value={money(d.netPaid)} hint={`${d.payableCount} wallets`} />
-          <SummaryItem label="Platform fee" value={money(d.fee)} hint={`${(d.feeBps / 100).toFixed(2)}% · fee version ${d.feeVersion}`} />
-          <SummaryItem label="Kept in your wallet" value={money(d.selfKept)} hint="Your own wallet's share" />
-          <SummaryItem label="Issuer excluded" value={money(d.excludedIssuer)} hint={d.excludeIssuer ? 'Not paid' : 'Issuer included'} />
-          <SummaryItem label="Not allocated" value={money(d.unallocated)} hint="Days with no holder (pre-launch, burned)" />
+          <SummaryItem label="You send" value={money(d.grossPaid)} hint="Holders + platform fee" info={SUMMARY_INFO.youSend} emphasis />
+          <SummaryItem label="Holders receive" value={money(d.netPaid)} hint={`${d.payableCount} wallets`} info={SUMMARY_INFO.holdersReceive} />
+          <SummaryItem label="Platform fee" value={money(d.fee)} hint={`${(d.feeBps / 100).toFixed(2)}% · fee version ${d.feeVersion}`} info={SUMMARY_INFO.fee} />
+          <SummaryItem label="Kept in your wallet" value={money(d.selfKept)} hint="Your own wallet's share" info={SUMMARY_INFO.selfKept} />
+          <SummaryItem label="Issuer excluded" value={money(d.excludedIssuer)} hint={d.excludeIssuer ? 'Not paid' : 'Issuer included'} info={SUMMARY_INFO.excludedIssuer} />
+          <SummaryItem label="Not allocated" value={money(d.unallocated)} hint="Days with no holder (pre-launch, burned)" info={SUMMARY_INFO.unallocated} />
           <SummaryItem label="Prepared for" value={shortenAddress(d.payerWallet, 6, 4)} hint="Only this wallet can sign" />
         </div>
       </Card>

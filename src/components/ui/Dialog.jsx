@@ -1,9 +1,15 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '../../lib/utils';
 
 /**
- * Dialog — animated centered modal. Renders inline; caller positions content.
+ * Dialog — animated centered modal.
+ *
+ * Rendered into document.body through a portal: a `position: fixed` overlay
+ * inside a transformed ancestor (page transitions, hover lifts) is positioned
+ * against that ancestor instead of the viewport, which pushed the dialog off
+ * screen. The portal keeps it centred on the viewport wherever it's used.
  * @param {boolean} open
  * @param {() => void} onClose
  * @param {string} [title]
@@ -23,7 +29,7 @@ const Dialog = ({ open, onClose, title, description, children, className = '', f
     };
   }, [open, onClose]);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -74,7 +80,8 @@ const Dialog = ({ open, onClose, title, description, children, className = '', f
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 };
 

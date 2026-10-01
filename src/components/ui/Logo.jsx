@@ -20,8 +20,16 @@ const LogoMark = ({ size = 26 }) => (
  */
 const Logo = () => (
   <div className="flex items-center gap-2.5">
-    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-      <LogoMark size={22} />
+    {/* The mark sits in a slowly turning gradient ring. */}
+    <span className="relative flex h-9 w-9 items-center justify-center">
+      <span
+        aria-hidden="true"
+        className="animate-spin-slow absolute inset-0 rounded-xl bg-[conic-gradient(from_0deg,transparent_0%,var(--tf-indigo-500)_25%,transparent_45%,#8b5cf6_70%,transparent_90%)] opacity-80"
+      />
+      <span className="absolute inset-[1.5px] rounded-[10px] bg-slate-100 dark:bg-slate-800" />
+      <span className="relative">
+        <LogoMark size={22} />
+      </span>
     </span>
     <span className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-white">
       True<span className="text-gradient">Fraction</span>

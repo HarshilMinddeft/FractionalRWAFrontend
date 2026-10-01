@@ -32,7 +32,7 @@ export const rentApi = {
   requestAdminNonce: async (address) => unwrap(await api.post('/auth/admin/nonce', { address })),
   verifyAdmin: async (address, signature) => unwrap(await api.post('/auth/admin/verify', { address, signature })),
   getAdminSession: async (token) => unwrap(await api.get('/auth/admin/me', auth(token))),
-  logoutAdmin: async (token) => unwrap(await api.post('/auth/admin/logout', null, auth(token))),
+  logoutAdmin: async (token) => unwrap(await api.post('/auth/admin/logout', {}, auth(token))),
 
   // ── Admin rent ──────────────────────────────────────────────────────────────
   getOverview: async (token) => unwrap(await api.get('/rent/admin/overview', auth(token))),
@@ -44,7 +44,7 @@ export const rentApi = {
   getDistribution: async (token, id) => unwrap(await api.get(`/rent/admin/distributions/${id}`, auth(token))),
   submitBatch: async (token, id, batchIndex, txHash) =>
     unwrap(await api.post(`/rent/admin/distributions/${id}/batches/${batchIndex}/submit`, { txHash }, auth(token))),
-  syncDistribution: async (token, id) => unwrap(await api.post(`/rent/admin/distributions/${id}/sync`, null, auth(token))),
+  syncDistribution: async (token, id) => unwrap(await api.post(`/rent/admin/distributions/${id}/sync`, {}, auth(token))),
   cancelDistribution: async (token, id) => unwrap(await api.delete(`/rent/admin/distributions/${id}`, auth(token))),
 };
 

@@ -10,6 +10,7 @@ import { useWeb3 } from '../../../context/Web3Context';
 import { getAppPropertyDetailsPath } from '../../../config/routes';
 import rentApi, { apiErrorMessage } from '../api/rentApi';
 import DataTable from '../components/DataTable';
+import { FIELD_INFO, averageHeld, explainRow } from '../utils/explain';
 import ChainLink from '../components/ChainLink';
 import {
   ACTIVITY_LABELS,
@@ -137,18 +138,49 @@ const InvestorDashboardPage = () => {
     },
   ];
 
+  // Each payout row carries its distribution's rent, supply and period, so
+  // the worked calculation can be shown per row.
+  const explain = (field) => (p) =>
+    p.tokenSeconds
+      ? explainRow(p, {
+          rent: p.rent,
+          totalShares: p.totalShares,
+          feeBps: p.feeBps,
+          periodStart: p.periodStart,
+          periodEnd: p.periodEnd,
+          monthEnd: p.monthEnd,
+          decimals,
+        })[field]
+      : null;
+
   const payoutColumns = [
     { key: 'month', header: 'Month', render: (p) => <span className="font-medium">{formatMonth(p.month)}</span> },
     { key: 'property', header: 'Property', render: (p) => p.propertyName || `Property #${p.tokenId}` },
-    { key: 'days', header: 'Days held', align: 'right', render: (p) => p.daysHeld },
-    { key: 'avg', header: 'Avg. shares', align: 'right', render: (p) => Number(p.averageBalance).toLocaleString('en-US', { maximumFractionDigits: 2 }) },
-    { key: 'share', header: 'Share of rent', align: 'right', render: (p) => `${Number(p.sharePercent).toFixed(3)}%` },
-    { key: 'gross', header: 'Gross', align: 'right', render: (p) => formatMoney(p.grossAmount, decimals) },
-    { key: 'fee', header: 'Fee', align: 'right', render: (p) => formatMoney(p.feeAmount, decimals) },
+    { key: 'days', header: 'Days held', align: 'right', info: FIELD_INFO.daysHeld, explain: explain('daysHeld'), render: (p) => p.daysHeld },
+    {
+      key: 'avg',
+      header: 'Avg. shares',
+      align: 'right',
+      info: FIELD_INFO.averageHeld,
+      explain: explain('averageHeld'),
+      render: (p) => averageHeld(p).toLocaleString('en-US', { maximumFractionDigits: 2 }),
+    },
+    {
+      key: 'share',
+      header: 'Share of rent',
+      align: 'right',
+      info: FIELD_INFO.share,
+      explain: explain('share'),
+      render: (p) => `${Number(p.sharePercent).toFixed(3)}%`,
+    },
+    { key: 'gross', header: 'Gross', align: 'right', info: FIELD_INFO.gross, explain: explain('gross'), render: (p) => formatMoney(p.grossAmount, decimals) },
+    { key: 'fee', header: 'Fee', align: 'right', info: FIELD_INFO.fee, explain: explain('fee'), render: (p) => formatMoney(p.feeAmount, decimals) },
     {
       key: 'net',
       header: 'You receive',
       align: 'right',
+      info: FIELD_INFO.net,
+      explain: explain('net'),
       render: (p) => <span className="font-semibold text-slate-900 dark:text-white">{formatMoney(p.netAmount, decimals)}</span>,
     },
     {

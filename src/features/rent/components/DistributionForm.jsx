@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
-import Select from '../../../components/ui/Select';
 import Textarea from '../../../components/ui/Textarea';
+import PropertyPicker from './PropertyPicker';
+import MonthPicker from './MonthPicker';
+import HoldersPreview from './HoldersPreview';
 import { formatMonth, recentMonths } from '../utils/format';
 
 const currentMonth = () => new Date().toISOString().slice(0, 7);
@@ -12,7 +14,17 @@ const currentMonth = () => new Date().toISOString().slice(0, 7);
  * New monthly distribution: property, month, rent, issuer toggle. Submitting
  * asks the backend to calculate the split and save it as a draft.
  */
-const DistributionForm = ({ properties, allowCurrentMonth, feeBps, symbol, onCreate, creating }) => {
+const DistributionForm = ({
+  properties,
+  allowCurrentMonth,
+  feeBps,
+  symbol,
+  onCreate,
+  creating,
+  loadHolders,
+  loadDistributions,
+  adminAddress,
+}) => {
   const months = useMemo(() => recentMonths(12), []);
   const thisMonth = currentMonth();
 
@@ -24,6 +36,51 @@ const DistributionForm = ({ properties, allowCurrentMonth, feeBps, symbol, onCre
   const [error, setError] = useState('');
 
   const property = properties.find((p) => p.id === tokenId);
+
+  // A month before the property launched can't be distributed: when the
+  // chosen property launched after the selected month, move to its launch
+  // month (if that month can be distributed yet).
+  useEffect(() => {
+    if (!property?.fractionalizedAt) return;
+    const launched = new Date(Number(property.fractionalizedAt) * 1000);
+    const launchMonth = `${launched.getUTCFullYear()}-${String(launched.getUTCMonth() + 1).padStart(2, '0')}`;
+    const available = launchMonth < thisMonth || (launchMonth === thisMonth && allowCurrentMonth);
+    if (month < launchMonth && available) setMonth(launchMonth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [property?.id]);
+
+  const [holders, setHolders] = useState([]);
+  const [holdersLoading, setHoldersLoading] = useState(false);
+  // 'YYYY-MM' → status of this property's existing (non-cancelled)
+  // distributions, so the month picker can mark months already paid.
+  const [statusByMonth, setStatusByMonth] = useState({});
+
+  useEffect(() => {
+    setStatusByMonth({});
+    if (!tokenId || !loadDistributions) return undefined;
+    let cancelled = false;
+    loadDistributions(tokenId).then((data) => {
+      if (cancelled || !data) return;
+      setStatusByMonth(
+        Object.fromEntries(data.items.filter((d) => d.status !== 'CANCELLED').map((d) => [d.month, d.status])),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tokenId, loadDistributions]);
+
+  useEffect(() => {
+    if (!tokenId || !loadHolders) return undefined;
+    let cancelled = false;
+    setHoldersLoading(true);
+    loadHolders(tokenId)
+      .then((data) => !cancelled && setHolders(data?.holders ?? []))
+      .finally(() => !cancelled && setHoldersLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [tokenId, loadHolders]);
   const monthInProgress = month === thisMonth;
 
   const submit = (e) => {
@@ -43,24 +100,28 @@ const DistributionForm = ({ properties, allowCurrentMonth, feeBps, symbol, onCre
       </p>
 
       <form onSubmit={submit} className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Select label="Property" value={tokenId} onChange={(e) => setTokenId(e.target.value)}>
-          <option value="">Select a property…</option>
-          {properties.map((p) => (
-            <option key={p.id} value={p.id}>
-              #{p.id} · {p.propertyName || 'Unnamed property'} · {p.holderCount} holder{p.holderCount === 1 ? '' : 's'}
-              {p.lastDistributedMonth ? ` · last paid ${p.lastDistributedMonth}` : ''}
-            </option>
-          ))}
-        </Select>
+        <PropertyPicker label="Property" properties={properties} value={tokenId} onChange={setTokenId} />
 
-        <Select label="Month (UTC)" value={month} onChange={(e) => setMonth(e.target.value)}>
-          {months.map((m) => (
-            <option key={m} value={m} disabled={m === thisMonth && !allowCurrentMonth}>
-              {formatMonth(m)}
-              {m === thisMonth ? (allowCurrentMonth ? ' — in progress (testnet)' : ' — in progress') : ''}
-            </option>
-          ))}
-        </Select>
+        <MonthPicker
+          label="Month (UTC)"
+          value={month}
+          onChange={setMonth}
+          allowCurrentMonth={allowCurrentMonth}
+          launchedAt={property ? Number(property.fractionalizedAt) : undefined}
+          statusByMonth={statusByMonth}
+        />
+
+        {property && (
+          <div className="md:col-span-2">
+            <HoldersPreview
+              property={property}
+              holders={holders}
+              loading={holdersLoading}
+              adminAddress={adminAddress}
+              excludeIssuer={excludeIssuer}
+            />
+          </div>
+        )}
 
         <Input
           label={`Rent for the month (${symbol})`}

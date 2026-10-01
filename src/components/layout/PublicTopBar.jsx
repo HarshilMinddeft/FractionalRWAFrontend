@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ThemeToggle from '../ui/ThemeToggle';
 import Logo from '../ui/Logo';
 import { useWeb3 } from '../../context/Web3Context';
@@ -23,10 +23,12 @@ const WalletIcon = () => (
  */
 const PublicTopBar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { address, isConnected, connectWallet } = useWeb3();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-950/70">
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+      <span key={location.pathname} className="header-beam" aria-hidden="true" />
       <div className="mx-auto flex h-16 w-full max-w-[1180px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <button type="button" onClick={() => navigate(ROUTES.marketplace)} className="cursor-pointer">
           <Logo />
@@ -45,7 +47,7 @@ const PublicTopBar = () => {
             <button
               type="button"
               onClick={connectWallet}
-              className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3.5 text-[13px] font-semibold text-white shadow-sm shadow-indigo-600/30 transition-all duration-150 hover:shadow-md hover:shadow-indigo-600/40 hover:brightness-110 active:scale-[0.98]"
+              className="btn-sheen inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3.5 text-[13px] font-semibold text-white shadow-sm shadow-indigo-600/30 transition-all duration-150 hover:shadow-md hover:shadow-indigo-600/40 hover:brightness-110 active:scale-[0.98]"
             >
               <WalletIcon />
               <span className="hidden sm:inline">Connect wallet</span>

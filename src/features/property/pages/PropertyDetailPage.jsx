@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
-import { AnimatePresence, motion } from 'motion/react';
 import PublicLayout from '../../../components/layout/PublicLayout';
 import AppLayout from '../../../components/layout/AppLayout';
 import Card from '../../../components/ui/Card';
@@ -12,7 +11,9 @@ import Spinner from '../../../components/ui/Spinner';
 import Progress from '../../../components/ui/Progress';
 import Badge from '../../../components/ui/Badge';
 import Dialog from '../../../components/ui/Dialog';
-import CopyButton from '../../../components/ui/CopyButton';
+import PropertyGallery from '../components/PropertyGallery';
+import PropertyOverview from '../components/PropertyOverview';
+import useStickyOffset from '../../../hooks/useStickyOffset';
 import web3Service from '../../../services/web3Service';
 import propertyApi from '../api/propertyApi';
 import contractsConfig from '../../../config/contracts.config';
@@ -93,30 +94,6 @@ const FACT_ICONS = {
   ),
 };
 
-const FactItem = ({ icon, label, value, mono = false, copyValue, className = '' }) => (
-  <div
-    className={cn(
-      'flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 transition-colors hover:border-indigo-100 hover:bg-indigo-50/40 dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-indigo-900 dark:hover:bg-indigo-950/20',
-      className,
-    )}
-  >
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:text-indigo-400 dark:ring-slate-700">
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        {FACT_ICONS[icon]}
-      </svg>
-    </div>
-    <div className="min-w-0 flex-1 text-left">
-      <p className="text-[10.5px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">{label}</p>
-      <p className={cn('mt-0.5 font-semibold text-slate-800 dark:text-slate-100', mono ? 'font-mono text-xs leading-relaxed break-all' : 'text-sm truncate')}>
-        {value}
-      </p>
-      {copyValue && (
-        <CopyButton value={copyValue} label="Copy address" copiedLabel="Copied" className="mt-1" />
-      )}
-    </div>
-  </div>
-);
-
 const Accordion = ({ title, icon, children, defaultOpen = false }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -156,94 +133,6 @@ const Accordion = ({ title, icon, children, defaultOpen = false }) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* Image gallery                                                        */
-/* ------------------------------------------------------------------ */
-
-const Gallery = ({ images = [] }) => {
-  const [active, setActive] = useState(0);
-
-  if (!images?.length) {
-    return (
-      <Card className="flex aspect-[16/9] items-center justify-center text-slate-400 dark:text-slate-600">
-        No images available for this property
-      </Card>
-    );
-  }
-
-  const goTo = (i) => setActive((i + images.length) % images.length);
-
-  return (
-    <Card className="overflow-hidden p-2.5 sm:p-3">
-      <div className="group relative overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-950">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.img
-            key={active}
-            src={images[active]}
-            alt={`Property view ${active + 1}`}
-            initial={{ opacity: 0.4, scale: 1.02 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-            className="aspect-[16/9] w-full object-cover"
-          />
-        </AnimatePresence>
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
-
-        {images.length > 1 && (
-          <>
-            <ArrowButton dir="prev" onClick={() => goTo(active - 1)} />
-            <ArrowButton dir="next" onClick={() => goTo(active + 1)} />
-            <span className="absolute right-3 bottom-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-              {active + 1} / {images.length}
-            </span>
-          </>
-        )}
-      </div>
-
-      {images.length > 1 && (
-        <div className="tf-scroll mt-2.5 flex gap-2 overflow-x-auto pb-1">
-          {images.map((url, index) => (
-            <button
-              key={url + index}
-              type="button"
-              onClick={() => setActive(index)}
-              className={cn(
-                'relative shrink-0 overflow-hidden rounded-lg ring-2 transition-all duration-150',
-                index === active
-                  ? 'ring-indigo-500 opacity-100'
-                  : 'ring-transparent opacity-60 hover:opacity-100',
-              )}
-            >
-              <img src={url} alt={`Thumbnail ${index + 1}`} className="h-16 w-24 object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
-    </Card>
-  );
-};
-
-const ArrowButton = ({ dir, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    aria-label={dir === 'prev' ? 'Previous image' : 'Next image'}
-    className={cn(
-      'absolute top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/90 text-slate-700 opacity-0 shadow-md backdrop-blur transition-all duration-200 group-hover:opacity-100 hover:bg-white dark:bg-slate-900/85 dark:text-slate-100 dark:hover:bg-slate-900',
-      dir === 'prev' ? 'left-3' : 'right-3',
-    )}
-  >
-    <svg className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-      {dir === 'prev' ? (
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-      ) : (
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-      )}
-    </svg>
-  </button>
-);
-
-/* ------------------------------------------------------------------ */
 /* Status                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -271,6 +160,8 @@ const PropertyDetailPage = ({ isPublic = false }) => {
   const { address: currentSigner } = useWeb3();
 
   const [property, setProperty] = useState(null);
+  // Sticky right rail offset (see the RIGHT RAIL comment below).
+  const [railRef, railTop] = useStickyOffset();
   const [buyTokensAmount, setBuyTokensAmount] = useState('');
   const [orderSellAmount, setOrderSellAmount] = useState('');
   const [opricePerToken, setPricePerToken] = useState('');
@@ -804,53 +695,10 @@ const PropertyDetailPage = ({ isPublic = false }) => {
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
         {/* ---------------- LEFT COLUMN ---------------- */}
         <div className="space-y-6 lg:col-span-2">
-          <Gallery images={property.propertyImages} />
+          <PropertyGallery images={property.propertyImages} />
 
           {/* Key facts */}
-          <Card className="p-5 sm:p-6">
-            <SectionLabel>Property overview</SectionLabel>
-            <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
-              <FactItem icon="id" label="Property ID" value={`#${property.propertyId}`} />
-              <FactItem icon="size" label="Property size" value={property.propertySize ? `${formatNumber(property.propertySize)} sqft` : '—'} />
-              <FactItem icon="price" label="Underlying asset value" value={formatUsd(property.propertyPrice, 0)} />
-              <FactItem
-                icon="perToken"
-                label="Price per token"
-                value={listing.pricePerToken ? formatUsd(listing.pricePerToken) : '—'}
-              />
-              {listing.buyBack && (
-                <FactItem icon="price" label="Buyback price" value={formatUsd(listing.buyBackPrice)} />
-              )}
-              <FactItem
-                icon="total"
-                label="Total token supply"
-                value={listing.totalShares ? formatNumber(listing.totalShares) : '—'}
-              />
-              <FactItem
-                icon="remaining"
-                label="Available on marketplace"
-                value={
-                  listing.remainingTokens !== undefined
-                    ? `${formatNumber(listing.remainingTokens)} tokens`
-                    : '—'
-                }
-              />
-              <FactItem icon="location" label="Location" value={property.locationDetailes || '—'} />
-              {property.propertyFeatures && (
-                <FactItem icon="features" label="Features" value={property.propertyFeatures} className="sm:col-span-2" />
-              )}
-              {listing.shareToken && (
-                <FactItem
-                  icon="token"
-                  label="Share token address"
-                  value={shortenAddress(listing.shareToken)}
-                  mono
-                  copyValue={listing.shareToken}
-                  className="sm:col-span-2"
-                />
-              )}
-            </div>
-          </Card>
+          <PropertyOverview property={property} listing={listing} />
 
           {/* Story / docs */}
           {(property.offringDetailes || property.propertyDetailes || property.propertyManagement) && (
@@ -912,8 +760,11 @@ const PropertyDetailPage = ({ isPublic = false }) => {
           )}
         </div>
 
-        {/* ---------------- RIGHT RAIL ---------------- */}
-        <div className="space-y-6 lg:sticky lg:top-24">
+        {/* ---------------- RIGHT RAIL ----------------
+            Sticky without an inner scrollbar: if the rail is taller than the
+            screen it scrolls with the page until its bottom is in view, then
+            sticks there (see useStickyOffset). */}
+        <div ref={railRef} className="space-y-6 lg:sticky" style={{ top: railTop }}>
           {listing.buyBack && isOwner ? (
             <Card className="overflow-hidden border-amber-200/70 p-0 dark:border-amber-900/50">
               <div className="items-center justify-between gap-3 border-b border-amber-200/70 bg-amber-50/70 px-5 py-3 dark:border-amber-900/50 dark:bg-amber-950/20">
