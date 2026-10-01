@@ -69,7 +69,8 @@ const DisconnectIcon = () => (
   </svg>
 );
 
-const ConnectedPill = ({ address, onDisconnect }) => {
+// Also used by PublicTopBar, so wallet actions match on public pages.
+export const ConnectedPill = ({ address, onDisconnect }) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 

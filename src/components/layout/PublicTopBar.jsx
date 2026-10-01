@@ -2,8 +2,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import ThemeToggle from '../ui/ThemeToggle';
 import Logo from '../ui/Logo';
 import { useWeb3 } from '../../context/Web3Context';
-import { shortenAddress } from '../../lib/utils';
 import { ROUTES } from '../../config/routes';
+import { ConnectedPill } from './TopBar';
 
 const WalletIcon = () => (
   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
@@ -18,13 +18,13 @@ const WalletIcon = () => (
 /**
  * Minimal top bar for public pages (Marketplace, Property details) — no
  * sidebar, no hamburger menu. Visitors can browse without a wallet; a
- * connected wallet just shows its short address here, it never switches
- * these two pages over to the sidebar app-shell.
+ * connected wallet gets the same menu as the app shell (copy, explorer,
+ * disconnect), but never switches these pages over to the sidebar app-shell.
  */
 const PublicTopBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { address, isConnected, connectWallet } = useWeb3();
+  const { address, isConnected, connectWallet, disconnectWallet } = useWeb3();
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
@@ -36,13 +36,7 @@ const PublicTopBar = () => {
 
         <div className="ml-auto flex items-center gap-2.5">
           {isConnected && address ? (
-            <span className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              </span>
-              {shortenAddress(address, 5, 4)}
-            </span>
+            <ConnectedPill address={address} onDisconnect={disconnectWallet} />
           ) : (
             <button
               type="button"
