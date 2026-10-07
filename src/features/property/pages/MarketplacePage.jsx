@@ -153,7 +153,7 @@ const MarketplacePage = ({ isPublic = false }) => {
         title={tab === 'dashboard' ? 'My Portfolio' : 'Marketplace'}
         description={
           tab === 'dashboard'
-            ? 'Track the property shares you hold, the rent they earn and every trade you make.'
+            ? 'Track the property shares you hold, the rent they earn and every trade you make. Your properties. Your shares. Your returns. All in one place.'
             : 'Browse tokenized real-world assets that are actively listed. Every property is fractionalized, on-chain and verified before it reaches the floor.'
         }
         icon={

@@ -363,7 +363,6 @@ const InvestorDashboard = ({ detailPath, onBrowse }) => {
         <div className="mb-4 flex items-center justify-between gap-3">
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Your portfolio, rental income and trading history
-            {summary ? ` · amounts in ${summary.stablecoin.symbol}` : ''}.
           </p>
           <Button
             variant="secondary"
