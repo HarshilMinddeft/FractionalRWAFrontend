@@ -58,7 +58,7 @@ const DataTable = ({ title, subtitle, action, columns, rows, rowKey, loading = f
                   <tr key={i}>
                     {columns.map((col) => (
                       <td key={col.key} className="px-5 py-3">
-                        <Skeleton className="h-8 w-full" />
+                        <Skeleton className="h-10 w-full" />
                       </td>
                     ))}
                   </tr>

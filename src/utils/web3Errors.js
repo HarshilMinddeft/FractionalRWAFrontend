@@ -49,6 +49,9 @@ const CUSTOM_ERRORS = {
   AccessControlUnauthorizedAccount: 'This wallet is not allowed to distribute rent (missing DISTRIBUTOR_ROLE).',
   ERC20InsufficientAllowance: 'The stablecoin approval does not cover this batch — approve first.',
   ERC20InsufficientBalance: 'This wallet does not hold enough stablecoin for this batch.',
+  // FeeManager
+  InvalidBps: 'The fee must be between 0% and 100%.',
+  OwnableUnauthorizedAccount: 'Only the FeeManager owner wallet can change fees.',
 };
 
 const KNOWN_ERRORS = [

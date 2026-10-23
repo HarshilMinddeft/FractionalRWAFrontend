@@ -125,6 +125,11 @@ export const web3Service = {
     return new ethers.Contract(contractsConfig.orderBook.address, contractsConfig.orderBook.abi, provider);
   },
 
+  getReadOnlyFeeManagerContract: (address) => {
+    const provider = web3Service.getReadOnlyProvider();
+    return new ethers.Contract(address, contractsConfig.feeManager.abi, provider);
+  },
+
   /**
    * Write Contract Helpers (Requires signer)
    */
@@ -151,6 +156,16 @@ export const web3Service = {
   getOrderBookContract: async () => {
     const signer = await web3Service.getSigner();
     return new ethers.Contract(contractsConfig.orderBook.address, contractsConfig.orderBook.abi, signer);
+  },
+
+  /**
+   * FeeManager the marketplace charges its sale fee through. Not configured
+   * in env: the marketplace is the source of truth for which one is live.
+   */
+  getFeeManagerContract: async () => {
+    const address = await web3Service.getReadOnlyMarketplaceContract().feeManager();
+    const signer = await web3Service.getSigner();
+    return new ethers.Contract(address, contractsConfig.feeManager.abi, signer);
   },
 
   getRentDistributorContract: async () => {

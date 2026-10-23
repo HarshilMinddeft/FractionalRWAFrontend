@@ -10,6 +10,7 @@ import UpdatePricePage from '../features/property/pages/UpdatePricePage';
 import CancelListingPage from '../features/property/pages/CancelListingPage';
 import PropertyDetailPage from '../features/property/pages/PropertyDetailPage';
 import UpdateBuyBackBPS from '../features/property/pages/UpdateBuyBackBPS';
+import UpdateSaleFeePage from '../features/property/pages/UpdateSaleFeePage';
 import RentDistributionPage from '../features/rent/pages/RentDistributionPage';
 import { ROUTES, getPropertyDetailsPath } from '../config/routes';
 import './App.css';
@@ -42,6 +43,7 @@ function App() {
       <Route path={ROUTES.appPropertyDetails} element={<PropertyDetailPage />} />
 
       <Route path={ROUTES.updateBuyBackBPS} element={<UpdateBuyBackBPS />} />
+      <Route path={ROUTES.updateSaleFee} element={<UpdateSaleFeePage />} />
       {/* The investor dashboard is now a tab on the marketplace */}
       <Route
         path={ROUTES.investorDashboard}
