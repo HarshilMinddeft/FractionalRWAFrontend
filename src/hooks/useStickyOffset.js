@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
  *
  * @returns {[(el: HTMLElement | null) => void, number]} ref for the sticky element, and its `top`
  */
+
 const useStickyOffset = (topGap = 96, bottomGap = 24) => {
   const [el, ref] = useState(null);
   const [top, setTop] = useState(topGap);
